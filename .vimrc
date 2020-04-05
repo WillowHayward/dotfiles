@@ -8,7 +8,6 @@ Plug 'romainl/Apprentice' " A pretty color scheme
 call plug#end()
 colorscheme apprentice
 syntax on
-set clipboard=unnamedplus
 
 set autoindent
 set expandtab
@@ -20,8 +19,16 @@ set number
 set relativenumber
 
 let g:netrw_banner = 0
-autocmd vimenter * if !argc() | E | endif
 
+" provide hjkl movements in Insert mode via the <Alt> modifier key
+inoremap <A-h> <C-o>h
+inoremap <A-j> <C-o>j
+inoremap <A-k> <C-o>k
+inoremap <A-l> <C-o>l
+
+" Alt-jk in normal mode centres screen
+nnoremap <A-j> zzj
+nnoremap <A-k> zzk
 
 " coc.nvim bindings
 " Use tab for trigger completion with characters ahead and navigate.
