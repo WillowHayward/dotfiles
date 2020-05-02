@@ -4,3 +4,4 @@
 	username = WillHayCode
 [core]
 	editor = nvim
+  excludesfile = ~/.gitignore
