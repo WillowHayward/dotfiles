@@ -5,3 +5,8 @@
 [core]
 	editor = nvim
   excludesfile = ~/.gitignore
+[alias]
+  s = status
+  c = commit
+  ca = commit --all
+  d = diff
