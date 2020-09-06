@@ -18,6 +18,9 @@ set colorcolumn=101
 set number
 set relativenumber
 
+set ignorecase
+set smartcase
+
 let g:netrw_banner = 0
 
 " Indenting a visual selection remains in visual mode afterwards
