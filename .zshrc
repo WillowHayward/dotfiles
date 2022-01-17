@@ -70,7 +70,7 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git laravel vi-mode)
+plugins=(git laravel vi-mode zsh-autosuggestions nx-completion)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -100,3 +100,13 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 bindkey -v
+
+export VISUAL=nvim
+export EDITOR="$VISUAL"
+setxkbmap -option caps:swapescape # Swap caps and escape
+# Load NVM
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+
+# Launch tmux
+[ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
