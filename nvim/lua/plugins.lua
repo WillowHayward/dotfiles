@@ -13,7 +13,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-vim.g.leaderkey = " "
+vim.g.mapleader = " "
 require("lazy").setup({
     -- Set up Neovim LSP
     'neovim/nvim-lspconfig',
@@ -23,6 +23,14 @@ require("lazy").setup({
 
     -- Code Completion
   
+    -- Fuzzy Finder
+    {
+        "nvim-telescope/telescope.nvim",
+        cmd = "Telescope",
+        version = false, -- telescope did only one release, so use HEAD for now
+	    dependencies = { 'nvim-lua/plenary.nvim' }
+        -- Key bindings in keys.lua
+    },
     -- Misc
     'christoomey/vim-tmux-navigator', -- Easier Tmux and Vim split navigation
     'Yggdroot/indentLine', -- Vertical lines to visually indicate indentation levels
