@@ -10,6 +10,8 @@ vim.opt.relativenumber = true
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
+vim.opt.mouse = ''
+
 -- indentLine settings
 vim.g.indentLine_setColors = 0
 
@@ -20,3 +22,4 @@ vim.opt.termguicolors = true
 vim.g.edge_style = 'aura'
 vim.g.edge_better_performance = 1
 vim.cmd[[colorscheme edge]]
+

@@ -26,7 +26,28 @@ require("lazy").setup({
     -- Misc
     'christoomey/vim-tmux-navigator', -- Easier Tmux and Vim split navigation
     'Yggdroot/indentLine', -- Vertical lines to visually indicate indentation levels
-    'sainnhe/edge' -- Color scheme
+    'sainnhe/edge', -- Color scheme
+    {
+        'glepnir/dashboard-nvim', -- Dashboard on launch
+        event = 'VimEnter',
+        config = function()
+        require('dashboard').setup {
+            theme = 'hyper',
+            config = {
+                header = {
+		    ':::       ::: ::::::::::: :::        :::        ::::::::  :::       ::: ::: ',
+		    ':+:       :+:     :+:     :+:        :+:       :+:    :+: :+:       :+: :+: ',
+		    '+:+       +:+     +:+     +:+        +:+       +:+    +:+ +:+       +:+ +:+ ',
+		    '+#+  +:+  +#+     +#+     +#+        +#+       +#+    +:+ +#+  +:+  +#+ +#+ ',
+		    '+#+ +#+#+ +#+     +#+     +#+        +#+       +#+    +#+ +#+ +#+#+ +#+ +#+ ',
+		    ' #+#+# #+#+#      #+#     #+#        #+#       #+#    #+#  #+#+# #+#+#      ',
+		    '  ###   ###   ########### ########## ########## ########    ###   ###   ### ',
+		}
+            }
+        }
+        end,
+        dependencies = { {'nvim-tree/nvim-web-devicons'}}
+    }
 })
 
 
