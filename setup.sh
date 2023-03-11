@@ -5,8 +5,9 @@ links[.zshrc]="~/.zshrc"
 links[.gitconfig]="~/.gitconfig"
 links[.gitignore.global]="~/.gitignore"
 links[.tmux.conf]="~/.tmux.conf"
+links[nvim]="~/.config/nvim"
 links[.npmrc]="~/.npmrc"
-links[.vimrc]="~/.config/nvim/init.vim"
+links[.vimrc]="~/.vimrc"
 
 for link in "${!links[@]}"; do
     echo Linking $link
