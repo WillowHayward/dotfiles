@@ -15,8 +15,6 @@ vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
 require("lazy").setup({
-    -- cmp & lsp
-    require('lsp'),
     -- Fuzzy Finder
     {
         "nvim-telescope/telescope.nvim",
@@ -25,6 +23,8 @@ require("lazy").setup({
 	    dependencies = { 'nvim-lua/plenary.nvim' }
         -- Key bindings in keys.lua
     },
+    -- cmp & lsp
+    require('lsp'),
     -- Misc
     'christoomey/vim-tmux-navigator', -- Easier Tmux and Vim split navigation
     'Yggdroot/indentLine', -- Vertical lines to visually indicate indentation levels

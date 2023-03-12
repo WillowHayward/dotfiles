@@ -3,6 +3,8 @@ local language_servers = {
     "shellcheck",
     "shfmt",
     "flake8",
+    "typescript-language-server",
+    "tsserver"
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -50,9 +52,6 @@ return {
             "williamboman/mason-lspconfig.nvim",
             "hrsh7th/cmp-nvim-lsp",
         },
-        --opts = {
-
-        --}
     },
     
   -- formatters
@@ -71,10 +70,11 @@ return {
         }
         end,
     },
-    
-    -- cmdline tools and lsp servers
     {
-        "williamboman/mason.nvim",
+        "williamboman/mason-lspconfig",
+        dependencies = {
+            "williamboman/mason.nvim"
+        },
         cmd = "Mason",
         opts = {
             ensure_installed = language_servers
@@ -90,6 +90,12 @@ return {
                 end
             end
         end,
+    },
+    {
+        "jose-elias-alvarez/typescript.nvim",
+        config = function()
+            require("typescript").setup({})
+        end
     }
 }
 
