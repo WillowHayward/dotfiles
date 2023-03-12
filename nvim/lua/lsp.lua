@@ -3,8 +3,7 @@ local language_servers = {
     "shellcheck",
     "shfmt",
     "flake8",
-    "typescript-language-server",
-    "svelte-language-server"
+    "typescript-language-server"
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -20,13 +19,20 @@ return {
         dependencies = {
             "hrsh7th/cmp-nvim-lsp",
             "hrsh7th/cmp-buffer",
-            "hrsh7th/cmp-path"
+            "hrsh7th/cmp-path",
+            'hrsh7th/cmp-vsnip',
+            'hrsh7th/vim-vsnip',
         },
         opts = function()
             local cmp = require('cmp')
             return {
                 completion = {
                     completeopt = "menu,menuone,noinsert",
+                },
+                snippet = {
+                    expand = function(args)
+                        vim.fn["vsnip#anonymous"](args.body)
+                    end,
                 },
                 mapping = {
                     ['<CR>'] = cmp.mapping.confirm({ select = true }),
@@ -35,6 +41,7 @@ return {
                 },
                 sources = {
                     { name = 'nvim_lsp' },
+                    { name = "vsnip" },
                     { name = 'buffer' },
                     { name = 'path' }
                 }
