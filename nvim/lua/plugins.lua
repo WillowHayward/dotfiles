@@ -25,6 +25,8 @@ require("lazy").setup({
     },
     -- cmp & lsp
     require('lsp'),
+    -- treesitter
+    require('treesitter'),
     -- Misc
     'christoomey/vim-tmux-navigator', -- Easier Tmux and Vim split navigation
     'Yggdroot/indentLine', -- Vertical lines to visually indicate indentation levels
