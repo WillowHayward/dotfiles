@@ -34,6 +34,16 @@ require("lazy").setup({
     -- Misc
     'christoomey/vim-tmux-navigator', -- Easier Tmux and Vim split navigation
     'Yggdroot/indentLine', -- Vertical lines to visually indicate indentation levels
+    'nvim-pack/nvim-spectre', -- Find and replace across files
+    {
+        'folke/which-key.nvim', -- Show available key bindings
+        config = function()
+            vim.o.timeout = true
+            vim.o.timeoutlen = 300
+            require('which-key').setup({})
+        end
+
+    },
     'sainnhe/edge', -- Color scheme
     {
         'goolord/alpha-nvim', -- Dashboard on launch
@@ -68,6 +78,11 @@ require("lazy").setup({
         config = function(_, dashboard)
             require("alpha").setup(dashboard.opts)
         end
+    },
+    -- silly
+    {
+        'eandrju/cellular-automaton.nvim', -- For when it all comes tumbling down
+        dependencies = {'nvim-treesitter/nvim-treesitter'}
     }
 })
 
