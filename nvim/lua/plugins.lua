@@ -39,7 +39,7 @@ require("lazy").setup({
         'folke/which-key.nvim', -- Show available key bindings
         config = function()
             vim.o.timeout = true
-            vim.o.timeoutlen = 300
+            vim.o.timeoutlen = 600
             require('which-key').setup({})
         end
 
@@ -50,15 +50,8 @@ require("lazy").setup({
         event = 'VimEnter',
         opts = function()
             local dashboard = require("alpha.themes.dashboard")
-            local logo = [[
-                :::       ::: ::::::::::: :::        :::        ::::::::  :::       ::: ::: 
-                :+:       :+:     :+:     :+:        :+:       :+:    :+: :+:       :+: :+: 
-                +:+       +:+     +:+     +:+        +:+       +:+    +:+ +:+       +:+ +:+ 
-                +#+  +:+  +#+     +#+     +#+        +#+       +#+    +:+ +#+  +:+  +#+ +#+ 
-                +#+ +#+#+ +#+     +#+     +#+        +#+       +#+    +#+ +#+ +#+#+ +#+ +#+ 
-                 #+#+# #+#+#      #+#     #+#        #+#       #+#    #+#  #+#+# #+#+#      
-                  ###   ###   ########### ########## ########## ########    ###   ###   ### 
-            ]]
+            local willow = require("willow");
+            local logo = willow.get_logo()
             dashboard.section.header.val = vim.split(logo, "\n")
             dashboard.section.buttons.val = {
                 dashboard.button("f", " " .. " Find file", ":Telescope find_files <CR>"),
@@ -72,7 +65,7 @@ require("lazy").setup({
             dashboard.section.header.opts.hl = "AlphaHeader"
             dashboard.section.buttons.opts.hl = "AlphaButtons"
             dashboard.opts.layout[1].val = 8
-            dashboard.section.footer.val = 'Speaking from experience, Willow is very tall' 
+            dashboard.section.footer.val = willow.get_slogan()
             return dashboard
 	    end,
         config = function(_, dashboard)
