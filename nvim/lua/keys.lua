@@ -14,8 +14,14 @@ vim.keymap.set('n', '<A-k>', 'zzk');
 
 -- Telescope
 local builtin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>/', builtin.live_grep)
-vim.keymap.set('n', '<leader>f', builtin.find_files)
-vim.keymap.set('n', '<leader>b', builtin.git_branches)
-vim.keymap.set('n', '<leader>p', builtin.planets) -- god this plugin is cute
+vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Find in files' })
+vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = 'Find files' })
+vim.keymap.set('n', '<leader>b', builtin.git_branches, { desc = 'Find git branch' })
+vim.keymap.set('n', '<leader>p', builtin.planets, { desc = 'Find planet' }) -- god this plugin is cute
 -- TODO: LSP Integration https://github.com/nvim-telescope/telescope.nvim#neovim-lsp-pickers
+
+-- Spectre (find and replace across multiple files)
+vim.keymap.set('n', '<leader>%', require('spectre').open, { desc = 'Open Spectre' })
+
+-- cellular automation (silly)
+vim.keymap.set("n", "<leader>q", "<cmd>CellularAutomaton make_it_rain<CR>", { desc = 'Destroy it all' })
