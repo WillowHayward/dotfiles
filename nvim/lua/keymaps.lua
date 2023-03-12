@@ -21,12 +21,23 @@ vim.keymap.set('n', '<leader>q', '<cmd>CellularAutomaton make_it_rain<CR>', { de
 -- Mason
 vim.keymap.set('n', '<leader>cm', '<cmd>Mason<cr>', { desc = 'Mason' })
 
+-- Lazy
+vim.keymap.set('n', '<leader>l', '<cmd>Lazy<cr>', { desc = 'Lazy' })
+
 -- Telescope
 local builtin = require('telescope.builtin')
 vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Find in files' })
 vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = 'Find files' })
-vim.keymap.set('n', '<leader>b', builtin.git_branches, { desc = 'Find git branch' })
+vim.keymap.set('n', '<leader>r', builtin.oldfiles, { desc = 'Find recent files' })
 vim.keymap.set('n', '<leader>p', builtin.planets, { desc = 'Find planet' }) -- god this plugin is cute
+
+-- Git
+vim.keymap.set('n', '<leader>gb', builtin.git_branches, { desc = 'Find git branch' })
+vim.keymap.set('n', '<leader>gf', builtin.git_files, { desc = 'git ls-files' })
+
+-- Telescope lsp
+vim.keymap.set('n', '<leader>cd', builtin.lsp_definitions, { desc = 'Find definition' })
+vim.keymap.set('n', '<leader>ct', builtin.lsp_type_definitions, { desc = 'Find type definition' })
 -- TODO: LSP Integration https://github.com/nvim-telescope/telescope.nvim#neovim-lsp-pickers
 -- cmp keybinds in lsp.lua
 
