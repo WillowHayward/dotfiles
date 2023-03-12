@@ -15,14 +15,8 @@ vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
 require("lazy").setup({
-    -- Set up Neovim LSP
-    'neovim/nvim-lspconfig',
-    'jose-elias-alvarez/null-ls.nvim',
-    'nvim-lua/plenary.nvim',
-    'jose-elias-alvarez/nvim-lsp-ts-utils',
-
-    -- Code Completion
-  
+    -- cmp & lsp
+    require('lsp'),
     -- Fuzzy Finder
     {
         "nvim-telescope/telescope.nvim",
