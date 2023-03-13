@@ -4,6 +4,7 @@ local language_servers = {
 	"shfmt",
 	"flake8",
 	"typescript-language-server",
+    "tailwindcss-language-server"
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -23,7 +24,7 @@ return {
 			"hrsh7th/cmp-vsnip",
 			"hrsh7th/vim-vsnip",
 		},
-		opts = function()
+		opts = function(_, opts)
 			local cmp = require("cmp")
 			return {
 				completion = {
@@ -58,10 +59,12 @@ return {
 			"mason.nvim",
 			"williamboman/mason-lspconfig.nvim",
 			"hrsh7th/cmp-nvim-lsp",
-			"jose-elias-alvarez/typescript.nvim",
+			"jose-elias-alvarez/typescript.nvim", -- TypeScript
 		},
 		opts = {
-			servers = {},
+			servers = {
+                tailwindcss = {},
+            },
 			setup = {
 				tsserver = function(_, opts)
 					require("typescript").setup({ server = opts })
