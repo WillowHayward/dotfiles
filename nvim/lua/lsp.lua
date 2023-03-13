@@ -1,148 +1,148 @@
 local language_servers = {
-    "stylua",
-    "shellcheck",
-    "shfmt",
-    "flake8",
-    "typescript-language-server"
+	"stylua",
+	"shellcheck",
+	"shfmt",
+	"flake8",
+	"typescript-language-server",
 }
 
 -- TODO Leftover imports from last config, investigate
-    -- 'nvim-lua/plenary.nvim',
-    -- 'jose-elias-alvarez/nvim-lsp-ts-utils',
+-- 'nvim-lua/plenary.nvim',
+-- 'jose-elias-alvarez/nvim-lsp-ts-utils',
 
 return {
-    -- autocompletion
-    {
-        "hrsh7th/nvim-cmp",
-        version = false, -- last release is way too old
-        event = "InsertEnter",
-        dependencies = {
-            "hrsh7th/cmp-nvim-lsp",
-            "hrsh7th/cmp-buffer",
-            "hrsh7th/cmp-path",
-            'hrsh7th/cmp-vsnip',
-            'hrsh7th/vim-vsnip',
-        },
-        opts = function()
-            local cmp = require('cmp')
-            return {
-                completion = {
-                    completeopt = "menu,menuone,noinsert",
-                },
-                snippet = {
-                    expand = function(args)
-                        vim.fn["vsnip#anonymous"](args.body)
-                    end,
-                },
-                mapping = {
-                    ['<CR>'] = cmp.mapping.confirm({ select = true }),
-                    ['<Tab>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 's' }),
-                    ['<S-Tab>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 's' })
-                },
-                sources = {
-                    { name = 'nvim_lsp' },
-                    { name = "vsnip" },
-                    { name = 'buffer' },
-                    { name = 'path' }
-                }
-            }
-        end
-    },
-    -- lsp
-    {
-        "neovim/nvim-lspconfig",
-        event = { "BufReadPre", "BufNewFile" },
-        dependencies = {
-            { "folke/neoconf.nvim", cmd = "Neoconf", config = true },
-            { "folke/neodev.nvim", opts = { experimental = { pathStrict = true } } },
-            "mason.nvim",
-            "williamboman/mason-lspconfig.nvim",
-            "hrsh7th/cmp-nvim-lsp",
-            "jose-elias-alvarez/typescript.nvim"
-        },
-        opts = {
-            servers = {},
-            setup = {
-                tsserver = function(_, opts)
-                    require("typescript").setup({ server = opts })
-                    return true
-                end,
-            }
-        },
-        config = function(_, opts)
-            -- This is mostly lifted from LazyVim
-	        local mlsp = require("mason-lspconfig")
-            local available = mlsp.get_available_servers()
+	-- autocompletion
+	{
+		"hrsh7th/nvim-cmp",
+		version = false, -- last release is way too old
+		event = "InsertEnter",
+		dependencies = {
+			"hrsh7th/cmp-nvim-lsp",
+			"hrsh7th/cmp-buffer",
+			"hrsh7th/cmp-path",
+			"hrsh7th/cmp-vsnip",
+			"hrsh7th/vim-vsnip",
+		},
+		opts = function()
+			local cmp = require("cmp")
+			return {
+				completion = {
+					completeopt = "menu,menuone,noinsert",
+				},
+				snippet = {
+					expand = function(args)
+						vim.fn["vsnip#anonymous"](args.body)
+					end,
+				},
+				mapping = {
+					["<CR>"] = cmp.mapping.confirm({ select = true }),
+					["<Tab>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "s" }),
+					["<S-Tab>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "s" }),
+				},
+				sources = {
+					{ name = "nvim_lsp" },
+					{ name = "vsnip" },
+					{ name = "buffer" },
+					{ name = "path" },
+				},
+			}
+		end,
+	},
+	-- lsp
+	{
+		"neovim/nvim-lspconfig",
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = {
+			{ "folke/neoconf.nvim", cmd = "Neoconf", config = true },
+			{ "folke/neodev.nvim", opts = { experimental = { pathStrict = true } } },
+			"mason.nvim",
+			"williamboman/mason-lspconfig.nvim",
+			"hrsh7th/cmp-nvim-lsp",
+			"jose-elias-alvarez/typescript.nvim",
+		},
+		opts = {
+			servers = {},
+			setup = {
+				tsserver = function(_, opts)
+					require("typescript").setup({ server = opts })
+					return true
+				end,
+			},
+		},
+		config = function(_, opts)
+			-- This is mostly lifted from LazyVim
+			local mlsp = require("mason-lspconfig")
+			local available = mlsp.get_available_servers()
 
-            local ensure_installed = {} ---@type string[]
-            local servers = opts.servers
-            local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
-            local function setup(server)
-                local server_opts = vim.tbl_deep_extend("force", {
-                    capabilities = vim.deepcopy(capabilities),
-                }, servers[server] or {})
+			local ensure_installed = {} ---@type string[]
+			local servers = opts.servers
+			local capabilities =
+				require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
+			local function setup(server)
+				local server_opts = vim.tbl_deep_extend("force", {
+					capabilities = vim.deepcopy(capabilities),
+				}, servers[server] or {})
 
-                if opts.setup[server] then
-                    if opts.setup[server](server, server_opts) then
-                        return
-                    end
-                elseif opts.setup["*"] then
-                    if opts.setup["*"](server, server_opts) then
-                        return
-                    end
-                end
-                require("lspconfig")[server].setup(server_opts)
-            end
-            for server, server_opts in pairs(servers) do
-                if server_opts then
-                    server_opts = server_opts == true and {} or server_opts
-                      -- run manual setup if mason=false or if this is a server that cannot be installed with mason-lspconfig
-                    if server_opts.mason == false or not vim.tbl_contains(available, server) then
-                        setup(server)
-                    else
-                        ensure_installed[#ensure_installed + 1] = server
-                    end
-                end
-            end
+				if opts.setup[server] then
+					if opts.setup[server](server, server_opts) then
+						return
+					end
+				elseif opts.setup["*"] then
+					if opts.setup["*"](server, server_opts) then
+						return
+					end
+				end
+				require("lspconfig")[server].setup(server_opts)
+			end
+			for server, server_opts in pairs(servers) do
+				if server_opts then
+					server_opts = server_opts == true and {} or server_opts
+					-- run manual setup if mason=false or if this is a server that cannot be installed with mason-lspconfig
+					if server_opts.mason == false or not vim.tbl_contains(available, server) then
+						setup(server)
+					else
+						ensure_installed[#ensure_installed + 1] = server
+					end
+				end
+			end
 
-	    require("mason-lspconfig").setup({ ensure_installed = ensure_installed })
-	    require("mason-lspconfig").setup_handlers({ setup })
-      end
-    },
-    
-  -- formatters
-  {
-    "jose-elias-alvarez/null-ls.nvim",
-    event = { "BufReadPre", "BufNewFile" },
-        dependencies = { "mason.nvim" },
-        opts = function()
-            local nls = require("null-ls")
-            return {
-            sources = {
-                -- nls.builtins.formatting.prettierd,
-                nls.builtins.formatting.stylua,
-                nls.builtins.diagnostics.flake8,
-            },
-        }
-        end,
-    },
-    {
-        "williamboman/mason.nvim",
-        cmd = "Mason",
-        opts = {
-            ensure_installed = language_servers
-        },
-        ---@param opts MasonSettings | {ensure_installed: string[]}
-        config = function(plugin, opts)
-            require("mason").setup()
-            local mr = require("mason-registry")
-            for _, tool in ipairs(opts.ensure_installed) do
-                local p = mr.get_package(tool)
-                if not p:is_installed() then
-                    p:install()
-                end
-            end
-        end,
-    },
+			require("mason-lspconfig").setup({ ensure_installed = ensure_installed })
+			require("mason-lspconfig").setup_handlers({ setup })
+		end,
+	},
+
+	-- formatters
+	{
+		"jose-elias-alvarez/null-ls.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = { "mason.nvim" },
+		opts = function()
+			local nls = require("null-ls")
+			return {
+				sources = {
+					-- nls.builtins.formatting.prettierd,
+					nls.builtins.formatting.stylua,
+					nls.builtins.diagnostics.flake8,
+				},
+			}
+		end,
+	},
+	{
+		"williamboman/mason.nvim",
+		cmd = "Mason",
+		opts = {
+			ensure_installed = language_servers,
+		},
+		---@param opts MasonSettings | {ensure_installed: string[]}
+		config = function(plugin, opts)
+			require("mason").setup()
+			local mr = require("mason-registry")
+			for _, tool in ipairs(opts.ensure_installed) do
+				local p = mr.get_package(tool)
+				if not p:is_installed() then
+					p:install()
+				end
+			end
+		end,
+	},
 }
-
