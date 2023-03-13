@@ -1,4 +1,26 @@
-# NeoVim Plugins to investigate
+# Init scripts
+ - Test the damn thing works
+ - https://cloud.whc.fyi/index.php/apps/files/?dir=/Server&openfile=751
+ - https://github.com/WillowHayward/services/blob/main/root.sh
+ - https://github.com/WillowHayward/services/blob/main/docker.sh
+ - https://github.com/WillowHayward/services/blob/main/services.sh
+ - Apps
+  - Docker
+   - https://docs.docker.com/engine/install/debian/
+   - https://docs.docker.com/engine/install/ubuntu/
+  - Vim
+    - https://www.vim.org/download.php#unix
+  - make/gcc
+  - RipGrep, fd, others for nvim plugins
+  - For inspiration: https://github.com/ibraheemdev/modern-unix
+ - zsh plugin installs!
+ - https://github.com/unixorn/awesome-zsh-plugins#installation
+
+# NeoVim
+ - Consider disabling syntax w/ treesitter (as in, just use treesitter)
+ - Language Servers
+  - Markdown
+ - Plugins
   - https://github.com/gbprod/substitute.nvim
   - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-map.md
   - Something nvim specific for tmux-navigator?
