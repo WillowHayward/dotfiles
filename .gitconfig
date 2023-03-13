@@ -1,12 +1,14 @@
 [user]
-	email = WillHayCode@gmail.com
+	email = willow@whc.fyi
 	name = Willow Hayward
-	username = WillHayCode
+	username = WillowHayward
 [core]
 	editor = nvim
-  excludesfile = ~/.gitignore
+    excludesfile = ~/dotfiles/.gitignore.global
 [alias]
   s = status
   c = commit
   ca = commit --all
   d = diff
+[init]
+	defaultBranch = main
