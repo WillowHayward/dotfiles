@@ -35,9 +35,23 @@ require("lazy").setup({
 		},
 		event = "VeryLazy",
 		config = function()
-			require("lualine").setup()
+			require("lualine").setup({})
 		end,
 	},
+    -- Git
+    {
+        "lewis6991/gitsigns.nvim",
+        opts = {
+            current_line_blame_opts = {
+                virt_text_pos = "right_align",
+                delay = 0
+            },
+        },
+        config = function (_, opts)
+            require("gitsigns").setup(opts)
+        end
+    },
+    "kdheepak/lazygit.nvim",
 	-- Misc
 	"christoomey/vim-tmux-navigator", -- Easier Tmux and Vim split navigation
 	"Yggdroot/indentLine", -- Vertical lines to visually indicate indentation levels
@@ -63,7 +77,7 @@ require("lazy").setup({
 				dashboard.button("f", " " .. " Find file", ":Telescope find_files <CR>"),
 				dashboard.button("n", " " .. " New file", ":ene <BAR> startinsert <CR>"),
 				dashboard.button("r", " " .. " Recent files", ":Telescope oldfiles <CR>"),
-				dashboard.button("g", " " .. " Find text", ":Telescope live_grep <CR>"),
+				dashboard.button("/", " " .. " Find text", ":Telescope live_grep <CR>"),
 				dashboard.button("c", " " .. " Config", ":e $MYVIMRC <CR>"),
 				dashboard.button("q", " " .. " Quit", ":qa<CR>"),
 			}

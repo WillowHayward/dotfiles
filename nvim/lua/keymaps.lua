@@ -34,6 +34,8 @@ vim.keymap.set("n", "<leader>p", builtin.planets, { desc = "Find planet" }) -- g
 -- Git
 vim.keymap.set("n", "<leader>gb", builtin.git_branches, { desc = "Find git branch" })
 vim.keymap.set("n", "<leader>gf", builtin.git_files, { desc = "git ls-files" })
+vim.keymap.set("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", { desc = "Toggle line blame" })
+vim.keymap.set("n", "<leader>gg", "<cmd>LazyGit <CR>", { desc = "Open LazyGit" })
 
 -- Telescope lsp
 vim.keymap.set("n", "<leader>cd", builtin.lsp_definitions, { desc = "Find definition" })
