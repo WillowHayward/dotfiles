@@ -2,17 +2,26 @@ call plug#begin('~/.vim/plugged')
 
 if has('nvim')
     Plug 'neoclide/coc.nvim', {'branch': 'release'} " Code Completion
+    "Plug 'neovim/nvim-lspconfig' " Code completion, when I get around to
+    "setting it up properly
 endif
 Plug 'christoomey/vim-tmux-navigator' " Easier Tmux and Vim split navigation
+Plug 'Yggdroot/indentLine' " Vertical lines to visually indicate indentation levels
 Plug 'romainl/Apprentice' " A pretty color scheme
 call plug#end()
 colorscheme apprentice
 syntax on
 
+" Disable automatic line wrapping in git commits
+autocmd Syntax gitcommit setlocal nowrap
+
+" indentLine settings
+let g:indentLine_setColors = 0
+
 set autoindent
 set expandtab
-set tabstop=2
-set shiftwidth=2
+set tabstop=4
+set shiftwidth=4
 set colorcolumn=101
 
 set number
