@@ -25,7 +25,27 @@ require("lazy").setup({
 		cmd = "Telescope",
 		version = false, -- telescope did only one release, so use HEAD for now
 		dependencies = { "nvim-lua/plenary.nvim" },
-		-- Key bindings in keys.lua
+        opts = function()
+            local telescopeConfig = require("telescope.config")
+            local vimgrep_arguments = { unpack(telescopeConfig.values.vimgrep_arguments) }
+            -- I want to search in hidden/dot files.
+            table.insert(vimgrep_arguments, "--hidden")
+            -- I don't want to search in the `.git` directory.
+            table.insert(vimgrep_arguments, "--glob")
+            table.insert(vimgrep_arguments, "!**/.git/*")
+
+            return {
+                defaults = {
+                    vimgrep_arguments = vimgrep_arguments
+                },
+                pickers = {
+                    -- Show dotfiles, but not .git directory
+                    find_files = {
+                        find_command = { "rg", "--files", "--hidden", "--glob", "!**/.git/*" },
+                    }
+                }
+            }
+        end,
 	},
     -- File system
     {
@@ -45,7 +65,8 @@ require("lazy").setup({
         opts = {
             filesystem = {
                 filtered_items = {
-                    hide_dotfiles = false
+                    hide_dotfiles = false,
+                    hide_gitignored = false,
                 }
             },
         },
