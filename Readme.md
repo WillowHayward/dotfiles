@@ -20,5 +20,5 @@ Set up automatically occurs in .zshrc
 | .npmrc            | ~/.npmrc                | NPM settings - Mostly initial project setup things like my name and email, MIT license, version 0.0.1.                                                                          |
 | .vimrc            | ~/.vimrc                | A basic Vim config |
 
-To automate the setup of the file locations, run `./setup.sh`. Some require further setup.
+To automate the setup of the file locations, run `./scripts/link.sh`. Some require further setup.
 
