@@ -27,11 +27,34 @@ require("lazy").setup({
 		dependencies = { "nvim-lua/plenary.nvim" },
 		-- Key bindings in keys.lua
 	},
+    -- File system
+    {
+        "nvim-neo-tree/neo-tree.nvim",
+        cmd = "Neotree",
+        branch = "v2.x",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+            "MunifTanjim/nui.nvim",
+        },
+        init = function ()
+            vim.g.loaded_netrw = 1
+            vim.g.loaded_netrwPlugin = 1
+            vim.g.neo_tree_remove_legacy_commands = 1
+        end,
+        opts = {
+            filesystem = {
+                filtered_items = {
+                    hide_dotfiles = false
+                }
+            },
+        },
+    },
 	-- Status line
 	{
 		"nvim-lualine/lualine.nvim",
 		dependencies = {
-			"kyazdani42/nvim-web-devicons",
+			"nvim-tree/nvim-web-devicons",
 		},
 		event = "VeryLazy",
 		config = function()
