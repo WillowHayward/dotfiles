@@ -31,6 +31,9 @@ vim.keymap.set("n", "<leader>f", builtin.find_files, { desc = "Find files" })
 vim.keymap.set("n", "<leader>r", builtin.oldfiles, { desc = "Find recent files" })
 vim.keymap.set("n", "<leader>p", builtin.planets, { desc = "Find planet" }) -- god this plugin is cute
 
+-- Neo-Tree
+vim.keymap.set("n", "\\", "<cmd>Neotree float reveal <CR>", { desc = "Open file browser" })
+
 -- Git
 vim.keymap.set("n", "<leader>gb", builtin.git_branches, { desc = "Find git branch" })
 vim.keymap.set("n", "<leader>gf", builtin.git_files, { desc = "git ls-files" })

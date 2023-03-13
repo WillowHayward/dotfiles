@@ -15,8 +15,6 @@ vim.opt.mouse = ""
 -- indentLine settings
 vim.g.indentLine_setColors = 0
 
-vim.g.netrw_banner = 0
-
 -- color scheme
 vim.opt.termguicolors = true
 vim.g.edge_style = "aura"
