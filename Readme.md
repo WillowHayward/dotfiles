@@ -3,7 +3,12 @@ These are the dotfiles I use to make my dev experience more universal across dev
 # Usage
 This is primarily designed for use in a system like Ubuntu.
 
-A lot of symlinks coming, so buckle up.
+## Environment variables
+Create a .env file in the root of this repo, and view .env.example for a list of available environment variables.
+
+Set up automatically occurs in .zshrc
+
+## Symlinks
 
 | dotfile           | System Location         | Description                                                                                                                                                                     |
 |-------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

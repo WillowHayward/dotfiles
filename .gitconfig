@@ -6,9 +6,9 @@
 	editor = nvim
     excludesfile = ~/dotfiles/.gitignore.global
 [alias]
-  s = status
-  c = commit
-  ca = commit --all
-  d = diff
+    s = status
+    c = commit
+    ca = commit --all
+    d = diff
 [init]
 	defaultBranch = main
