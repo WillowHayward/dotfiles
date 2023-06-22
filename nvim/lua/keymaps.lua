@@ -73,6 +73,7 @@ vim.keymap.set("n", "]w", diagnostic_goto(true, "HINT"), { desc = "Next hint" })
 vim.keymap.set("n", "[w", diagnostic_goto(false, "HINT"), { desc = "Previous hint" })
 vim.keymap.set("n", "]w", diagnostic_goto(true, "INFO"), { desc = "Next info" })
 vim.keymap.set("n", "[w", diagnostic_goto(false, "INFO"), { desc = "Previous info" })
+vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" });
 
 -- TypeScript
 vim.keymap.set("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", { desc = "Organise TypeScript imports" })
