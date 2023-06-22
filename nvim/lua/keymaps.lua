@@ -69,10 +69,10 @@ vim.keymap.set("n", "]e", diagnostic_goto(true, "ERROR"), { desc = "Next error" 
 vim.keymap.set("n", "[e", diagnostic_goto(false, "ERROR"), { desc = "Previous error" })
 vim.keymap.set("n", "]w", diagnostic_goto(true, "WARNING"), { desc = "Next warning" })
 vim.keymap.set("n", "[w", diagnostic_goto(false, "WARNING"), { desc = "Previous warning" })
-vim.keymap.set("n", "]w", diagnostic_goto(true, "HINT"), { desc = "Next hint" })
-vim.keymap.set("n", "[w", diagnostic_goto(false, "HINT"), { desc = "Previous hint" })
-vim.keymap.set("n", "]w", diagnostic_goto(true, "INFO"), { desc = "Next info" })
-vim.keymap.set("n", "[w", diagnostic_goto(false, "INFO"), { desc = "Previous info" })
+vim.keymap.set("n", "]h", diagnostic_goto(true, "HINT"), { desc = "Next hint" })
+vim.keymap.set("n", "[h", diagnostic_goto(false, "HINT"), { desc = "Previous hint" })
+vim.keymap.set("n", "]i", diagnostic_goto(true, "INFO"), { desc = "Next info" })
+vim.keymap.set("n", "[i", diagnostic_goto(false, "INFO"), { desc = "Previous info" })
 vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" });
 
 -- TypeScript
