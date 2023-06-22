@@ -4,7 +4,8 @@ local language_servers = {
 	"shfmt",
 	"flake8",
 	"typescript-language-server",
-    "tailwindcss-language-server"
+    "tailwindcss-language-server",
+    "svelte-language-server",
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -39,6 +40,8 @@ return {
 					["<CR>"] = cmp.mapping.confirm({ select = true }),
 					["<Tab>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "s" }),
 					["<S-Tab>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "s" }),
+                    ["<C-p>"] = cmp.mapping(cmp.mapping.scroll_docs(-3)),
+                    ["<C-n>"] = cmp.mapping(cmp.mapping.scroll_docs(3)),
 				},
 				sources = {
 					{ name = "nvim_lsp" },
