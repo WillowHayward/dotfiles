@@ -115,6 +115,7 @@ local slogans = {
 	"Once, Willow beat a horse in a fistfight",
 	"Willow had far too much fun making these slogans",
 	'Willow is far too professional to say "fuck" on her NeoVim startup screen',
+    "Just wait until you find out Willow's terrible, terrible secret",
 }
 
 local M = {}
