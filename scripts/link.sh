@@ -7,6 +7,7 @@ links[.tmux.conf]=".tmux.conf"
 links[nvim]=".config/nvim"
 links[.npmrc]=".npmrc"
 links[.vimrc]=".vimrc"
+links[.yarnrc.yml]=".yarnrc.yml"
 
 for link in "${!links[@]}"; do
     TARGET=$PWD/$link 
