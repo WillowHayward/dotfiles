@@ -27,6 +27,7 @@ return {
             "hrsh7th/cmp-path",
             "hrsh7th/cmp-vsnip",
             "hrsh7th/vim-vsnip",
+            "hrsh7th/cmp-nvim-lsp-signature-help",
         },
         opts = function(_, opts)
             local cmp = require("cmp")
@@ -47,6 +48,7 @@ return {
                     ["<C-n>"] = cmp.mapping(cmp.mapping.scroll_docs(3)),
                 },
                 sources = {
+                    { name = "nvim_lsp_signature_help" },
                     { name = "nvim_lsp" },
                     { name = "vsnip" },
                     { name = "buffer" },
