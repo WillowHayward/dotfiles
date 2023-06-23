@@ -100,6 +100,12 @@ require("lazy").setup({
 	"christoomey/vim-tmux-navigator", -- Easier Tmux and Vim split navigation
 	"Yggdroot/indentLine", -- Vertical lines to visually indicate indentation levels
 	"nvim-pack/nvim-spectre", -- Find and replace across files
+    {
+        "gbprod/substitute.nvim", -- Substitute text with text from register
+        config = function()
+            require('substitute').setup({})
+        end
+    },
 	{
 		"folke/which-key.nvim", -- Show available key bindings
 		config = function()
