@@ -8,6 +8,7 @@ local language_servers = {
     "tailwindcss-language-server",
     "svelte-language-server",
     "eslint-lsp",
+    "prettier",
 }
 
 -- TODO Leftover imports from last config, investigate
