@@ -20,7 +20,7 @@ vim.keymap.set("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", { desc = "Open new 
 vim.keymap.set("n", "<leader>%", require("spectre").open, { desc = "Open Spectre" })
 
 -- Subsitute (replace text with text from register)
-local substitute = require('substitute');
+local substitute = require("substitute")
 local function sub(yank, command)
     command = substitute[command]
     return function()
@@ -28,16 +28,36 @@ local function sub(yank, command)
     end
 end
 
-vim.keymap.set("n", "s", substitute.operator, { desc = "Subsitute text with contents of register" });
-vim.keymap.set("n", "ss", substitute.line, { desc = "Subsitute line with contents of register" });
-vim.keymap.set("n", "S", substitute.eol, { desc = "Subsitute text until end of line with contents of register" });
-vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with contents of register" });
+vim.keymap.set("n", "s", substitute.operator, { desc = "Subsitute text with contents of register" })
+vim.keymap.set("n", "ss", substitute.line, { desc = "Subsitute line with contents of register" })
+vim.keymap.set("n", "S", substitute.eol, { desc = "Subsitute text until end of line with contents of register" })
+vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with contents of register" })
 
 -- substitute + yank TODO: Not currently working
-vim.keymap.set("n", "<leader>s", sub(true, 'operator'), { desc = "[Broken]Subsitute text with contents of register and yank deleted text" });
-vim.keymap.set("n", "<leader>ss", sub(true, 'line'), { desc = "[Broken]Subsitute line with contents of register and yank deleted text" });
-vim.keymap.set("n", "<leader>S", sub(true, 'eol'), { desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" });
-vim.keymap.set("x", "<leader>s", sub(true, 'visual'), { desc = "[Broken]Subsitute selection with contents of register and yank deleted text" });
+vim.keymap.set(
+    "n",
+    "<leader>s",
+    sub(true, "operator"),
+    { desc = "[Broken]Subsitute text with contents of register and yank deleted text" }
+)
+vim.keymap.set(
+    "n",
+    "<leader>ss",
+    sub(true, "line"),
+    { desc = "[Broken]Subsitute line with contents of register and yank deleted text" }
+)
+vim.keymap.set(
+    "n",
+    "<leader>S",
+    sub(true, "eol"),
+    { desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" }
+)
+vim.keymap.set(
+    "x",
+    "<leader>s",
+    sub(true, "visual"),
+    { desc = "[Broken]Subsitute selection with contents of register and yank deleted text" }
+)
 
 -- cellular automation (silly)
 vim.keymap.set("n", "<leader>q", "<cmd>CellularAutomaton make_it_rain<CR>", { desc = "Destroy it all" })
@@ -66,7 +86,7 @@ vim.keymap.set("n", "<leader>gg", "<cmd>LazyGit <CR>", { desc = "Open LazyGit" }
 
 -- Telescope lsp
 vim.keymap.set("n", "gD", telescope.lsp_definitions, { desc = "Find definition" })
-vim.keymap.set("n", "gr", telescope.lsp_references, { desc = "References" });
+vim.keymap.set("n", "gr", telescope.lsp_references, { desc = "References" })
 vim.keymap.set("n", "<leader>ct", telescope.lsp_type_definitions, { desc = "Find type definition" })
 vim.keymap.set("n", "<leader>*", telescope.grep_string, { desc = "Search current string or selection" })
 
@@ -80,7 +100,7 @@ local function diagnostic_goto(next, severity)
         go({ severity = severity })
     end
 end
-vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" });
+vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" })
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
 vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Code hover" })
 vim.keymap.set("n", "gd", vim.diagnostic.open_float, { desc = "Diagnostic hover" })
@@ -95,7 +115,8 @@ vim.keymap.set("n", "]h", diagnostic_goto(true, "HINT"), { desc = "Next hint" })
 vim.keymap.set("n", "[h", diagnostic_goto(false, "HINT"), { desc = "Previous hint" })
 vim.keymap.set("n", "]i", diagnostic_goto(true, "INFO"), { desc = "Next info" })
 vim.keymap.set("n", "[i", diagnostic_goto(false, "INFO"), { desc = "Previous info" })
-vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" });
+vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" })
 
+vim.keymap.set("n", "<leader>cs", vim.lsp.buf.document_symbol, { desc = "View document symbols" })
 -- TypeScript
 vim.keymap.set("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", { desc = "Organise TypeScript imports" })
