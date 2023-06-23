@@ -19,6 +19,26 @@ vim.keymap.set("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", { desc = "Open new 
 -- Spectre (find and replace across multiple files)
 vim.keymap.set("n", "<leader>%", require("spectre").open, { desc = "Open Spectre" })
 
+-- Subsitute (replace text with text from register)
+local substitute = require('substitute');
+local function sub(yank, command)
+    command = substitute[command]
+    return function()
+        command({ yank_substituted_text = yank })
+    end
+end
+
+vim.keymap.set("n", "s", substitute.operator, { desc = "Subsitute text with contents of register" });
+vim.keymap.set("n", "ss", substitute.line, { desc = "Subsitute line with contents of register" });
+vim.keymap.set("n", "S", substitute.eol, { desc = "Subsitute text until end of line with contents of register" });
+vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with contents of register" });
+
+-- substitute + yank TODO: Not currently working
+vim.keymap.set("n", "<leader>s", sub(true, 'operator'), { desc = "[Broken]Subsitute text with contents of register and yank deleted text" });
+vim.keymap.set("n", "<leader>ss", sub(true, 'line'), { desc = "[Broken]Subsitute line with contents of register and yank deleted text" });
+vim.keymap.set("n", "<leader>S", sub(true, 'eol'), { desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" });
+vim.keymap.set("x", "<leader>s", sub(true, 'visual'), { desc = "[Broken]Subsitute selection with contents of register and yank deleted text" });
+
 -- cellular automation (silly)
 vim.keymap.set("n", "<leader>q", "<cmd>CellularAutomaton make_it_rain<CR>", { desc = "Destroy it all" })
 
@@ -52,6 +72,7 @@ vim.keymap.set("n", "<leader>*", telescope.grep_string, { desc = "Search current
 
 -- cmp keybinds in lsp.lua
 
+-- LSP
 local function diagnostic_goto(next, severity)
     local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
     severity = severity and vim.diagnostic.severity[severity] or nil
@@ -59,7 +80,7 @@ local function diagnostic_goto(next, severity)
         go({ severity = severity })
     end
 end
--- LSP
+vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" });
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
 vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Code hover" })
 vim.keymap.set("n", "<leader>cf", vim.lsp.buf.format, { desc = "Code formatting" })
