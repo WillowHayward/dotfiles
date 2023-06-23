@@ -1,5 +1,6 @@
 local language_servers = {
 	"stylua",
+    "lua-language-server",
 	"shellcheck",
 	"shfmt",
 	"flake8",
@@ -63,10 +64,20 @@ return {
 			"williamboman/mason-lspconfig.nvim",
 			"hrsh7th/cmp-nvim-lsp",
 			"jose-elias-alvarez/typescript.nvim", -- TypeScript
+            "ray-x/lsp_signature.nvim",
 		},
 		opts = {
 			servers = {
                 tailwindcss = {},
+                lua_ls = {
+                    settings = {
+                        Lua = {
+                            workspace = {
+                                checkThirdParty = false,
+                            }
+                        },
+                    }
+                }
             },
 			setup = {
 				tsserver = function(_, opts)
@@ -114,9 +125,10 @@ return {
 
 			require("mason-lspconfig").setup({ ensure_installed = ensure_installed })
 			require("mason-lspconfig").setup_handlers({ setup })
+            require("lsp_signature").setup({}) -- TODO: Not super thrilled with the defaults, look into later
+            -- Consider "Issafalcon/lsp-overloads.nvim",
 		end,
 	},
-
 	-- formatters
 	{
 		"jose-elias-alvarez/null-ls.nvim",
