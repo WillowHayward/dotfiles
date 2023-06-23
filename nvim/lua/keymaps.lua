@@ -65,7 +65,7 @@ vim.keymap.set("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>"
 vim.keymap.set("n", "<leader>gg", "<cmd>LazyGit <CR>", { desc = "Open LazyGit" })
 
 -- Telescope lsp
-vim.keymap.set("n", "gd", telescope.lsp_definitions, { desc = "Find definition" })
+vim.keymap.set("n", "gD", telescope.lsp_definitions, { desc = "Find definition" })
 vim.keymap.set("n", "gr", telescope.lsp_references, { desc = "References" });
 vim.keymap.set("n", "<leader>ct", telescope.lsp_type_definitions, { desc = "Find type definition" })
 vim.keymap.set("n", "<leader>*", telescope.grep_string, { desc = "Search current string or selection" })
@@ -83,6 +83,7 @@ end
 vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" });
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
 vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Code hover" })
+vim.keymap.set("n", "gd", vim.diagnostic.open_float, { desc = "Diagnostic hover" })
 vim.keymap.set("n", "<leader>cf", vim.lsp.buf.format, { desc = "Code formatting" })
 vim.keymap.set("n", "]d", diagnostic_goto(true), { desc = "Next diagnostic" })
 vim.keymap.set("n", "[d", diagnostic_goto(false), { desc = "Previous diagnostic" })

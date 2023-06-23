@@ -7,6 +7,7 @@ local language_servers = {
 	"typescript-language-server",
     "tailwindcss-language-server",
     "svelte-language-server",
+    "eslint-lsp",
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -127,6 +128,8 @@ return {
 			require("mason-lspconfig").setup_handlers({ setup })
             require("lsp_signature").setup({}) -- TODO: Not super thrilled with the defaults, look into later
             -- Consider "Issafalcon/lsp-overloads.nvim",
+            -- Format on save
+            vim.cmd [[autocmd BufWritePre <buffer> lua vim.lsp.buf.format()]]
 		end,
 	},
 	-- formatters
