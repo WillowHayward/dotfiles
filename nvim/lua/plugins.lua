@@ -96,6 +96,17 @@ require("lazy").setup({
         end
     },
     "kdheepak/lazygit.nvim",
+    -- Litee
+    {
+        'ldelossa/litee.nvim',
+        dependencies = {
+            'ldelossa/litee-symboltree.nvim'
+        },
+        config = function ()
+            require('litee.lib').setup({})
+            require('litee.symboltree').setup({})
+        end
+    },
 	-- Misc
 	"christoomey/vim-tmux-navigator", -- Easier Tmux and Vim split navigation
 	"Yggdroot/indentLine", -- Vertical lines to visually indicate indentation levels
