@@ -21,10 +21,15 @@
  - Language Servers
   - Markdown
  - Plugins
-  - https://github.com/gbprod/substitute.nvim
   - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-map.md
   - Something nvim specific for tmux-navigator?
   - indentLine replacement? https://github.com/lukas-reineke/indent-blankline.nvim
+  - Mini - https://github.com/echasnovski/mini.nvim
+    - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-completion.md - May have better signature support than nvim-cmp (overloads?)
+    - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-misc.md - zoom() fn. <leader>z to mimic tmux behaviour?
+    - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-starter.md - Possible Alpha alternative
+    - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-pairs.md
+    - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-splitjoin.md
 
 # Zsh
  - Configure aliases
