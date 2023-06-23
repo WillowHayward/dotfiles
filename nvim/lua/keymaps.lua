@@ -33,7 +33,7 @@ vim.keymap.set("n", "ss", substitute.line, { desc = "Subsitute line with content
 vim.keymap.set("n", "S", substitute.eol, { desc = "Subsitute text until end of line with contents of register" })
 vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with contents of register" })
 
--- substitute + yank TODO: Not currently working
+-- substitute + yank BUG: Not currently working
 vim.keymap.set(
     "n",
     "<leader>s",
@@ -65,15 +65,21 @@ vim.keymap.set("n", "<leader>q", "<cmd>CellularAutomaton make_it_rain<CR>", { de
 -- Mason
 vim.keymap.set("n", "<leader>cm", "<cmd>Mason<cr>", { desc = "Mason" })
 
+-- Todo-comments
+local todo = require("todo-comments")
+vim.keymap.set("n", "]t", todo.jump_next, { desc = "Next TODO" })
+vim.keymap.set("n", "[t", todo.jump_prev, { desc = "Previous TODO" })
+vim.keymap.set("n", "ft", "<cmd>TodoTelescope<CR>", { desc = "Search project TODOs" })
+
 -- Lazy
 vim.keymap.set("n", "<leader>l", "<cmd>Lazy<cr>", { desc = "Lazy" })
 
 -- Telescope
 local telescope = require("telescope.builtin")
 vim.keymap.set("n", "<leader>/", telescope.live_grep, { desc = "Find in files" })
-vim.keymap.set("n", "<leader>f", telescope.find_files, { desc = "Find files" })
-vim.keymap.set("n", "<leader>r", telescope.oldfiles, { desc = "Find recent files" })
-vim.keymap.set("n", "<leader>p", telescope.planets, { desc = "Find planet" }) -- god this plugin is cute
+vim.keymap.set("n", "<leader>ff", telescope.find_files, { desc = "Find files" })
+vim.keymap.set("n", "<leader>fr", telescope.oldfiles, { desc = "Find recent files" })
+vim.keymap.set("n", "<leader>fp", telescope.planets, { desc = "Find planet" }) -- god this plugin is cute
 
 -- Neo-Tree
 vim.keymap.set("n", "\\", "<cmd>Neotree float reveal <CR>", { desc = "Open file browser" })

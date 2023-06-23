@@ -22,17 +22,15 @@
   - Markdown
  - Plugins
     - Definitely: 
-        - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-misc.md - zoom() fn. <leader>z to mimic tmux behaviour?
         - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-pairs.md
         - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-splitjoin.md
-        - https://github.com/folke/todo-comments.nvim - This'll be handy
     - Maybe:
         - https://github.com/folke/noice.nvim
         - indentLine replacement? https://github.com/lukas-reineke/indent-blankline.nvim
+        - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-misc.md - zoom() fn. <leader>z to mimic tmux behaviour?
         - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-starter.md - Possible Alpha alternative
-        - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-completion.md - May have better signature support than nvim-cmp (overloads?)
         - https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-map.md
-        - Something nvim specific for tmux-navigator?
+        - https://github.com/alexghergh/nvim-tmux-navigation - Something nvim specific for tmux-navigator?
         - https://github.com/RRethy/vim-illuminate - Not sure if I love this, but could be worth trying
 
 # Zsh
