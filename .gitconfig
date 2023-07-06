@@ -5,6 +5,8 @@
 [core]
 	editor = nvim
     excludesfile = ~/dotfiles/.gitignore.global
+[push]
+    followTags = true
 [alias]
     s = status
     c = commit
