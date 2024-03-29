@@ -134,5 +134,19 @@ vim.keymap.set("n", "[i", diagnostic_goto(false, "INFO"), { desc = "Previous inf
 vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" })
 
 vim.keymap.set("n", "<leader>cs", vim.lsp.buf.document_symbol, { desc = "View document symbols" })
+-- DAP
+local dap = require('dap')
+vim.keymap.set("n", "<leader>dt", dap.run, { desc = "Toggle debug breakpoint" })
+vim.keymap.set("n", "<leader>dc", dap.continue, { desc = "Launch/resume debug session" })
+vim.keymap.set("n", "<leader>ds", dap.step_over, { desc = "Step through code" })
+vim.keymap.set("n", "<leader>dS", dap.step_back, { desc = "Step back through code" })
+vim.keymap.set("n", "<leader>di", dap.repl.open, { desc = "Inspect debug state" })
+
 -- TypeScript
 vim.keymap.set("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", { desc = "Organise TypeScript imports" })
+
+local jester = require('jester')
+-- Jest
+vim.keymap.set("n", "<leader>ctt", jester.run, { desc = "Run Jest test under cursor" })
+vim.keymap.set("n", "<leader>ctf", jester.run_file, { desc = "Run Jest tests in current file" })
+vim.keymap.set("n", "<leader>ctl", jester.run_last, { desc = "Re-run last Jest test" })
