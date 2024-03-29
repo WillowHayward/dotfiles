@@ -9,6 +9,8 @@ local language_servers = {
     "svelte-language-server",
     "eslint-lsp",
     "prettier",
+    "docker-compose-language-service",
+    "dockerfile-language-server",
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -159,6 +161,15 @@ return {
             }
         end,
     },
+    --- DAP
+    {
+        "mfussenegger/nvim-dap",
+    },
+    --- Jest tests
+    {
+        "David-Kunz/jester",
+    },
+    --- lsp-management
     {
         "williamboman/mason.nvim",
         cmd = "Mason",
@@ -176,5 +187,9 @@ return {
                 end
             end
         end,
+    },
+    {
+        "jay-babu/mason-nvim-dap.nvim",
+        dependencies = { "mason.nvim", "mfussenegger/nvim-dap" },
     },
 }
