@@ -11,6 +11,7 @@ local language_servers = {
     "prettier",
     "docker-compose-language-service",
     "dockerfile-language-server",
+    "gdtoolkit",
 }
 
 -- TODO Leftover imports from last config, investigate
