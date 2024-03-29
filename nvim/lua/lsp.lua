@@ -162,14 +162,6 @@ return {
             }
         end,
     },
-    --- DAP
-    {
-        "mfussenegger/nvim-dap",
-    },
-    --- Jest tests
-    {
-        "David-Kunz/jester",
-    },
     --- lsp-management
     {
         "williamboman/mason.nvim",
@@ -188,9 +180,5 @@ return {
                 end
             end
         end,
-    },
-    {
-        "jay-babu/mason-nvim-dap.nvim",
-        dependencies = { "mason.nvim", "mfussenegger/nvim-dap" },
     },
 }

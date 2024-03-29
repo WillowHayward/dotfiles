@@ -17,6 +17,8 @@ vim.g.mapleader = " "
 require("lazy").setup({
     -- cmp & lsp
     require("lsp"),
+    -- dap
+    require("dap"),
     -- treesitter
     require("treesitter"),
     -- Fuzzy Finder
@@ -110,6 +112,7 @@ require("lazy").setup({
     -- Misc
     "christoomey/vim-tmux-navigator", -- Easier Tmux and Vim split navigation
     "Yggdroot/indentLine",         -- Vertical lines to visually indicate indentation levels
+    "David-Kunz/jester", -- Run Jest tests
     "nvim-pack/nvim-spectre",      -- Find and replace across files
     {
         "folke/todo-comments.nvim", -- Todo
