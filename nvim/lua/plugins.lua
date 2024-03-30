@@ -15,10 +15,16 @@ vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
 require("lazy").setup({
-    -- cmp & lsp
+    -- My Plugins
+    --{
+    --"WillowHayward/nx-cli.nvim",
+    --dev = true,
+    --config = function()
+    --require("nx-cli").setup({})
+    --end,
+    --},
+    -- cmp & lsp & dap
     require("lsp"),
-    -- dap
-    require("dap"),
     -- treesitter
     require("treesitter"),
     -- Fuzzy Finder

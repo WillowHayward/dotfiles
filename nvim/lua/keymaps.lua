@@ -17,12 +17,12 @@ vim.keymap.set("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", { desc = "Open new t
 vim.keymap.set("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", { desc = "Open new tab before current onto home screen" })
 
 -- Saving and Quitting
-vim.keymap.set("n", "<leader>w", "<cmd>w<CR>", { desc = "Write buffer" });
-vim.keymap.set("n", "<leader>W", "<cmd>wa<CR>", { desc = "Write all" });
-vim.keymap.set("n", "<leader>q", "<cmd>q<CR>", { desc = "Close buffer" });
-vim.keymap.set("n", "<leader>Q", "<cmd>qa<CR>", { desc = "Close all" });
-vim.keymap.set("n", "<leader>x", "<cmd>x<CR>", { desc = "Write & close buffer" });
-vim.keymap.set("n", "<leader>X", "<cmd>xa<CR>", { desc = "Write & close all" });
+vim.keymap.set("n", "<leader>w", "<cmd>w<CR>", { desc = "Write buffer" })
+vim.keymap.set("n", "<leader>W", "<cmd>wa<CR>", { desc = "Write all" })
+vim.keymap.set("n", "<leader>q", "<cmd>q<CR>", { desc = "Close buffer" })
+vim.keymap.set("n", "<leader>Q", "<cmd>qa<CR>", { desc = "Close all" })
+vim.keymap.set("n", "<leader>x", "<cmd>x<CR>", { desc = "Write & close buffer" })
+vim.keymap.set("n", "<leader>X", "<cmd>xa<CR>", { desc = "Write & close all" })
 
 -- Spectre (find and replace across multiple files)
 vim.keymap.set("n", "<leader>%", require("spectre").open, { desc = "Open Spectre" })
@@ -30,10 +30,10 @@ vim.keymap.set("n", "<leader>%", require("spectre").open, { desc = "Open Spectre
 -- Subsitute (replace text with text from register)
 local substitute = require("substitute")
 local function sub(yank, command)
-    command = substitute[command]
-    return function()
-        command({ yank_substituted_text = yank })
-    end
+	command = substitute[command]
+	return function()
+		command({ yank_substituted_text = yank })
+	end
 end
 
 vim.keymap.set("n", "s", substitute.operator, { desc = "Subsitute text with contents of register" })
@@ -43,28 +43,28 @@ vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with c
 
 -- substitute + yank BUG: Not currently working
 vim.keymap.set(
-    "n",
-    "<leader>s",
-    sub(true, "operator"),
-    { desc = "[Broken]Subsitute text with contents of register and yank deleted text" }
+	"n",
+	"<leader>s",
+	sub(true, "operator"),
+	{ desc = "[Broken]Subsitute text with contents of register and yank deleted text" }
 )
 vim.keymap.set(
-    "n",
-    "<leader>ss",
-    sub(true, "line"),
-    { desc = "[Broken]Subsitute line with contents of register and yank deleted text" }
+	"n",
+	"<leader>ss",
+	sub(true, "line"),
+	{ desc = "[Broken]Subsitute line with contents of register and yank deleted text" }
 )
 vim.keymap.set(
-    "n",
-    "<leader>S",
-    sub(true, "eol"),
-    { desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" }
+	"n",
+	"<leader>S",
+	sub(true, "eol"),
+	{ desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" }
 )
 vim.keymap.set(
-    "x",
-    "<leader>s",
-    sub(true, "visual"),
-    { desc = "[Broken]Subsitute selection with contents of register and yank deleted text" }
+	"x",
+	"<leader>s",
+	sub(true, "visual"),
+	{ desc = "[Broken]Subsitute selection with contents of register and yank deleted text" }
 )
 
 -- cellular automation (silly)
@@ -110,11 +110,11 @@ vim.keymap.set("n", "<leader>*", telescope.grep_string, { desc = "Search current
 
 -- LSP
 local function diagnostic_goto(next, severity)
-    local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
-    severity = severity and vim.diagnostic.severity[severity] or nil
-    return function()
-        go({ severity = severity })
-    end
+	local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
+	severity = severity and vim.diagnostic.severity[severity] or nil
+	return function()
+		go({ severity = severity })
+	end
 end
 vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" })
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
@@ -135,9 +135,13 @@ vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current sy
 
 vim.keymap.set("n", "<leader>cs", vim.lsp.buf.document_symbol, { desc = "View document symbols" })
 -- DAP
-local dap = require('dap')
-vim.keymap.set("n", "<leader>dt", dap.run, { desc = "Toggle debug breakpoint" })
-vim.keymap.set("n", "<leader>dc", dap.continue, { desc = "Launch/resume debug session" })
+local dap = require("dap")
+vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint, { desc = "Toggle debug breakpoint" })
+vim.keymap.set("n", "<leader>dd", function()
+	dap.continue({ new = true })
+end, { desc = "Start new debug session" })
+vim.keymap.set("n", "<leader>dc", dap.continue, { desc = "Continue debug session" })
+vim.keymap.set("n", "<leader>dD", dap.close, { desc = "Stop debug session" })
 vim.keymap.set("n", "<leader>ds", dap.step_over, { desc = "Step through code" })
 vim.keymap.set("n", "<leader>dS", dap.step_back, { desc = "Step back through code" })
 vim.keymap.set("n", "<leader>di", dap.repl.open, { desc = "Inspect debug state" })
@@ -145,7 +149,7 @@ vim.keymap.set("n", "<leader>di", dap.repl.open, { desc = "Inspect debug state" 
 -- TypeScript
 vim.keymap.set("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", { desc = "Organise TypeScript imports" })
 
-local jester = require('jester')
+local jester = require("jester")
 -- Jest
 vim.keymap.set("n", "<leader>ctt", jester.run, { desc = "Run Jest test under cursor" })
 vim.keymap.set("n", "<leader>ctf", jester.run_file, { desc = "Run Jest tests in current file" })
