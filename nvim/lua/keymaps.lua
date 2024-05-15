@@ -1,31 +1,42 @@
+-- Function to set keymaps
+local function set_keymap(mode, key, action, desc, opts)
+    local defaults = {
+        desc = desc or "",
+        silent = false,
+        expr = false,
+        noremap = true,
+    }
+    local fullOpts = vim.tbl_extend("force", defaults, opts or {})
+    vim.keymap.set(mode, key, action, fullOpts)
+end
 -- Indenting a visual selection remains in visual mode afterwards
-vim.keymap.set("v", ">", ">gv")
-vim.keymap.set("v", "<", "<gv")
+set_keymap("v", ">", ">gv")
+set_keymap("v", "<", "<gv")
 
 -- provide hjkl movements in Insert mode via the <Alt> modifier key
-vim.keymap.set("i", "<A-h>", "<C-o>h")
-vim.keymap.set("i", "<A-j>", "<C-o>j")
-vim.keymap.set("i", "<A-k>", "<C-o>k")
-vim.keymap.set("i", "<A-l>", "<C-o>l")
+set_keymap("i", "<A-h>", "<C-o>h")
+set_keymap("i", "<A-j>", "<C-o>j")
+set_keymap("i", "<A-k>", "<C-o>k")
+set_keymap("i", "<A-l>", "<C-o>l")
 
 -- Alt-jk in normal mode centres screen
-vim.keymap.set("n", "<A-j>", "zzj")
-vim.keymap.set("n", "<A-k>", "zzk")
+set_keymap("n", "<A-j>", "zzj")
+set_keymap("n", "<A-k>", "zzk")
 
 -- Add tabs
-vim.keymap.set("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", { desc = "Open new tab onto home screen" })
-vim.keymap.set("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", { desc = "Open new tab before current onto home screen" })
+set_keymap("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", "Open new tab onto home screen")
+set_keymap("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", "Open new tab before current onto home screen")
 
 -- Saving and Quitting
-vim.keymap.set("n", "<leader>w", "<cmd>w<CR>", { desc = "Write buffer" });
-vim.keymap.set("n", "<leader>W", "<cmd>wa<CR>", { desc = "Write all" });
-vim.keymap.set("n", "<leader>q", "<cmd>q<CR>", { desc = "Close buffer" });
-vim.keymap.set("n", "<leader>Q", "<cmd>qa<CR>", { desc = "Close all" });
-vim.keymap.set("n", "<leader>x", "<cmd>x<CR>", { desc = "Write & close buffer" });
-vim.keymap.set("n", "<leader>X", "<cmd>xa<CR>", { desc = "Write & close all" });
+set_keymap("n", "<leader>w", "<cmd>w<CR>", "Write buffer")
+set_keymap("n", "<leader>W", "<cmd>wa<CR>", "Write all")
+set_keymap("n", "<leader>q", "<cmd>q<CR>", "Close buffer")
+set_keymap("n", "<leader>Q", "<cmd>qa<CR>", "Close all")
+set_keymap("n", "<leader>x", "<cmd>x<CR>", "Write & close buffer")
+set_keymap("n", "<leader>X", "<cmd>xa<CR>", "Write & close all")
 
 -- Spectre (find and replace across multiple files)
-vim.keymap.set("n", "<leader>%", require("spectre").open, { desc = "Open Spectre" })
+set_keymap("n", "<leader>%", require("spectre").open, "Open Spectre")
 
 -- Subsitute (replace text with text from register)
 local substitute = require("substitute")
@@ -36,75 +47,75 @@ local function sub(yank, command)
     end
 end
 
-vim.keymap.set("n", "s", substitute.operator, { desc = "Subsitute text with contents of register" })
-vim.keymap.set("n", "ss", substitute.line, { desc = "Subsitute line with contents of register" })
-vim.keymap.set("n", "S", substitute.eol, { desc = "Subsitute text until end of line with contents of register" })
-vim.keymap.set("x", "s", substitute.visual, { desc = "Subsitute selection with contents of register" })
+set_keymap("n", "s", substitute.operator, "Subsitute text with contents of register")
+set_keymap("n", "ss", substitute.line, "Subsitute line with contents of register")
+set_keymap("n", "S", substitute.eol, "Subsitute text until end of line with contents of register")
+set_keymap("x", "s", substitute.visual, "Subsitute selection with contents of register")
 
 -- substitute + yank BUG: Not currently working
-vim.keymap.set(
+set_keymap(
     "n",
     "<leader>s",
     sub(true, "operator"),
-    { desc = "[Broken]Subsitute text with contents of register and yank deleted text" }
+    "[Broken]Subsitute text with contents of register and yank deleted text"
 )
-vim.keymap.set(
+set_keymap(
     "n",
     "<leader>ss",
     sub(true, "line"),
-    { desc = "[Broken]Subsitute line with contents of register and yank deleted text" }
+    "[Broken]Subsitute line with contents of register and yank deleted text"
 )
-vim.keymap.set(
+set_keymap(
     "n",
     "<leader>S",
     sub(true, "eol"),
-    { desc = "[Broken]Subsitute text until end of line with contents of register and yank deleted text" }
+    "[Broken]Subsitute text until end of line with contents of register and yank deleted text"
 )
-vim.keymap.set(
+set_keymap(
     "x",
     "<leader>s",
     sub(true, "visual"),
-    { desc = "[Broken]Subsitute selection with contents of register and yank deleted text" }
+    "[Broken]Subsitute selection with contents of register and yank deleted text"
 )
 
 -- cellular automation (silly)
-vim.keymap.set("n", "<leader>!", "<cmd>CellularAutomaton make_it_rain<CR>", { desc = "Destroy it all" })
+set_keymap("n", "<leader>!", "<cmd>CellularAutomaton make_it_rain<CR>", "Destroy it all")
 
 -- Mason
-vim.keymap.set("n", "<leader>cm", "<cmd>Mason<cr>", { desc = "Mason" })
+set_keymap("n", "<leader>cm", "<cmd>Mason<cr>", "Mason")
 
 -- Todo-comments
 local todo = require("todo-comments")
-vim.keymap.set("n", "]t", todo.jump_next, { desc = "Next TODO" })
-vim.keymap.set("n", "[t", todo.jump_prev, { desc = "Previous TODO" })
-vim.keymap.set("n", "<leader>ft", "<cmd>TodoTelescope<CR>", { desc = "Search project TODOs" })
+set_keymap("n", "]t", todo.jump_next, "Next TODO")
+set_keymap("n", "[t", todo.jump_prev, "Previous TODO")
+set_keymap("n", "<leader>ft", "<cmd>TodoTelescope<CR>", "Search project TODOs")
 
 -- Lazy
-vim.keymap.set("n", "<leader>l", "<cmd>Lazy<cr>", { desc = "Lazy" })
+set_keymap("n", "<leader>l", "<cmd>Lazy<cr>", "Lazy")
 
 -- Telescope
 local telescope = require("telescope.builtin")
-vim.keymap.set("n", "<leader>/", telescope.live_grep, { desc = "Find in files" })
-vim.keymap.set("n", "<leader>ff", telescope.find_files, { desc = "Find files" })
-vim.keymap.set("n", "<leader>fb", telescope.buffers, { desc = "Find buffers" })
-vim.keymap.set("n", "<leader>fh", telescope.help_tags, { desc = "Find help tags" })
-vim.keymap.set("n", "<leader>fr", telescope.oldfiles, { desc = "Find recent files" })
-vim.keymap.set("n", "<leader>fp", telescope.planets, { desc = "Find planet" }) -- god this plugin is cute
+set_keymap("n", "<leader>/", telescope.live_grep, "Find in files")
+set_keymap("n", "<leader>ff", telescope.find_files, "Find files")
+set_keymap("n", "<leader>fb", telescope.buffers, "Find buffers")
+set_keymap("n", "<leader>fh", telescope.help_tags, "Find help tags")
+set_keymap("n", "<leader>fr", telescope.oldfiles, "Find recent files")
+set_keymap("n", "<leader>fp", telescope.planets, "Find planet") -- god this plugin is cute
 
 -- Neo-Tree
-vim.keymap.set("n", "\\", "<cmd>Neotree float reveal <CR>", { desc = "Open file browser" })
+set_keymap("n", "\\", "<cmd>Neotree float reveal <CR>", "Open file browser")
 
 -- Git
-vim.keymap.set("n", "<leader>gb", telescope.git_branches, { desc = "Find git branch" })
-vim.keymap.set("n", "<leader>gf", telescope.git_files, { desc = "git ls-files" })
-vim.keymap.set("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", { desc = "Toggle line blame" })
-vim.keymap.set("n", "<leader>gg", "<cmd>LazyGit <CR>", { desc = "Open LazyGit" })
+set_keymap("n", "<leader>gb", telescope.git_branches, "Find git branch")
+set_keymap("n", "<leader>gf", telescope.git_files, "git ls-files")
+set_keymap("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", "Toggle line blame")
+set_keymap("n", "<leader>gg", "<cmd>LazyGit <CR>", "Open LazyGit")
 
 -- Telescope lsp
-vim.keymap.set("n", "gD", telescope.lsp_definitions, { desc = "Find definition" })
-vim.keymap.set("n", "gr", telescope.lsp_references, { desc = "References" })
-vim.keymap.set("n", "<leader>ct", telescope.lsp_type_definitions, { desc = "Find type definition" })
-vim.keymap.set("n", "<leader>*", telescope.grep_string, { desc = "Search current string or selection" })
+set_keymap("n", "gD", telescope.lsp_definitions, "Find definition")
+set_keymap("n", "gr", telescope.lsp_references, "References")
+--set_keymap("n", "<leader>ct", telescope.lsp_type_definitions, "Find type definition") -- Deprecated for copilot tests (also I don't think it worked lol)
+set_keymap("n", "<leader>*", telescope.grep_string, "Search current string or selection")
 
 -- cmp keybinds in lsp.lua
 
@@ -116,23 +127,74 @@ local function diagnostic_goto(next, severity)
         go({ severity = severity })
     end
 end
-vim.keymap.set("n", "<leader>cl", "<cmd>LspInfo<CR>", { desc = "Open LspInfo" })
-vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
-vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Code hover" })
-vim.keymap.set("n", "gd", vim.diagnostic.open_float, { desc = "Diagnostic hover" })
-vim.keymap.set("n", "<leader>cf", vim.lsp.buf.format, { desc = "Code formatting" })
-vim.keymap.set("n", "]d", diagnostic_goto(true), { desc = "Next diagnostic" })
-vim.keymap.set("n", "[d", diagnostic_goto(false), { desc = "Previous diagnostic" })
-vim.keymap.set("n", "]e", diagnostic_goto(true, "ERROR"), { desc = "Next error" })
-vim.keymap.set("n", "[e", diagnostic_goto(false, "ERROR"), { desc = "Previous error" })
-vim.keymap.set("n", "]w", diagnostic_goto(true, "WARNING"), { desc = "Next warning" })
-vim.keymap.set("n", "[w", diagnostic_goto(false, "WARNING"), { desc = "Previous warning" })
-vim.keymap.set("n", "]h", diagnostic_goto(true, "HINT"), { desc = "Next hint" })
-vim.keymap.set("n", "[h", diagnostic_goto(false, "HINT"), { desc = "Previous hint" })
-vim.keymap.set("n", "]i", diagnostic_goto(true, "INFO"), { desc = "Next info" })
-vim.keymap.set("n", "[i", diagnostic_goto(false, "INFO"), { desc = "Previous info" })
-vim.keymap.set("n", "<leader>R", vim.lsp.buf.rename, { desc = "Rename current symbol" })
+set_keymap("n", "<leader>cl", "<cmd>LspInfo<CR>", "Open LspInfo")
+set_keymap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+set_keymap("n", "K", vim.lsp.buf.hover, "Code hover")
+set_keymap("n", "gd", vim.diagnostic.open_float, "Diagnostic hover")
+set_keymap("n", "<leader>cf", vim.lsp.buf.format, "Code formatting")
+set_keymap("n", "]d", diagnostic_goto(true), "Next diagnostic")
+set_keymap("n", "[d", diagnostic_goto(false), "Previous diagnostic")
+set_keymap("n", "]e", diagnostic_goto(true, "ERROR"), "Next error")
+set_keymap("n", "[e", diagnostic_goto(false, "ERROR"), "Previous error")
+set_keymap("n", "]w", diagnostic_goto(true, "WARNING"), "Next warning")
+set_keymap("n", "[w", diagnostic_goto(false, "WARNING"), "Previous warning")
+set_keymap("n", "]h", diagnostic_goto(true, "HINT"), "Next hint")
+set_keymap("n", "[h", diagnostic_goto(false, "HINT"), "Previous hint")
+set_keymap("n", "]i", diagnostic_goto(true, "INFO"), "Next info")
+set_keymap("n", "[i", diagnostic_goto(false, "INFO"), "Previous info")
+set_keymap("n", "<leader>R", vim.lsp.buf.rename, "Rename current symbol")
 
-vim.keymap.set("n", "<leader>cs", vim.lsp.buf.document_symbol, { desc = "View document symbols" })
+set_keymap("n", "<leader>cs", vim.lsp.buf.document_symbol, "View document symbols")
 -- TypeScript
-vim.keymap.set("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", { desc = "Organise TypeScript imports" })
+set_keymap("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", "Organise TypeScript imports")
+
+-- Copilot
+--vim.keymap.set("i", "`", 'copilot#Accept("\\<CR>")', {
+--expr = true,
+--replace_keycodes = false,
+--})
+--vim.g.copilot_no_tab_map = true
+local chat = require("CopilotChat")
+local CopilotChatSelect = require("CopilotChat.select")
+
+local function ask_copilot(question, selectionMethod, callback)
+    return function()
+        chat.ask(question, {
+            selection = CopilotChatSelect[selectionMethod],
+            callback = callback or function() end,
+        })
+    end
+end
+
+-- Function which uses set_keymap and ask_copilot to create the same keymap for visual and normal mode
+local function set_copilot_keymap(key, question, desc, callback)
+    set_keymap("n", key, ask_copilot(question, "buffer", callback), desc .. " current buffer")
+    set_keymap("v", key, ask_copilot(question, "visual", callback), desc .. " selection")
+end
+
+-- TODO: "fix" and "fix diagnostics" - https://github.com/CopilotC-Nvim/CopilotChat.nvim
+set_keymap("n", "<leader>cc", "<cmd>CopilotChatOpen<CR>", "Open Copilot chat window")
+
+set_keymap("n", "<leader>gd", "<cmd>CopilotChatCommit<CR>", "Generate a commit message for the current diff")
+set_keymap("n", "<leader>gs", "<cmd>CopilotChatCommitStaged<CR>", "Generate a commit message for the staged changes")
+
+-- Explain
+set_copilot_keymap("<leader>ce", "Please explain how this code works", "Ask Copilot to explain")
+
+-- TODO: This seems inconsistent
+-- Review
+set_keymap("n", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review current buffer")
+set_keymap("v", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review selection")
+
+-- Optimize
+set_copilot_keymap(
+    "<leader>co",
+    "Please optimize this code to improve performance and readablilty",
+    "Ask Copilot to optimize"
+)
+
+-- Document
+set_copilot_keymap("<leader>cd", "Please add documentation comment(s) for this code", "Ask Copilot to document")
+
+-- Generate Tests
+set_copilot_keymap("<leader>ct", "Please generate tests for this code", "Ask Copilot to document")
