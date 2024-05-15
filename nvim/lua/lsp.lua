@@ -16,6 +16,46 @@ local language_servers = {
 -- 'jose-elias-alvarez/nvim-lsp-ts-utils',
 
 return {
+    -- Github Copilot
+    {
+        "zbirenbaum/copilot.lua",
+        cmd = "Copilot",
+        event = "InsertEnter",
+        config = function()
+            require("copilot").setup({
+                suggestion = { enabled = false },
+                panel = { enabled = false },
+            })
+        end,
+    },
+    {
+        "zbirenbaum/copilot-cmp",
+        dependencies = {
+            "zbirenbaum/copilot.lua",
+        },
+        config = function()
+            require("copilot_cmp").setup()
+        end,
+    },
+    {
+        "CopilotC-Nvim/CopilotChat.nvim",
+        branch = "canary",
+        dependencies = {
+            { "zbirenbaum/copilot.lua" },
+            { "nvim-lua/plenary.nvim" },
+        },
+        opts = {
+            debug = true,     -- Enable debugging
+            window = {
+                layout = "float", -- Set layout to float
+                title = "GitHub Copilot", -- Set title
+            },
+            submit_prompt = {
+                normal = "<CR>",
+                insert = "<CR><CR>",
+            },
+        },
+    },
     -- autocompletion
     {
         "hrsh7th/nvim-cmp",
@@ -28,6 +68,7 @@ return {
             "hrsh7th/cmp-vsnip",
             "hrsh7th/vim-vsnip",
             "hrsh7th/cmp-nvim-lsp-signature-help",
+            "zbirenbaum/copilot-cmp",
         },
         opts = function(_, opts)
             local cmp = require("cmp")
@@ -48,6 +89,7 @@ return {
                     ["<C-n>"] = cmp.mapping(cmp.mapping.scroll_docs(3)),
                 },
                 sources = {
+                    { name = "copilot" },
                     { name = "nvim_lsp_signature_help" },
                     { name = "nvim_lsp" },
                     { name = "vsnip" },
