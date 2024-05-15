@@ -34,17 +34,16 @@ set_keymap("n", "<leader>q", "<cmd>q<CR>", "Close buffer")
 set_keymap("n", "<leader>Q", "<cmd>qa<CR>", "Close all")
 set_keymap("n", "<leader>x", "<cmd>x<CR>", "Write & close buffer")
 set_keymap("n", "<leader>X", "<cmd>xa<CR>", "Write & close all")
-
 -- Spectre (find and replace across multiple files)
 set_keymap("n", "<leader>%", require("spectre").open, "Open Spectre")
 
 -- Subsitute (replace text with text from register)
 local substitute = require("substitute")
 local function sub(yank, command)
-    command = substitute[command]
-    return function()
-        command({ yank_substituted_text = yank })
-    end
+	command = substitute[command]
+	return function()
+		command({ yank_substituted_text = yank })
+	end
 end
 
 set_keymap("n", "s", substitute.operator, "Subsitute text with contents of register")
@@ -121,12 +120,13 @@ set_keymap("n", "<leader>*", telescope.grep_string, "Search current string or se
 
 -- LSP
 local function diagnostic_goto(next, severity)
-    local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
-    severity = severity and vim.diagnostic.severity[severity] or nil
-    return function()
-        go({ severity = severity })
-    end
+	local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
+	severity = severity and vim.diagnostic.severity[severity] or nil
+	return function()
+		go({ severity = severity })
+	end
 end
+
 set_keymap("n", "<leader>cl", "<cmd>LspInfo<CR>", "Open LspInfo")
 set_keymap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
 set_keymap("n", "K", vim.lsp.buf.hover, "Code hover")
@@ -147,6 +147,25 @@ set_keymap("n", "<leader>R", vim.lsp.buf.rename, "Rename current symbol")
 set_keymap("n", "<leader>cs", vim.lsp.buf.document_symbol, "View document symbols")
 -- TypeScript
 set_keymap("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", "Organise TypeScript imports")
+
+-- DAP
+local dap = require("dap")
+set_keymap("n", "<leader>dt", dap.toggle_breakpoint, "Toggle debug breakpoint")
+set_keymap("n", "<leader>dd", function()
+	dap.continue({ new = true })
+end, "Start new debug session")
+set_keymap("n", "<leader>dc", dap.continue, "Continue debug session")
+set_keymap("n", "<leader>dD", dap.close, "Stop debug session")
+set_keymap("n", "<leader>ds", dap.step_over, "Step through code")
+set_keymap("n", "<leader>dS", dap.step_back, "Step back through code")
+set_keymap("n", "<leader>di", dap.repl.open, "Inspect debug state")
+
+
+local jester = require("jester")
+-- Jest
+set_keymap("n", "<leader>ctt", jester.run, "Run Jest test under cursor")
+set_keymap("n", "<leader>ctf", jester.run_file, "Run Jest tests in current file")
+set_keymap("n", "<leader>ctl", jester.run_last, "Re-run last Jest test")
 
 -- Copilot
 --vim.keymap.set("i", "`", 'copilot#Accept("\\<CR>")', {
