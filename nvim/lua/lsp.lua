@@ -9,6 +9,9 @@ local language_servers = {
     "svelte-language-server",
     "eslint-lsp",
     "prettier",
+    "docker-compose-language-service",
+    "dockerfile-language-server",
+    "gdtoolkit",
 }
 
 -- TODO Leftover imports from last config, investigate
@@ -132,6 +135,7 @@ return {
                         },
                     },
                 },
+                gdscript = {},
             },
             setup = {
                 tsserver = function(_, opts)
@@ -201,6 +205,29 @@ return {
             }
         end,
     },
+    --- DAP
+    {
+        "mfussenegger/nvim-dap",
+        event = { "BufReadPre", "BufNewFile" },
+        config = function()
+            local dap = require("dap")
+            dap.adapters.godot = {
+                type = "server",
+                host = "127.0.0.1",
+                port = 6006,
+            }
+            dap.configurations.gdscript = {
+                {
+                    type = "godot",
+                    request = "launch",
+                    name = "Launch scene",
+                    project = "${workspaceFolder}",
+                    launch_scene = true,
+                },
+            }
+        end,
+    },
+    --- lsp-management
     {
         "williamboman/mason.nvim",
         cmd = "Mason",
