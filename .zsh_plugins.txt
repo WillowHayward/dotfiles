@@ -10,3 +10,6 @@ ohmyzsh/ohmyzsh path:plugins/laravel
 
 zsh-users/zsh-autosuggestions
 jscutlery/nx-completion
+
+agkozak/zsh-z
+so-fancy/diff-so-fancy
