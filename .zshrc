@@ -15,7 +15,7 @@ source_files() {
 zsh_root="$HOME/dotfiles/zsh"
 cd $zsh_root # tmux.zsh cds to $HOME
 load_first=(env.zsh install.zsh autoload.zsh)
-load_last=(tmux.zsh)
+load_last=(work.zsh tmux.zsh)
 
 # Source the first files
 source_files $load_first
