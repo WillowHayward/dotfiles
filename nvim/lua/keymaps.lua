@@ -251,8 +251,9 @@ set_copilot_ask_keymap("<leader>ce", "Please explain how this code works", "Ask 
 
 -- TODO: This seems inconsistent
 -- Review
-set_keymap("n", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review current buffer")
-set_keymap("v", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review selection")
+set_copilot_ask_keymap("<leader>cr", "Please review this code", "Ask Copilot to review") -- TODO: This doesn't add the in-line hinting like CopilotChatReview
+--set_keymap("n", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review current buffer")
+--set_keymap("v", "<leader>cr", "<cmd>CopilotChatReview<CR>", "Ask copilot to review selection")
 
 -- Optimize
 set_copilot_ask_keymap(
