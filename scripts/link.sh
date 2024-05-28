@@ -2,6 +2,7 @@
 # Create symlinks between configurations in this repo and their destinations
 declare -A links #links[TARGET]="DESTINATION" (DESTINATION will be prefixed with $HOME/)
 links[.zshrc]=".zshrc"
+links[.zsh_plugins.txt]=".zsh_plugins.txt"
 links[.gitconfig]=".gitconfig"
 links[.tmux.conf]=".tmux.conf"
 links[nvim]=".config/nvim"
