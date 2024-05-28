@@ -62,3 +62,24 @@ load-nvmrc
 # Launch tmux
 [ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
 cd $HOME
+
+# added by pipx (https://github.com/pipxproject/pipx)
+export PATH="/home/whayward/.local/bin:$PATH"
+
+# added by pipx (https://github.com/pipxproject/pipx)
+export PATH="/home/whayward/.local/bin:$PATH"
+
+# For work
+alias cdm="cd ~/monolith"
+
+# Copilot suggestions
+alias ll='ls -l'  # List directory contents in long format
+alias la='ls -A'  # List all (including hidden) directory contents
+alias l='ls -CF'  # List directory contents in column format
+alias ..='cd ..'  # Go up one directory level
+alias ...='cd ../..'  # Go up two directory levels
+alias grep='grep --color=auto'  # Colorize output of grep
+alias df='df -H'  # Display filesystem disk space usage in human-readable format
+alias du='du -ch'  # Display directory space usage in human-readable format
+alias mkdir='mkdir -pv'  # Make directories, including parent directories as needed, and print each directory name
+alias hist='history | grep'  # Search command history
