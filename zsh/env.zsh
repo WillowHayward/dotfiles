@@ -8,8 +8,8 @@ if [[ -f "$DOTFILES" ]]; then # Global environment variables not for committing
     set +o allexport
 fi
 
-if [[ -n "$WSL_ENV" ]]; then
-    # If WSL_ENV is set, this is probably my work setup
+if [[ -n "$WSLENV" ]]; then
+    # If WSLENV is set, this is probably my work setup
     export WHC_WORK=true
 else
     export WHC_HOME=true
