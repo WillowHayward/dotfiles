@@ -1,85 +1,32 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
-
-# Set up environment variables
-DOTFILES="$HOME/dotfiles/.env"
-if [[ -f "$DOTFILES" ]]; then 
-    set -o allexport
-    source $DOTFILES
-    set +o allexport
-fi
-
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
-
-ZSH_THEME="robbyrussell"
-
-plugins=(git laravel vi-mode zsh-autosuggestions nx-completion)
-
-source $ZSH/oh-my-zsh.sh
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-bindkey -v
-
-export VISUAL=nvim
-export EDITOR="$VISUAL"
-[ ! -z "$WSLENV" && ! -z "$SSH_CONNECTION" ] && setxkbmap -option caps:swapescape # Swap caps and escape
-
-# Load NVM
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# Entry point for my zsh configuration - this bootstraps everything in $HOME/dotfiles/zsh
+# NOTE: This file assumes that the dotfiles repository is located in $HOME/dotfiles
+#
+# install.zsh:12: parse error near `\n'
+# nvm.zsh:22: command not found: add-zsh-hook
 
 
-# Load nvmrc in directories with .nvmrc
-load-nvmrc() {
-  local nvmrc_path
-  nvmrc_path="$(nvm_find_nvmrc)"
-
-  if [ -n "$nvmrc_path" ]; then
-    local nvmrc_node_version
-    nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
-
-    if [ "$nvmrc_node_version" = "N/A" ]; then
-      nvm install
-    elif [ "$nvmrc_node_version" != "$(nvm version)" ]; then
-      nvm use
-    fi
-  elif [ -n "$(PWD=$OLDPWD nvm_find_nvmrc)" ] && [ "$(nvm version)" != "$(nvm version default)" ]; then
-    echo "Reverting to nvm default version"
-    nvm use default
-  fi
+source_files() {
+    local files=("$@")
+    for file in $files; do
+        source $file
+    done
 }
 
-add-zsh-hook chpwd load-nvmrc
-load-nvmrc
+zsh_root="$HOME/dotfiles/zsh"
+cd $zsh_root # tmux.zsh cds to $HOME
+load_first=(env.zsh install.zsh autoload.zsh)
+load_last=(tmux.zsh)
 
-# Launch tmux
-[ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
-cd $HOME
+# Source the first files
+source_files $load_first
 
-# added by pipx (https://github.com/pipxproject/pipx)
-export PATH="/home/whayward/.local/bin:$PATH"
+# Get all zsh files and source them, excluding the first and last files
+all_files=($(ls))
+for file in $all_files; do
+    if (( ${load_first[(Ie)$file]} == 0 && ${load_last[(Ie)$file]} == 0 )); then
+        source $file
+    fi
+done
 
-# added by pipx (https://github.com/pipxproject/pipx)
-export PATH="/home/whayward/.local/bin:$PATH"
-
-# For work
-alias cdm="cd ~/monolith"
-
-# Copilot suggestions
-alias ll='ls -l'  # List directory contents in long format
-alias la='ls -A'  # List all (including hidden) directory contents
-alias l='ls -CF'  # List directory contents in column format
-alias ..='cd ..'  # Go up one directory level
-alias ...='cd ../..'  # Go up two directory levels
-alias grep='grep --color=auto'  # Colorize output of grep
-alias df='df -H'  # Display filesystem disk space usage in human-readable format
-alias du='du -ch'  # Display directory space usage in human-readable format
-alias mkdir='mkdir -pv'  # Make directories, including parent directories as needed, and print each directory name
-alias hist='history | grep'  # Search command history
+# Source the last files
+source_files $load_last

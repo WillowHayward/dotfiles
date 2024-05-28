@@ -1,0 +1,12 @@
+# Oh My Zsh
+ohmyzsh/ohmyzsh path:lib
+ohmyzsh/ohmyzsh path:lib
+ohmyzsh/ohmyzsh path:plugins/git
+ohmyzsh/ohmyzsh path:plugins/vi-mode
+ohmyzsh/ohmyzsh path:themes/robbyrussell.zsh-theme
+
+# TODO: Assess this, tbh
+ohmyzsh/ohmyzsh path:plugins/laravel
+
+zsh-users/zsh-autosuggestions
+jscutlery/nx-completion
