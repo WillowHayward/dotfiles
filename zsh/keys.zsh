@@ -1,6 +1,6 @@
 
 bindkey -v # Turn on vim mappings
-if [[ -v $WHC_HOME && -v $WHC_LOCAL ]]; then
+if [[ -v WHC_HOME && -v WHC_LOCAL ]]; then
     setxkbmap -option caps:swapescape # Swap caps and escape, but only for local home connections
 fi
 
@@ -8,13 +8,13 @@ fi
 alias n='nvim'
 
 # Location shortcuts
-alias cdm='cd $HOME/monoverse/'
+if [[ -v WHC_HOME ]]; then
+    alias cdm='cd $HOME/monoverse/'
+fi
 alias cdp='cd $HOME/projects/'
 alias cdd='cd $HOME/dotfiles/'
-alias cdD='cd $HOME/docker/'
+alias cdD='cd $HOME/docker/' # TODO: Consider "containers"?
 
-# For work
-alias cdm="cd ~/monolith"
 
 # Copilot suggestions
 alias ll='ls -l'  # List directory contents in long format
