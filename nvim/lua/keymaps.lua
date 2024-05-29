@@ -14,7 +14,7 @@ end
 set_keymap("n", "<leader><leader>", "<cmd>Noice dismiss<CR>", "Clear noice notifications") -- TODO: Does double-space scan?
 
 -- Refresh
-set_keymap("n", "<leader>e", "<cmd>e<CR>", "Reload buffer");
+set_keymap("n", "<leader>e", "<cmd>e<CR>", "Reload buffer")
 
 -- Indenting a visual selection remains in visual mode afterwards
 set_keymap("v", ">", ">gv")
@@ -24,7 +24,7 @@ set_keymap("v", "<", "<gv")
 -- local comment = require("Comment")
 -- comment.setup
 
-set_keymap("n", "<leader>L", ":lua ", "Open Lua prompt")
+-- set_keymap("n", "<leader>L", ":lua ", "Open Lua prompt")
 
 -- Set keymaps for commenting and uncommenting code
 -- set_keymap("n", "<leader>/", comment.toggle, "Toggle comment")
@@ -44,6 +44,12 @@ set_keymap("n", "<A-k>", "zzk")
 set_keymap("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", "Open new tab onto home screen")
 set_keymap("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", "Open new tab before current onto home screen")
 
+-- Navigate tabs
+-- NOTE: I don't know if unsetting these entirely is a long-term thing, but it'll help me build the new habit
+vim.keymap.set("n", "gt", "<nop>")
+vim.keymap.set("n", "gT", "<nop>")
+set_keymap("n", "<leader>l", "<cmd>tabnext<CR>", "Next tab") -- TODO: Make repeatable
+set_keymap("n", "<leader>h", "<cmd>tabprev<CR>", "Previous tab")
 -- Saving and Quitting
 set_keymap("n", "<leader>w", "<cmd>w<CR>", "Write buffer")
 set_keymap("n", "<leader>W", "<cmd>wa<CR>", "Write all")
@@ -107,7 +113,7 @@ set_keymap("n", "[t", todo.jump_prev, "Previous TODO")
 set_keymap("n", "<leader>ft", "<cmd>TodoTelescope<CR>", "Search project TODOs")
 
 -- Lazy
-set_keymap("n", "<leader>l", "<cmd>Lazy<cr>", "Lazy")
+set_keymap("n", "<leader>L", "<cmd>Lazy<cr>", "Lazy")
 
 -- Telescope
 local telescope = require("telescope.builtin")
