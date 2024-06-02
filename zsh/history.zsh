@@ -1,3 +1,4 @@
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source <(fzf --zsh)
 
 HISTFILE=~/.zsh_history
