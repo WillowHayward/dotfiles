@@ -30,64 +30,64 @@ require("lazy").setup({
 	-- UI
 	-- Project management
 	--{
-		--"coffebar/neovim-project",
-		--opts = {
-			--projects = { -- define project roots
-				--"~/projects/*",
-				--"~/docker/*",
-				--"~/dotfiles",
-				--"~/monoverse/",
-				--"~/monolith", -- work
-				--"~/new/monolith-hub-services", -- work. Also rename this directory
-			--},
-		--},
-		--init = function()
-			---- enable saving the state of plugins in the session
-			--vim.opt.sessionoptions:append("globals") -- save global variables that start with an uppercase letter and contain at least one lowercase letter.
-		--end,
-		--dependencies = {
-			--{ "nvim-lua/plenary.nvim" },
-			--{ "nvim-telescope/telescope.nvim", tag = "0.1.4" },
-			--{ "Shatur/neovim-session-manager" },
-		--},
-		--lazy = false,
-		--priority = 100,
+	--"coffebar/neovim-project",
+	--opts = {
+	--projects = { -- define project roots
+	--"~/projects/*",
+	--"~/docker/*",
+	--"~/dotfiles",
+	--"~/monoverse/",
+	--"~/monolith", -- work
+	--"~/new/monolith-hub-services", -- work. Also rename this directory
+	--},
+	--},
+	--init = function()
+	---- enable saving the state of plugins in the session
+	--vim.opt.sessionoptions:append("globals") -- save global variables that start with an uppercase letter and contain at least one lowercase letter.
+	--end,
+	--dependencies = {
+	--{ "nvim-lua/plenary.nvim" },
+	--{ "nvim-telescope/telescope.nvim", tag = "0.1.4" },
+	--{ "Shatur/neovim-session-manager" },
+	--},
+	--lazy = false,
+	--priority = 100,
 	--},
 	--{
-		--"folke/noice.nvim",
-		--event = "VeryLazy",
-		--opts = function()
-			--require("noice").setup({
-				--cmdline = {
-					--conceal = false, -- Stops from trying to search cmdline input in buffer
-				--},
-				--lsp = {
-					---- override markdown rendering so that **cmp** and other plugins use **Treesitter**
-					--override = {
-						--["vim.lsp.util.convert_input_to_markdown_lines"] = true,
-						--["vim.lsp.util.stylize_markdown"] = true,
-						--["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
-					--},
-				--},
-				---- you can enable a preset for easier configuration
-				--presets = {
-					--bottom_search = true, -- use a classic bottom cmdline for search
-					--command_palette = true, -- position the cmdline and popupmenu together
-					--long_message_to_split = true, -- long messages will be sent to a split
-					--inc_rename = false, -- enables an input dialog for inc-rename.nvim
-					--lsp_doc_border = false, -- add a border to hover docs and signature help
-				--},
-			--})
-		--end,
-		--dependencies = {
-			---- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
-			--"MunifTanjim/nui.nvim",
-			---- OPTIONAL:
-			----   `nvim-notify` is only needed, if you want to use the notification view.
-			----   If not available, we use `mini` as the fallback
-			--"rcarriga/nvim-notify",
-			--"hrsh7th/nvim-cmp",
-		--},
+	--"folke/noice.nvim",
+	--event = "VeryLazy",
+	--opts = function()
+	--require("noice").setup({
+	--cmdline = {
+	--conceal = false, -- Stops from trying to search cmdline input in buffer
+	--},
+	--lsp = {
+	---- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+	--override = {
+	--["vim.lsp.util.convert_input_to_markdown_lines"] = true,
+	--["vim.lsp.util.stylize_markdown"] = true,
+	--["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
+	--},
+	--},
+	---- you can enable a preset for easier configuration
+	--presets = {
+	--bottom_search = true, -- use a classic bottom cmdline for search
+	--command_palette = true, -- position the cmdline and popupmenu together
+	--long_message_to_split = true, -- long messages will be sent to a split
+	--inc_rename = false, -- enables an input dialog for inc-rename.nvim
+	--lsp_doc_border = false, -- add a border to hover docs and signature help
+	--},
+	--})
+	--end,
+	--dependencies = {
+	---- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
+	--"MunifTanjim/nui.nvim",
+	---- OPTIONAL:
+	----   `nvim-notify` is only needed, if you want to use the notification view.
+	----   If not available, we use `mini` as the fallback
+	--"rcarriga/nvim-notify",
+	--"hrsh7th/nvim-cmp",
+	--},
 	--},
 	-- Fuzzy Finder
 	{
@@ -230,11 +230,12 @@ require("lazy").setup({
 			local logo = willow.get_logo()
 			dashboard.section.header.val = vim.split(logo, "\n")
 			dashboard.section.buttons.val = {
+				dashboard.button("e", "󰖉 " .. " Open Most Recent", "2<C-o>"), -- Twice for reasons I've never understood. TODO: Investigate
 				dashboard.button("f", " " .. " Find file", ":Telescope find_files <CR>"),
 				dashboard.button("n", " " .. " New file", ":ene <BAR> startinsert <CR>"),
-				dashboard.button("r", " " .. " Recent files", ":Telescope oldfiles <CR>"),
-				dashboard.button("/", " " .. " Find text", ":Telescope live_grep <CR>"),
-				dashboard.button("p", " " .. " Recent Projects", ":Telescope neovim-project history <CR>"),
+				dashboard.button("r", "󰖉 " .. " Recent files", ":Telescope oldfiles <CR>"),
+				dashboard.button("/", " " .. " Find text", ":Telescope live_grep <CR>"),
+				dashboard.button("p", " " .. " Recent Projects", ":Telescope neovim-project history <CR>"),
 				dashboard.button("c", " " .. " Config", ":e $MYVIMRC <CR>"),
 				dashboard.button("q", " " .. " Quit", ":qa<CR>"),
 			}
@@ -253,5 +254,14 @@ require("lazy").setup({
 	{
 		"eandrju/cellular-automaton.nvim", -- For when it all comes tumbling down
 		dependencies = { "nvim-treesitter/nvim-treesitter" },
+	},
+	-- Taskwarrior
+	{
+		"ribelo/taskwarrior.nvim",
+		opts = {
+			-- your configuration comes here
+			-- or leave it empty to use the default settings
+			-- refer to the configuration section below
+		},
 	},
 })

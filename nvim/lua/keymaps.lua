@@ -42,7 +42,7 @@ set_keymap("n", "<A-k>", "zzk")
 
 -- Add tabs
 set_keymap("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", "Open new tab onto home screen")
-set_keymap("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", "Open new tab before current onto home screen")
+--set_keymap("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", "Open new tab before current onto home screen") -- TODO: This is gonna be better served by taskwarrior - when have I ever used this keybinding?
 
 -- Navigate tabs
 -- NOTE: I don't know if unsetting these entirely is a long-term thing, but it'll help me build the new habit
@@ -50,6 +50,8 @@ vim.keymap.set("n", "gt", "<nop>")
 vim.keymap.set("n", "gT", "<nop>")
 set_keymap("n", "<leader>l", "<cmd>tabnext<CR>", "Next tab") -- TODO: Make repeatable
 set_keymap("n", "<leader>h", "<cmd>tabprev<CR>", "Previous tab")
+set_keymap("n", "<leader>k", "<cmd>tabnext<CR>", "Next tab") -- TODO: Make repeatable
+set_keymap("n", "<leader>j", "<cmd>tabprev<CR>", "Previous tab")
 -- Saving and Quitting
 set_keymap("n", "<leader>w", "<cmd>w<CR>", "Write buffer")
 set_keymap("n", "<leader>W", "<cmd>wa<CR>", "Write all")
@@ -286,3 +288,6 @@ set_copilot_ask_keymap("<leader>cq", "Give me a quick win", "Ask Copilot for a q
 -- vim.api.nvim_win_set_option(win, 'winhl', 'Normal:MyHighlight')
 --end
 --)
+-- taskwarrior
+local task = require("taskwarrior_nvim")
+set_keymap("n", "<leader>T", function() task.browser({"ready"}) end, "Open taskwarrior list");
