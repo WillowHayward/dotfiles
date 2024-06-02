@@ -30,3 +30,5 @@ done
 
 # Source the last files
 source_files $load_last
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
