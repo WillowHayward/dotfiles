@@ -3,6 +3,9 @@ ohmyzsh/ohmyzsh path:lib
 ohmyzsh/ohmyzsh path:lib
 ohmyzsh/ohmyzsh path:plugins/git
 ohmyzsh/ohmyzsh path:plugins/vi-mode
+
+ohmyzsh/ohmyzsh path:plugins/taskwarrior
+
 ohmyzsh/ohmyzsh path:themes/robbyrussell.zsh-theme
 
 # TODO: Assess this, tbh
