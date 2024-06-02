@@ -1,4 +1,6 @@
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source <(fzf --zsh)
 
-# TODO: Is this the best place for this?
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
