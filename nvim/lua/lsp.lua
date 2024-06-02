@@ -2,6 +2,7 @@ local language_servers = {
 	"stylua",
 	"lua-language-server",
 	"shellcheck",
+    -- "beautysh", -- TODO
 	"shfmt",
 	"flake8",
 	"typescript-language-server",
@@ -167,6 +168,7 @@ return {
 					},
 				},
 				gdscript = {},
+                -- beautysh = {}
 			},
 			setup = {
 				tsserver = function(_, opts)
