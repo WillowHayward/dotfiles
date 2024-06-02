@@ -26,9 +26,6 @@ export VISUAL=nvim
 export EDITOR="$VISUAL"
 
 export ZSH_THEME="robbyrussell"
-export HISTFILE=~/.zsh_history
-export HISTSIZE=10000
-export SAVEHIST=10000
 
 export ANTIDOTE_DIR=${ZDOTDIR:-~}/.antidote
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
