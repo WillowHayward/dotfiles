@@ -30,3 +30,13 @@ done
 
 # Source the last files
 source_files $load_last
+
+
+# TODO: Find out why this is behaving strangely elsewhere
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+source <(fzf --zsh)
+
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt appendhistory
