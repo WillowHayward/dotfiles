@@ -10,6 +10,8 @@ links[.npmrc]=".npmrc"
 links[.vimrc]=".vimrc"
 links[.yarnrc.yml]=".yarnrc.yml"
 
+links[.taskrc]=".taskrc"
+
 for link in "${!links[@]}"; do
     TARGET=$PWD/$link 
     DESTINATION=$HOME/${links[$link]} 
