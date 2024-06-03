@@ -48,6 +48,8 @@ context.horace.read=project:horace
 context.horace.write=project:horace
 context.lipwig.read=project:lipwig
 context.lipwig.write=project:lipwig
+context.work.read=project:work
+context.work.write=project:work
 
 # Priority "L" should be lower than unset priority, and more than counterbalance blocking
 urgency.uda.priority.L.coefficient=-20
