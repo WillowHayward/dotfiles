@@ -26,6 +26,7 @@ alias tcn='task context none'
 
 # Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
 alias gs='git status'
+alias lg='lazygit'
 
 # Copilot suggestions
 alias ll='ls -l'  # List directory contents in long format
