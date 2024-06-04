@@ -27,6 +27,18 @@ alias tms='~/dotfiles/scripts/tms.sh'
 alias gs='git status'
 alias lg='lazygit'
 
+# Docker
+# NOTE: d and dc are already taken by other things
+alias dcu='docker compose up'
+alias dcud='docker compose up -d'
+alias dcd='docker compose down'
+alias dcr='docker compose restart'
+alias dcl='docker compose logs'
+alias dl='docker logs'
+alias dr='docker restart'
+alias de='docker exec -it'
+alias dcp='docker cp'
+
 # Taskwarrior
 alias ta='task add'
 alias te='task edit'
