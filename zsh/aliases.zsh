@@ -4,16 +4,28 @@ if [[ -v WHC_HOME && -v WHC_LOCAL ]]; then
     setxkbmap -option caps:swapescape # Swap caps and escape, but only for local home connections
 fi
 
-# Keymaps
-alias n='nvim'
-
 # Location shortcuts
 if [[ -v WHC_HOME ]]; then
     alias cdm='cd $HOME/monoverse/'
 fi
 alias cdp='cd $HOME/projects/'
 alias cdd='cd $HOME/dotfiles/'
-alias cdD='cd $HOME/docker/' # TODO: Consider "containers"?
+alias cdc='cd $HOME/docker/' # TODO: Consider "containers"?
+alias cdh='cd $HOME/'
+
+# Neovim
+alias n='nvim'
+
+# Zsh
+alias zshr='source ~/.zshrc'
+
+# Tmux
+alias tm='tmux'
+alias tms='~/dotfiles/scripts/tms.sh'
+
+# Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
+alias gs='git status'
+alias lg='lazygit'
 
 # Taskwarrior
 alias ta='task add'
@@ -23,10 +35,6 @@ alias tc='task context'
 alias tl='task list'
 alias ti='task info'
 alias tcn='task context none'
-
-# Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
-alias gs='git status'
-alias lg='lazygit'
 
 # Copilot suggestions
 alias ll='ls -l'  # List directory contents in long format
