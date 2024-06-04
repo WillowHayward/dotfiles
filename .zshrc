@@ -1,9 +1,5 @@
 # Entry point for my zsh configuration - this bootstraps everything in $HOME/dotfiles/zsh
 # NOTE: This file assumes that the dotfiles repository is located in $HOME/dotfiles
-#
-# install.zsh:12: parse error near `\n'
-# nvm.zsh:22: command not found: add-zsh-hook
-
 
 source_files() {
     local files=("$@")
@@ -15,7 +11,6 @@ source_files() {
 autoload -U add-zsh-hook
 
 zsh_root="$HOME/dotfiles/zsh"
-#cd $zsh_root # tmux.zsh cds to $HOME
 load_first=(env.zsh)
 load_last=(history.zsh)
 skip=(home.zsh work.zsh remote.zsh local.zsh)
