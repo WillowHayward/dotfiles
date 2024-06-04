@@ -24,6 +24,23 @@ else
   SESSION_NAME=$(basename "$DIRECTORY")
 fi
 
+# Check if a session with the same name already exists
+SESSION_EXISTS=$(tmux list-sessions | awk -F: '{print $1}' | grep "^$SESSION_NAME$")
+
+# If a session with the same name exists, append a number to make it unique
+if [ ! -z "$SESSION_EXISTS" ]
+then
+  i=1
+  while true; do
+    NEW_SESSION_NAME="${SESSION_NAME}_$i"
+    SESSION_EXISTS=$(tmux list-sessions | awk -F: '{print $1}' | grep "^$NEW_SESSION_NAME$")
+    if [ -z "$SESSION_EXISTS" ]; then
+      SESSION_NAME=$NEW_SESSION_NAME
+      break
+    fi
+    i=$((i+1))
+  done
+fi
 
 # Start a new tmux session with the provided name and directory
 tmux new-session -d -s $SESSION_NAME -c $DIRECTORY
