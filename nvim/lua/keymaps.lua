@@ -152,8 +152,16 @@ local function diagnostic_goto(next, severity)
 	end
 end
 
+-- TODO: Broken, figure it out (only works when there's 1 code action at present - modify to run first if multiple)
+-- TODO: Review this, consider making the default ca behaviour
+local function code_action_apply()
+    vim.lsp.buf.code_action({
+        apply = true
+    })
+end
 set_keymap("n", "<leader>cl", "<cmd>LspInfo<CR>", "Open LspInfo")
 set_keymap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+set_keymap("n", "<leader>cA", code_action_apply, "Code action")
 set_keymap("n", "K", vim.lsp.buf.hover, "Code hover")
 set_keymap("n", "gd", vim.diagnostic.open_float, "Diagnostic hover")
 set_keymap("n", "<leader>cf", vim.lsp.buf.format, "Code formatting")
