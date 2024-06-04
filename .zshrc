@@ -15,7 +15,7 @@ source_files() {
 zsh_root="$HOME/dotfiles/zsh"
 #cd $zsh_root # tmux.zsh cds to $HOME
 load_first=(env.zsh install.zsh autoload.zsh)
-load_last=(work.zsh tmux.zsh)
+load_last=(work.zsh tmux.zsh history.zsh)
 
 # Source the first files
 source_files $load_first
@@ -30,13 +30,3 @@ done
 
 # Source the last files
 source_files $load_last
-
-
-# TODO: Find out why this is behaving strangely elsewhere
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-source <(fzf --zsh)
-
-HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-setopt appendhistory
