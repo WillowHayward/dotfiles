@@ -16,6 +16,9 @@ set_keymap("n", "<leader><leader>", "<cmd>Noice dismiss<CR>", "Clear noice notif
 -- Refresh
 set_keymap("n", "<leader>e", "<cmd>e<CR>", "Reload buffer")
 
+-- Redo (<C-r> is taken by "open recent file")
+set_keymap("n", "U", "<cmd>redo<CR>", "Redo last undone change")
+
 -- Indenting a visual selection remains in visual mode afterwards
 set_keymap("v", ">", ">gv")
 set_keymap("v", "<", "<gv")
