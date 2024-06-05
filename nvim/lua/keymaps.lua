@@ -120,10 +120,10 @@ set_keymap("n", "<leader>L", "<cmd>Lazy<cr>", "Lazy")
 -- Telescope
 local telescope = require("telescope.builtin")
 set_keymap("n", "<leader>/", telescope.live_grep, "Find in files")
-set_keymap("n", "<leader>ff", telescope.find_files, "Find files")
+set_keymap("n", "<C-t>", telescope.find_files, "Find files")
 set_keymap("n", "<leader>fb", telescope.buffers, "Find buffers")
 set_keymap("n", "<leader>fh", telescope.help_tags, "Find help tags")
-set_keymap("n", "<leader>fr", telescope.oldfiles, "Find recent files")
+set_keymap("n", "<C-r>", telescope.oldfiles, "Find recent files")
 set_keymap("n", "<leader>fp", telescope.planets, "Find planet") -- god this plugin is cute
 
 -- Neo-Tree
