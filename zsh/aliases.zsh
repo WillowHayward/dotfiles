@@ -22,6 +22,7 @@ alias zshr='source ~/.zshrc'
 # Tmux
 alias tm='tmux'
 # tms defined as function - creates new session
+alias tmsd='tms ~/dotfiles'
 
 # Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
 alias gs='git status'
