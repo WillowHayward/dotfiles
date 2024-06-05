@@ -11,7 +11,7 @@ source_files() {
 autoload -U add-zsh-hook
 
 zsh_root="$HOME/dotfiles/zsh"
-load_first=(env.zsh)
+load_first=(env.zsh functions.zsh)
 load_last=(history.zsh)
 skip=(home.zsh work.zsh remote.zsh local.zsh)
 
