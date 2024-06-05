@@ -8,7 +8,7 @@ fi
 if [[ -v WHC_HOME ]]; then
     alias cdm='cd $HOME/monoverse/'
 fi
-alias cdp='cd $HOME/projects/'
+# cdp defined as function - cds to $WHC_PROJECTS_DIR or subdirectory
 alias cdd='cd $HOME/dotfiles/'
 alias cdc='cd $HOME/docker/' # TODO: Consider "containers"?
 alias cdh='cd $HOME/'
@@ -21,7 +21,7 @@ alias zshr='source ~/.zshrc'
 
 # Tmux
 alias tm='tmux'
-alias tms='~/dotfiles/scripts/tms.sh'
+# tms defined as function - creates new session
 
 # Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
 alias gs='git status'
@@ -47,6 +47,7 @@ alias tc='task context'
 alias tl='task list'
 alias ti='task info'
 alias tcn='task context none'
+# tap defined as function - adds task to project
 
 # Copilot suggestions
 alias ll='ls -l'  # List directory contents in long format
