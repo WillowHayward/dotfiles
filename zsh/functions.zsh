@@ -70,3 +70,20 @@ function tap() {
 
     task add project:$@
 }
+
+# Autocomplete for `tap`
+_tap_autocomplete() {
+    local -a project_names
+    project_names=("${(@f)$(task _projects)}")
+    _describe 'values' project_names
+}
+
+_tap() {
+    if (( CURRENT == 2 )); then
+        _tap_autocomplete
+    else
+        _default
+    fi
+}
+
+compdef _tap tap
