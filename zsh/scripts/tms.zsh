@@ -1,4 +1,3 @@
-#!/bin/zsh
 # Utility script for the `tms` command to start a new session
 # Args:
 #   $1 - Session directory (optional)
