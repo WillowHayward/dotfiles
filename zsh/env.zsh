@@ -1,10 +1,10 @@
 # Environment variables - To be run at the start of zsh launch
 # WHC_ prefix for Willow Hayward Code stuff
 export ZSH="$HOME/.oh-my-zsh"
-export DOTFILES="$HOME/dotfiles/.env"
-if [[ -f "$DOTFILES" ]]; then # Global environment variables not for committing
+export WHC_DOTFILES_DIR="$HOME/dotfiles"
+if [[ -f "$WHC_DOTFILES_DIR/.env" ]]; then # Global environment variables not for committing
     set -o allexport
-    source $DOTFILES
+    source "$WHC_DOTFILES_DIR/.env"
     set +o allexport
 fi
 
@@ -21,6 +21,8 @@ if [[ -n "$SSH_CONNECTION" ]]; then
 else
     export WHC_LOCAL=true
 fi
+
+export WHC_PROJECTS_DIR="$HOME/projects"
 
 export VISUAL=nvim
 export EDITOR="$VISUAL"
