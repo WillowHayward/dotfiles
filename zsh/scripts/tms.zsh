@@ -3,42 +3,28 @@
 #   $1 - Session directory (optional)
 #   $2 - Session name (optional)
 
-# Default session name
-SESSION_NAME="default_session"
+# Default default directory
+DIRECTORY=${1:-"$HOME"}
 
-# Default directory
-DIRECTORY="$HOME"
+# If the directory does not start with ~ or /, treat it as relative to the current directory
+[[ "$DIRECTORY" != /* && "$DIRECTORY" != ~* ]] && DIRECTORY="$(pwd)/$DIRECTORY"
 
-# Check if a directory was provided
-if [ ! -z "$1" ]
-then
-  DIRECTORY="$1"
-fi
-
-# Check if a session name was provided
-if [ ! -z "$2" ]
-then
-  SESSION_NAME="$2"
+# Default session name directory
+if [ -z "$1" ]; then
+    # If no directory is provided, SESSION_NAME should default to 'default_session'
+    SESSION_NAME=${2:-"default_session"}
 else
-  SESSION_NAME=$(basename "$DIRECTORY")
+    SESSION_NAME=${2:-$(basename "$DIRECTORY")}
 fi
 
 # Check if a session with the same name already exists
-SESSION_EXISTS=$(tmux list-sessions | awk -F: '{print $1}' | grep "^$SESSION_NAME$")
-
-# If a session with the same name exists, append a number to make it unique
-if [ ! -z "$SESSION_EXISTS" ]
-then
-  i=1
-  while true; do
-    NEW_SESSION_NAME="${SESSION_NAME}_$i"
-    SESSION_EXISTS=$(tmux list-sessions | awk -F: '{print $1}' | grep "^$NEW_SESSION_NAME$")
-    if [ -z "$SESSION_EXISTS" ]; then
-      SESSION_NAME=$NEW_SESSION_NAME
-      break
-    fi
-    i=$((i+1))
-  done
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    # If a session with the same name exists, append a number to make it unique
+    i=1
+    while tmux has-session -t "${SESSION_NAME}_$i" 2>/dev/null; do
+        i=$((i+1))
+    done
+    SESSION_NAME="${SESSION_NAME}_$i"
 fi
 
 # Start a new tmux session with the provided name and directory
