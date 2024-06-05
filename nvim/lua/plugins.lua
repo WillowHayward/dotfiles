@@ -220,7 +220,7 @@ require("lazy").setup({
 			require("which-key").setup({})
 		end,
 	},
-	"sainnhe/edge", -- Color scheme
+    "Mofiqul/dracula.nvim", -- Theme
 	{
 		"goolord/alpha-nvim", -- Dashboard on launch
 		event = "VimEnter",
