@@ -53,3 +53,8 @@ context.work.write=project:work
 
 # Priority "L" should be lower than unset priority, and more than counterbalance blocking
 urgency.uda.priority.L.coefficient=-20
+context.lifesuite.read=project:lifesuite
+context.lifesuite.write=project:lifesuite
+context.rpi.read=project:rpi
+context.rpi.write=project:rpi
+context=lifesuite

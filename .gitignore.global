@@ -12,6 +12,6 @@ Thumbs.db
 *~
 
 # General
-log/
-*.log
+#log/
+#*.log
 

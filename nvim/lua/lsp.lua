@@ -2,6 +2,7 @@ local language_servers = {
 	"stylua",
 	"lua-language-server",
 	"shellcheck",
+    "sonarlint-language-server",
     -- "beautysh", -- TODO
 	"shfmt",
 	"flake8",

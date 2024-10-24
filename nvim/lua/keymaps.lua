@@ -158,9 +158,9 @@ end
 -- TODO: Broken, figure it out (only works when there's 1 code action at present - modify to run first if multiple)
 -- TODO: Review this, consider making the default ca behaviour
 local function code_action_apply()
-    vim.lsp.buf.code_action({
-        apply = true
-    })
+	vim.lsp.buf.code_action({
+		apply = true,
+	})
 end
 set_keymap("n", "<leader>cl", "<cmd>LspInfo<CR>", "Open LspInfo")
 set_keymap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
@@ -301,4 +301,6 @@ set_copilot_ask_keymap("<leader>cq", "Give me a quick win", "Ask Copilot for a q
 --)
 -- taskwarrior
 local task = require("taskwarrior_nvim")
-set_keymap("n", "<leader>T", function() task.browser({"ready"}) end, "Open taskwarrior list");
+set_keymap("n", "<leader>T", function()
+	task.browser({ "ready" })
+end, "Open taskwarrior list")
