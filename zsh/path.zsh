@@ -5,3 +5,5 @@ export PATH="${PATH}:~/android-studio/bin"
 
 export PATH="${PATH}:$HOME/.cargo/bin"
 #$HOME/.cargo/env
+
+export PATH="$PATH:/opt/nvim-linux64/bin"
