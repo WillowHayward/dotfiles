@@ -138,6 +138,12 @@ set_keymap("n", "<leader>gf", telescope.git_files, "git ls-files")
 set_keymap("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", "Toggle line blame")
 set_keymap("n", "<leader>gg", "<cmd>LazyGit <CR>", "Open LazyGit")
 
+
+-- GitHub
+set_keymap("n", "<leader>fi", "<cmd>Octo issue list<CR>", "Find GitHub issues")
+set_keymap("n", "<leader>gI", "<cmd>Octo issue create<CR>", "Create GitHub issue")
+-- TODO: Octo has way more it can do that I might use
+
 -- Telescope lsp
 set_keymap("n", "gD", telescope.lsp_definitions, "Find definition")
 set_keymap("n", "gr", telescope.lsp_references, "References")
