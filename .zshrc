@@ -45,4 +45,7 @@ for var in "${(@k)envs}"; do
     fi
 done
 
-[ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
+
+if [[ -v WHC_LOCAL ]]; then
+    [ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
+fi
