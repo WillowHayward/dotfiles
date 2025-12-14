@@ -44,8 +44,3 @@ for var in "${(@k)envs}"; do
         source $zsh_root/${envs[$var]}
     fi
 done
-
-
-if [[ -v WHC_LOCAL ]]; then
-    [ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
-fi
