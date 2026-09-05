@@ -1,7 +1,7 @@
 
 bindkey -v # Turn on vim mappings
 if [[ -v WHC_HOME && -v WHC_LOCAL ]]; then
-    setxkbmap -option caps:swapescape # Swap caps and escape, but only for local home connections
+    # setxkbmap -option caps:swapescape # Swap caps and escape, but only for local home connections
 fi
 
 # Location shortcuts
