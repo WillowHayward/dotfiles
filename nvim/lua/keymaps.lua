@@ -203,11 +203,11 @@ set_keymap("n", "<leader>ds", dap.step_over, "Step through code")
 set_keymap("n", "<leader>dS", dap.step_back, "Step back through code")
 set_keymap("n", "<leader>di", dap.repl.open, "Inspect debug state")
 
-local jester = require("jester")
+-- local jester = require("jester")
 -- Jest
-set_keymap("n", "<leader>ctt", jester.run, "Run Jest test under cursor")
-set_keymap("n", "<leader>ctf", jester.run_file, "Run Jest tests in current file")
-set_keymap("n", "<leader>ctl", jester.run_last, "Re-run last Jest test")
+-- set_keymap("n", "<leader>ctt", jester.run, "Run Jest test under cursor")
+-- set_keymap("n", "<leader>ctf", jester.run_file, "Run Jest tests in current file")
+-- set_keymap("n", "<leader>ctl", jester.run_last, "Re-run last Jest test")
 
 -- Copilot
 -- TODO: (insane): Fork CopilotChat.nvim, and modify this file to allow you to call it smokes: https://github.com/CopilotC-Nvim/CopilotChat.nvim/blob/feca60cf0ae08d866ba35cc8a95d12941ccc4f59/lua/CopilotChat/prompts.lua#L5

@@ -1,5 +1,4 @@
-# Entry point for my zsh configuration - this bootstraps everything in $HOME/dotfiles/zsh
-# NOTE: This file assumes that the dotfiles repository is located in $HOME/dotfiles
+-
 
 source_files() {
     local files=("$@")
@@ -11,7 +10,7 @@ source_files() {
 autoload -U add-zsh-hook
 autoload -U +X compinit && compinit
 
-zsh_root="$HOME/dotfiles/zsh"
+zsh_root="$HOME/dotfiles/shell/zsh"
 load_first=(env.zsh functions.zsh) # functions in case I add something that'll be used later in the zsh config
 load_last=(history.zsh)
 skip=(home.zsh work.zsh remote.zsh local.zsh)
@@ -44,3 +43,17 @@ for var in "${(@k)envs}"; do
         source $zsh_root/${envs[$var]}
     fi
 done
+
+# fnm
+FNM_PATH="/home/whayward/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "$(fnm env --use-on-cd --shell zsh)"
+fi
+
+# fnm
+FNM_PATH="/home/whayward/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "$(fnm env --shell zsh)"
+fi

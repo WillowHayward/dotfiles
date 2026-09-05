@@ -16,10 +16,6 @@ local language_servers = {
 	"gdtoolkit",
 }
 
--- TODO Leftover imports from last config, investigate
--- 'nvim-lua/plenary.nvim',
--- 'jose-elias-alvarez/nvim-lsp-ts-utils',
-
 return {
 	-- Github Copilot
 	{
@@ -149,7 +145,7 @@ return {
 			"mason.nvim",
 			"williamboman/mason-lspconfig.nvim",
 			"hrsh7th/cmp-nvim-lsp",
-			"jose-elias-alvarez/typescript.nvim", -- TypeScript
+			-- "jose-elias-alvarez/typescript.nvim", -- TypeScript
 			"ray-x/lsp_signature.nvim",
 			{
 				"j-hui/fidget.nvim",
@@ -201,7 +197,7 @@ return {
 						return
 					end
 				end
-				require("lspconfig")[server].setup(server_opts)
+				vim.lsp.config(server, server_opts)
 			end
 			for server, server_opts in pairs(servers) do
 				if server_opts then
@@ -216,7 +212,7 @@ return {
 			end
 
 			require("mason-lspconfig").setup({ ensure_installed = ensure_installed })
-			require("mason-lspconfig").setup_handlers({ setup })
+			-- require("mason-lspconfig").setup_handlers({ setup })
 			--require("lsp_signature").setup({}) -- TODO: Not super thrilled with the defaults, look into later
 			-- Consider "Issafalcon/lsp-overloads.nvim",
 			-- Format on save
@@ -225,7 +221,7 @@ return {
 	},
 	-- formatters
 	{
-		"jose-elias-alvarez/null-ls.nvim",
+		"nvimtools/none-ls.nvim",
 		event = { "BufReadPre", "BufNewFile" },
 		dependencies = { "mason.nvim" },
 		opts = function()
