@@ -1,0 +1,13 @@
+# Reserve # for the project provider; pass application arguments with ::.
+global_argument_delimiter = "::"
+
+[keybinds]
+previous = ["Down", "ctrl p", "ctrl k"]
+next = ["Down", "ctrl n", "ctrl j"]
+
+[[providers.prefixes]]
+prefix = "#"
+provider = "menus:projects"
+
+[placeholders]
+"menus:projects" = { input = "Projects", list = "No matching projects" }
