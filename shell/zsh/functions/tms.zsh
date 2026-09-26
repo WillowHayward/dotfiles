@@ -4,19 +4,27 @@
 #   $1 - Session directory (optional)
 #       If not provided, defaults to $HOME
 #   $2 - Session name (optional)
-#       If not provided, defaults to basename of $1 or 'default_session'
+#       If not provided, defaults to basename of $1 or 'general'
 
 # Default default directory
 function tms() {
-    DIRECTORY=${1:-"$HOME"}
+    local DIRECTORY=${1:-"$HOME"} SESSION_NAME i
+    if [[ $# == 0 ]]; then
+        if [[ -n "$TMUX" ]]; then
+            tmux has-session -t '=general' 2>/dev/null || tmux new-session -d -s general -c "$HOME"
+            tmux switch-client -t '=general'
+        else
+            tmux new-session -A -s general -c "$HOME"
+        fi
+        return
+    fi
 
     # If the directory does not start with ~ or /, treat it as relative to the current directory
     [[ "$DIRECTORY" != /* && "$DIRECTORY" != ~* ]] && DIRECTORY="$(pwd)/$DIRECTORY"
 
     # Default session name directory
     if [ -z "$1" ]; then
-        # If no directory is provided, SESSION_NAME should default to 'default_session'
-        SESSION_NAME=${2:-"default_session"}
+        SESSION_NAME=${2:-"general"}
     else
         SESSION_NAME=${2:-$(basename "$DIRECTORY")}
     fi
@@ -32,9 +40,12 @@ function tms() {
     fi
 
     # Start a new tmux session with the provided name and directory
-    tmux new-session -d -s $SESSION_NAME -c $DIRECTORY
+    tmux new-session -d -s "$SESSION_NAME" -c "$DIRECTORY"
 
     # Switch to the new session
-    tmux switch-client -t $SESSION_NAME
+    if [[ -n "$TMUX" ]]; then
+        tmux switch-client -t "=$SESSION_NAME"
+    else
+        tmux attach-session -t "=$SESSION_NAME"
+    fi
 }
-
