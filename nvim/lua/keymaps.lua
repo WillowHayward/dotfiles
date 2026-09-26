@@ -10,6 +10,76 @@ local function set_keymap(mode, key, action, desc, opts)
 	vim.keymap.set(mode, key, action, fullOpts)
 end
 
+-- AI (Sidekick + Codex)
+require("which-key").add({ { "<leader>a", group = "AI (Codex)", mode = { "n", "x" } } })
+
+set_keymap("n", "<leader>aa", function()
+	require("ai-context").toggle()
+end, "Toggle Codex window")
+set_keymap("n", "<leader>aA", function()
+	require("ai-context").toggle()
+end, "Toggle Codex window")
+set_keymap("n", "<leader>ad", function()
+	require("sidekick.cli").close({ name = "codex" })
+end, "Detach Codex session")
+set_keymap("n", "<leader>as", function()
+	require("sidekick.cli").select({ filter = { name = "codex" } })
+end, "Select Codex session")
+set_keymap({ "n", "x" }, "<leader>ap", function()
+	require("sidekick.cli").prompt({
+		cb = function(_, text)
+			if text then
+				require("ai-context").send({ text = text })
+			end
+		end,
+	})
+end, "Choose Codex prompt")
+
+local function codex_send(msg)
+	return function()
+		require("ai-context").send({ msg = msg })
+	end
+end
+set_keymap({ "n", "x" }, "<leader>at", codex_send("{this}"), "Send this to Codex")
+set_keymap("n", "<leader>af", codex_send("{file}"), "Send file to Codex")
+set_keymap("x", "<leader>av", codex_send("{selection}"), "Send selection to Codex")
+set_keymap({ "n", "x" }, "<leader>ae", codex_send("Explain {this}"), "Ask Codex to explain")
+set_keymap("n", "<leader>ar", codex_send("Can you review {file} for issues?"), "Ask Codex to review")
+
+-- Quick wins: q/Q for the current file, w/W for the whole workspace.
+set_keymap(
+	"n",
+	"<leader>aq",
+	codex_send(
+		"Suggest one quick win in {file}: a small, concrete improvement with a clear benefit. Explain what to change and why."
+	),
+	"Codex: one quick win in file"
+)
+set_keymap(
+	"n",
+	"<leader>aQ",
+	codex_send(
+		"Suggest ten quick wins in {file}: small, concrete improvements with clear benefits. Rank them by impact versus effort and explain what to change and why."
+	),
+	"Codex: ten quick wins in file"
+)
+set_keymap(
+	"n",
+	"<leader>aw",
+	codex_send(
+		"Explore the entire project containing {file} and suggest one quick win across the project: a small, concrete improvement with a clear benefit. Look beyond the current file; identify the relevant files and explain what to change and why."
+	),
+	"Codex: one quick win in project"
+)
+set_keymap(
+	"n",
+	"<leader>aW",
+	codex_send(
+		"Explore the entire project containing {file} and suggest ten quick wins across the project: small, concrete improvements with clear benefits. Look beyond the current file; rank them by impact versus effort, identify the relevant files, and explain what to change and why."
+	),
+	"Codex: ten quick wins in project"
+)
+
 -- Clear notifications
 set_keymap("n", "<leader><leader>", "<cmd>Noice dismiss<CR>", "Clear noice notifications") -- TODO: Does double-space scan?
 
@@ -137,7 +207,6 @@ set_keymap("n", "<leader>gb", telescope.git_branches, "Find git branch")
 set_keymap("n", "<leader>gf", telescope.git_files, "git ls-files")
 set_keymap("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", "Toggle line blame")
 set_keymap("n", "<leader>gg", "<cmd>LazyGit <CR>", "Open LazyGit")
-
 
 -- GitHub
 set_keymap("n", "<leader>fi", "<cmd>Octo issue list<CR>", "Find GitHub issues")

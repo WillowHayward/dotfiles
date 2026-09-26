@@ -25,6 +25,8 @@ require("lazy").setup({
     --},
     -- cmp & lsp & dap
     require("lsp"),
+    -- AI CLI
+    require("ai"),
     -- treesitter
     require("treesitter"),
     -- UI
