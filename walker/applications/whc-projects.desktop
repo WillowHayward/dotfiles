@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Projects
+Comment=Open a project in tmux with Neovim and Sidekick
+Exec=walker --provider menus:projects
+Icon=folder-development
+Terminal=false
+Categories=Development;
+Keywords=tmux;project;neovim;
