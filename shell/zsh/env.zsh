@@ -27,7 +27,9 @@ export WHC_PROJECTS_DIR="$HOME/projects"
 export VISUAL=nvim
 export EDITOR="$VISUAL"
 
-export ZSH_THEME="dracula"
+export ZSH_THEME="powerlevel10k/powerlevel10k"
 
 export ANTIDOTE_DIR=${ZDOTDIR:-~}/.antidote
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+
+#export WHC_DEVICE="cowgirl" # cowgirl, bessie, the-ship, work
+#export WHC_PROFILE="home" # home, work, remote
