@@ -33,7 +33,7 @@ local specialWorkspaces = {
 		key = "A",
 		name = "ai",
 		rules = {
-			on_created_empty = "[workspace special:ai silent] chatgpt",
+            on_created_empty = "[workspace special:ai silent] chatgpt --ozone-platform=wayland",
 		},
 	},
 }

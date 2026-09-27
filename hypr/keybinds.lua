@@ -42,7 +42,7 @@ end
 -- Basic Programs
 local programsKeybinds = {
 	{ key = "RETURN", cmd = programs.menu },
-	{ key = "T", cmd = programs.terminal },
+	{ key = "D", cmd = programs.terminal },
 	{ key = "E", cmd = programs.fileManager },
 	{ key = "W", cmd = programs.webBrowser },
 	{ key = "PRINT", cmd = utils.takeScreenshot, noSuper = true },
