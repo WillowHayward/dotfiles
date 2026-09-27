@@ -41,8 +41,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 rm $HOME/.zshrc # Remote default zshrc
 
 # node
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-corepack enable
+bash "$(dirname -- "${BASH_SOURCE[0]}")/setup-node.sh"
 
 # Link config files
 ./link.sh

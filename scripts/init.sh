@@ -30,8 +30,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 
 # node
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-corepack enable
+bash "$(dirname -- "${BASH_SOURCE[0]}")/setup-node.sh"
 
 # Link config files
 ./link.sh
