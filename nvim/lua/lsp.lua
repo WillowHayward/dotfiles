@@ -18,47 +18,47 @@ local language_servers = {
 
 return {
 	-- Github Copilot
-	{
-		"zbirenbaum/copilot.lua",
-		cmd = "Copilot",
-		event = "InsertEnter",
-		config = function()
-			require("copilot").setup({
-				suggestion = { enabled = false },
-				panel = { enabled = false },
-			})
-		end,
-	},
-	{
-		"zbirenbaum/copilot-cmp",
-		dependencies = {
-			"zbirenbaum/copilot.lua",
-		},
-		config = function()
-			require("copilot_cmp").setup()
-		end,
-	},
-	{
-		"CopilotC-Nvim/CopilotChat.nvim",
-		branch = "canary",
-		dependencies = {
-			{ "zbirenbaum/copilot.lua" },
-			{ "nvim-lua/plenary.nvim" },
-		},
-		opts = {
-			debug = true, -- Enable debugging
-			window = {
-				layout = "float", -- Set layout to float
-				title = "GitHub Copilot", -- Set title
-				width = 0.8,
-				height = 0.8,
-			},
-			submit_prompt = {
-				normal = "<CR>",
-				insert = "<CR><CR>",
-			},
-		},
-	},
+	-- {
+	-- 	"zbirenbaum/copilot.lua",
+	-- 	cmd = "Copilot",
+	-- 	event = "InsertEnter",
+	-- 	config = function()
+	-- 		require("copilot").setup({
+	-- 			suggestion = { enabled = false },
+	-- 			panel = { enabled = false },
+	-- 		})
+	-- 	end,
+	-- },
+	-- {
+	-- 	"zbirenbaum/copilot-cmp",
+	-- 	dependencies = {
+	-- 		"zbirenbaum/copilot.lua",
+	-- 	},
+	-- 	config = function()
+	-- 		require("copilot_cmp").setup()
+	-- 	end,
+	-- },
+	-- {
+	-- 	"CopilotC-Nvim/CopilotChat.nvim",
+	-- 	branch = "canary",
+	-- 	dependencies = {
+	-- 		{ "zbirenbaum/copilot.lua" },
+	-- 		{ "nvim-lua/plenary.nvim" },
+	-- 	},
+	-- 	opts = {
+	-- 		debug = true, -- Enable debugging
+	-- 		window = {
+	-- 			layout = "float", -- Set layout to float
+	-- 			title = "GitHub Copilot", -- Set title
+	-- 			width = 0.8,
+	-- 			height = 0.8,
+	-- 		},
+	-- 		submit_prompt = {
+	-- 			normal = "<CR>",
+	-- 			insert = "<CR><CR>",
+	-- 		},
+	-- 	},
+	-- },
 	-- autocompletion
 	{
 		"hrsh7th/nvim-cmp",
