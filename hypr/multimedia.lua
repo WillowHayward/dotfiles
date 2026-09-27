@@ -22,16 +22,16 @@ hl.bind(
 -- The volume knob emits the same keys as the keyboard's volume controls.
 local super = require("constants").keys.super
 local brightnessScript = debug.getinfo(1, "S").source:sub(2):match("^(.*)/") .. "/brightness.sh"
-local function brightnessCommand(direction)
-    return "sh '" .. brightnessScript:gsub("'", "'\\''") .. "' " .. direction
+local function brightnessCommand(direction, target)
+    return "sh '" .. brightnessScript:gsub("'", "'\\''") .. "' " .. direction .. " " .. target
 end
 for _, bind in ipairs({
-    { key = "XF86MonBrightnessUp", direction = "up" },
-    { key = "XF86MonBrightnessDown", direction = "down" },
-    { key = super .. " + XF86AudioRaiseVolume", direction = "up" },
-    { key = super .. " + XF86AudioLowerVolume", direction = "down" },
+    { key = "XF86MonBrightnessUp", direction = "up", target = "internal" },
+    { key = "XF86MonBrightnessDown", direction = "down", target = "internal" },
+    { key = super .. " + XF86AudioRaiseVolume", direction = "up", target = "active" },
+    { key = super .. " + XF86AudioLowerVolume", direction = "down", target = "active" },
 }) do
-    hl.bind(bind.key, hl.dsp.exec_cmd(brightnessCommand(bind.direction)), { locked = true, repeating = true })
+    hl.bind(bind.key, hl.dsp.exec_cmd(brightnessCommand(bind.direction, bind.target)), { locked = true, repeating = true })
 end
 
 -- Requires playerctl
