@@ -16,7 +16,7 @@ def tmux(*args, check=True):
 
 
 def projects(root):
-    entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".") and p.name != "infra"] if root.is_dir() else []
+    entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
     infra = root / "infra"
     if infra.is_dir():
         entries += [p for p in infra.iterdir() if p.is_dir() and not p.name.startswith(".")]
