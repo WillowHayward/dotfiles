@@ -28,6 +28,7 @@ bindSuper(workspaceUtils.focusPreviousWorkspace, "mouse_up")
 
 -- Special workspaces
 local specialWorkspaces = {
+	{ key = "G", name = "game" },
 	{ key = "S", name = "scratch" },
 	{
 		key = "A",

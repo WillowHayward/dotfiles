@@ -56,3 +56,32 @@ hl.on("config.reloaded", function()
 		applyMonitorDefault(monitor, true)
 	end
 end)
+
+-- Route the portrait game preview to DVI-I-1; retain Super + G access.
+hl.workspace_rule({
+	workspace = "special:game",
+	monitor = "eDP-1",
+})
+hl.window_rule({
+	name = "godot-game-workspace",
+	match = { class = "^Farm The Revolution$" },
+	workspace = "special:game",
+	monitor = "eDP-1",
+	float = true,
+	size = { 360, 640 },
+	center = true,
+})
+
+-- Stop flameshot from moving windows
+hl.window_rule({
+	name = "flameshot-screen-isolation",
+	match = { class = "flameshot" },
+	float = true,
+	pin = true,
+	no_anim = true,
+	border_size = 0,
+	rounding = 0,
+	-- Fixed: Singular field name and space-separated string value
+	suppress_event = "fullscreen maximize activate",
+	move = "0 0",
+})

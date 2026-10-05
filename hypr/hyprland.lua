@@ -55,6 +55,7 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -- hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 
 require("styling")
+require("titlebars")
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------

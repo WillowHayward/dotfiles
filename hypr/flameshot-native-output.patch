@@ -1,0 +1,44 @@
+--- a/src/utils/screengrabber.cpp
++++ b/src/utils/screengrabber.cpp
+@@ -230,6 +230,41 @@
+     ok = true;
+     int wid = 0;
+     QPixmap screenshot;
++#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
++    // Opt-in Hyprland capture: avoid portal desktop compositing, origin
++    // assumptions, and QScreen's integer DPR on fractionally scaled outputs.
++    const QString output = qEnvironmentVariable("FLAMESHOT_NATIVE_OUTPUT");
++    if (m_info.waylandDetected() && !output.isEmpty()) {
++        const auto screens = QGuiApplication::screens();
++        for (int i = 0; i < screens.size(); ++i) {
++            if (screens[i]->name() != output) {
++                continue;
++            }
++            m_selectedMonitor = i;
++            QProcess grim;
++            grim.start(QStringLiteral("grim"),
++                       { QStringLiteral("-o"), output,
++                         QStringLiteral("-s"),
++                         qEnvironmentVariable("FLAMESHOT_NATIVE_SCALE"),
++                         QStringLiteral("-t"), QStringLiteral("png"),
++                         QStringLiteral("-") });
++            ok = grim.waitForFinished(10000) &&
++                 grim.exitStatus() == QProcess::NormalExit &&
++                 grim.exitCode() == 0 &&
++                 screenshot.loadFromData(grim.readAllStandardOutput(), "PNG");
++            if (!ok) {
++                AbstractLogger::error() << tr("Native monitor capture failed");
++                return QPixmap();
++            }
++            screenshot.setDevicePixelRatio(
++              qreal(screenshot.width()) / screens[i]->geometry().width());
++            return screenshot;
++        }
++        ok = false;
++        AbstractLogger::error() << tr("Requested monitor is no longer available");
++        return QPixmap();
++    }
++#endif
+ 
+ #if defined(Q_OS_MACOS)
+     QScreen* currentScreen = QGuiAppCurrentScreen().currentScreen();
