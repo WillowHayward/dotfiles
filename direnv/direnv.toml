@@ -1,0 +1,4 @@
+# Quieter output: the loaded/unloaded lines are still available with `direnv status`.
+[global]
+hide_env_diff = true
+warn_timeout = "10s"

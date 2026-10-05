@@ -1,0 +1,17 @@
+# Shared direnv helpers (linked to ~/.config/direnv/direnvrc).
+
+# use_fnm [version]: put the Node version from .node-version/.nvmrc (or the given one) on PATH.
+#   .envrc:  use fnm
+use_fnm() {
+    command -v fnm >/dev/null 2>&1 || { log_error "use_fnm: fnm is not installed"; return 1; }
+    eval "$(fnm env --shell bash)" # direnv evaluates .envrc in bash, not in your zsh
+    local version=${1:-}
+    if [[ -n $version ]]; then
+        fnm use --silent-if-unchanged "$version" >/dev/null || return 1
+    else
+        for file in .node-version .nvmrc; do
+            [[ -f $file ]] && watch_file "$file"
+        done
+        fnm use --silent-if-unchanged >/dev/null || return 1
+    fi
+}
