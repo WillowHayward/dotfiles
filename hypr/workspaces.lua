@@ -6,25 +6,25 @@ local focusAbsoluteWorkspace = workspaceUtils.focusAbsoluteWorkspace
 
 require("workspace_rules")
 
-bindSuper(focusAbsoluteWorkspace("previous"), "SHIFT", "O")
+bindSuper("Previous workspace", focusAbsoluteWorkspace("previous"), "SHIFT", "O")
 
 -- Each monitor owns ten numbered workspaces: 1–10, 11–20, 21–30, ...
 for i = 1, 10 do
 	local key = i % 10 -- 10 maps to key 0
-	bindSuper(workspaceUtils.focusMonitorWorkspace(i), key)
-	bindSuper(workspaceUtils.moveWindowToMonitorWorkspace(i), "SHIFT", key)
+	bindSuper("Workspace " .. i .. " on this monitor", workspaceUtils.focusMonitorWorkspace(i), key)
+	bindSuper("Move window to workspace " .. i, workspaceUtils.moveWindowToMonitorWorkspace(i), "SHIFT", key)
 end
 
-bindSuper(function() workspaceUtils.insertWorkspace(1) end, "N")
-bindSuper(function() workspaceUtils.insertWorkspace(1, true) end, "SHIFT", "N")
-bindSuper(function() workspaceUtils.insertWorkspace(-1) end, "P")
-bindSuper(function() workspaceUtils.insertWorkspace(-1, true) end, "SHIFT", "P")
+bindSuper("New workspace after this one", function() workspaceUtils.insertWorkspace(1) end, "N")
+bindSuper("New workspace after this one, with this window", function() workspaceUtils.insertWorkspace(1, true) end, "SHIFT", "N")
+bindSuper("New workspace before this one", function() workspaceUtils.insertWorkspace(-1) end, "P")
+bindSuper("New workspace before this one, with this window", function() workspaceUtils.insertWorkspace(-1, true) end, "SHIFT", "P")
 
 -- Skip empty workspaces within the active monitor's range.
-bindSuper(workspaceUtils.focusNextWorkspace, "CONTROL", "L")
-bindSuper(workspaceUtils.focusNextWorkspace, "mouse_down")
-bindSuper(workspaceUtils.focusPreviousWorkspace, "CONTROL", "H")
-bindSuper(workspaceUtils.focusPreviousWorkspace, "mouse_up")
+bindSuper("Next non-empty workspace", workspaceUtils.focusNextWorkspace, "CONTROL", "L")
+bindSuper("Next non-empty workspace (scroll)", workspaceUtils.focusNextWorkspace, "mouse_down")
+bindSuper("Previous non-empty workspace", workspaceUtils.focusPreviousWorkspace, "CONTROL", "H")
+bindSuper("Previous non-empty workspace (scroll)", workspaceUtils.focusPreviousWorkspace, "mouse_up")
 
 -- Special workspaces
 local specialWorkspaces = {
@@ -40,8 +40,8 @@ local specialWorkspaces = {
 }
 for _, bind in ipairs(specialWorkspaces) do
 	local workspaceName = "special:" .. bind.name
-	bindSuper(hl.dsp.workspace.toggle_special(bind.name), bind.key)
-	bindSuper(hl.dsp.window.move({ workspace = workspaceName }), "SHIFT", bind.key)
+	bindSuper("Toggle the " .. bind.name .. " scratch workspace", hl.dsp.workspace.toggle_special(bind.name), bind.key)
+	bindSuper("Move window to the " .. bind.name .. " scratch workspace", hl.dsp.window.move({ workspace = workspaceName }), "SHIFT", bind.key)
 	if bind.rules then
 		local rule = { workspace = workspaceName }
 		for property, value in pairs(bind.rules) do
