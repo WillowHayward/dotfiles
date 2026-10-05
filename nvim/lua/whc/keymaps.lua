@@ -1,87 +1,16 @@
+-- Keymaps that do not belong to a plugin. Plugin keymaps live in lua/plugins/*.lua (lazy `keys`),
+-- LSP-independent code actions and diagnostics are here because they use built-ins.
+
 -- Function to set keymaps w/ some logical defaults
 local function set_keymap(mode, key, action, desc, opts)
-	local defaults = {
-		desc = desc or "",
-		silent = false,
-		expr = false,
-		noremap = true,
-	}
-	local fullOpts = vim.tbl_extend("force", defaults, opts or {})
-	vim.keymap.set(mode, key, action, fullOpts)
-end
-
-local features = require("profile").features
-
--- AI (Sidekick + Codex)
-if features.ai then
-	require("which-key").add({ { "<leader>a", group = "AI (Codex)", mode = { "n", "x" } } })
-
-	set_keymap("n", "<leader>aa", function()
-		require("ai-context").toggle()
-	end, "Toggle Codex window")
-	set_keymap("n", "<leader>aA", function()
-		require("ai-context").toggle()
-	end, "Toggle Codex window")
-	set_keymap("n", "<leader>ad", function()
-		require("sidekick.cli").close({ name = "codex" })
-	end, "Detach Codex session")
-	set_keymap("n", "<leader>as", function()
-		require("sidekick.cli").select({ filter = { name = "codex" } })
-	end, "Select Codex session")
-	set_keymap({ "n", "x" }, "<leader>ap", function()
-		require("sidekick.cli").prompt({
-			cb = function(_, text)
-				if text then
-					require("ai-context").send({ text = text })
-				end
-			end,
-		})
-	end, "Choose Codex prompt")
-
-	local function codex_send(msg)
-		return function()
-			require("ai-context").send({ msg = msg })
-		end
-	end
-	set_keymap({ "n", "x" }, "<leader>at", codex_send("{this}"), "Send this to Codex")
-	set_keymap("n", "<leader>af", codex_send("{file}"), "Send file to Codex")
-	set_keymap("x", "<leader>av", codex_send("{selection}"), "Send selection to Codex")
-	set_keymap({ "n", "x" }, "<leader>ae", codex_send("Explain {this}"), "Ask Codex to explain")
-	set_keymap("n", "<leader>ar", codex_send("Can you review {file} for issues?"), "Ask Codex to review")
-
-	-- Quick wins: q/Q for the current file, w/W for the whole workspace.
-	set_keymap(
-		"n",
-		"<leader>aq",
-		codex_send(
-			"Suggest one quick win in {file}: a small, concrete improvement with a clear benefit. Explain what to change and why."
-		),
-		"Codex: one quick win in file"
-	)
-	set_keymap(
-		"n",
-		"<leader>aQ",
-		codex_send(
-			"Suggest ten quick wins in {file}: small, concrete improvements with clear benefits. Rank them by impact versus effort and explain what to change and why."
-		),
-		"Codex: ten quick wins in file"
-	)
-	set_keymap(
-		"n",
-		"<leader>aw",
-		codex_send(
-			"Explore the entire project containing {file} and suggest one quick win across the project: a small, concrete improvement with a clear benefit. Look beyond the current file; identify the relevant files and explain what to change and why."
-		),
-		"Codex: one quick win in project"
-	)
-	set_keymap(
-		"n",
-		"<leader>aW",
-		codex_send(
-			"Explore the entire project containing {file} and suggest ten quick wins across the project: small, concrete improvements with clear benefits. Look beyond the current file; rank them by impact versus effort, identify the relevant files, and explain what to change and why."
-		),
-		"Codex: ten quick wins in project"
-	)
+    local defaults = {
+        desc = desc or "",
+        silent = false,
+        expr = false,
+        noremap = true,
+    }
+    local fullOpts = vim.tbl_extend("force", defaults, opts or {})
+    vim.keymap.set(mode, key, action, fullOpts)
 end
 
 -- Clear search highlighting
@@ -97,16 +26,6 @@ set_keymap("n", "U", "<cmd>redo<CR>", "Redo last undone change")
 set_keymap("v", ">", ">gv")
 set_keymap("v", "<", "<gv")
 
--- Import the 'comment' module
--- local comment = require("Comment")
--- comment.setup
-
--- set_keymap("n", "<leader>L", ":lua ", "Open Lua prompt")
-
--- Set keymaps for commenting and uncommenting code
--- set_keymap("n", "<leader>/", comment.toggle, "Toggle comment")
--- set_keymap("v", "<leader>/", comment.toggle, "Toggle comment")
-
 -- provide hjkl movements in Insert mode via the <Alt> modifier key
 set_keymap("i", "<A-h>", "<C-o>h")
 set_keymap("i", "<A-j>", "<C-o>j")
@@ -117,17 +36,20 @@ set_keymap("i", "<A-l>", "<C-o>l")
 set_keymap("n", "<A-j>", "zzj")
 set_keymap("n", "<A-k>", "zzk")
 
--- Add tabs
+-- Tabs. gt/gT are disabled to build the <leader> habit; a count repeats the move, wrapping
+-- around: 2<leader>h goes two tabs to the left.
 set_keymap("n", "<leader>t", "<cmd>tabnew<CR>", "Open new tab")
-
--- Navigate tabs
--- NOTE: I don't know if unsetting these entirely is a long-term thing, but it'll help me build the new habit
 vim.keymap.set("n", "gt", "<nop>")
 vim.keymap.set("n", "gT", "<nop>")
-set_keymap("n", "<leader>l", "<cmd>tabnext<CR>", "Next tab") -- TODO: Make repeatable
-set_keymap("n", "<leader>h", "<cmd>tabprev<CR>", "Previous tab")
-set_keymap("n", "<leader>k", "<cmd>tabnext<CR>", "Next tab") -- TODO: Make repeatable
-set_keymap("n", "<leader>j", "<cmd>tabprev<CR>", "Previous tab")
+local function tab_step(direction)
+    return function()
+        local total = vim.fn.tabpagenr("$")
+        vim.cmd.tabnext(((vim.fn.tabpagenr() - 1 + direction * vim.v.count1) % total) + 1)
+    end
+end
+set_keymap("n", "<leader>l", tab_step(1), "Next tab (takes a count)")
+set_keymap("n", "<leader>h", tab_step(-1), "Previous tab (takes a count)")
+
 -- Saving and Quitting
 set_keymap("n", "<leader>w", "<cmd>w<CR>", "Write buffer")
 set_keymap("n", "<leader>W", "<cmd>wa<CR>", "Write all")
@@ -135,114 +57,31 @@ set_keymap("n", "<leader>q", "<cmd>q<CR>", "Close buffer")
 set_keymap("n", "<leader>Q", "<cmd>qa<CR>", "Close all")
 set_keymap("n", "<leader>x", "<cmd>x<CR>", "Write & close buffer")
 set_keymap("n", "<leader>X", "<cmd>xa<CR>", "Write & close all")
--- Spectre (find and replace across multiple files)
-set_keymap("n", "<leader>%", require("spectre").open, "Open Spectre")
 
--- Subsitute (replace text with text from register)
-local substitute = require("substitute")
-local function sub(yank, command)
-	command = substitute[command]
-	return function()
-		command({ yank_substituted_text = yank })
-	end
-end
-
-set_keymap("n", "s", substitute.operator, "Subsitute text with contents of register")
-set_keymap("n", "ss", substitute.line, "Subsitute line with contents of register")
-set_keymap("n", "S", substitute.eol, "Subsitute text until end of line with contents of register")
-set_keymap("x", "s", substitute.visual, "Subsitute selection with contents of register")
-
--- substitute + yank BUG: Not currently working
-set_keymap(
-	"n",
-	"<leader>s",
-	sub(true, "operator"),
-	"[Broken]Subsitute text with contents of register and yank deleted text"
-)
-set_keymap(
-	"n",
-	"<leader>ss",
-	sub(true, "line"),
-	"[Broken]Subsitute line with contents of register and yank deleted text"
-)
-set_keymap(
-	"n",
-	"<leader>S",
-	sub(true, "eol"),
-	"[Broken]Subsitute text until end of line with contents of register and yank deleted text"
-)
-set_keymap(
-	"x",
-	"<leader>s",
-	sub(true, "visual"),
-	"[Broken]Subsitute selection with contents of register and yank deleted text"
-)
-
--- Mason
+-- Plugin managers
 set_keymap("n", "<leader>cm", "<cmd>Mason<cr>", "Mason")
-
--- Todo-comments
-local todo = require("todo-comments")
-set_keymap("n", "]t", todo.jump_next, "Next TODO")
-set_keymap("n", "[t", todo.jump_prev, "Previous TODO")
-set_keymap("n", "<leader>ft", "<cmd>TodoTelescope<CR>", "Search project TODOs")
-
--- Lazy
 set_keymap("n", "<leader>L", "<cmd>Lazy<cr>", "Lazy")
 
--- Telescope
-local telescope = require("telescope.builtin")
-local project = require("project")
-set_keymap("n", "<leader>/", project.live_grep, "Find in workspace")
-set_keymap("n", "<C-t>", project.find_files, "Find workspace files")
-set_keymap("n", "<leader>fb", telescope.buffers, "Find buffers")
-set_keymap("n", "<leader>fh", telescope.help_tags, "Find help tags")
-set_keymap("n", "<C-r>", telescope.oldfiles, "Find recent files")
-set_keymap("n", "<leader>fp", telescope.planets, "Find planet") -- god this plugin is cute
-
--- Neo-Tree
-set_keymap("n", "\\", "<cmd>Neotree float reveal <CR>", "Open file browser")
-
--- Git
-set_keymap("n", "<leader>gb", telescope.git_branches, "Find git branch")
-set_keymap("n", "<leader>gf", telescope.git_files, "git ls-files")
-set_keymap("n", "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame <CR>", "Toggle line blame")
-set_keymap("n", "<leader>gg", "<cmd>LazyGit <CR>", "Open LazyGit")
-
--- GitHub
-set_keymap("n", "<leader>fi", "<cmd>Octo issue list<CR>", "Find GitHub issues")
-set_keymap("n", "<leader>gI", "<cmd>Octo issue create<CR>", "Create GitHub issue")
--- TODO: Octo has way more it can do that I might use
-
--- Telescope lsp
-set_keymap("n", "gD", telescope.lsp_definitions, "Find definition")
-set_keymap("n", "gr", telescope.lsp_references, "References")
---set_keymap("n", "<leader>ct", telescope.lsp_type_definitions, "Find type definition") -- Deprecated for copilot tests (also I don't think it worked lol)
-set_keymap("n", "<leader>*", project.grep_string, "Search current string in workspace")
-
--- cmp keybinds in lsp.lua
-
--- LSP
+-- LSP and diagnostics
 local function diagnostic_goto(next, severity)
-	severity = severity and vim.diagnostic.severity[severity] or nil
-	return function()
-		vim.diagnostic.jump({ count = next and 1 or -1, severity = severity })
-	end
+    severity = severity and vim.diagnostic.severity[severity] or nil
+    return function()
+        vim.diagnostic.jump({ count = next and 1 or -1, severity = severity })
+    end
 end
 
 -- TODO: Broken, figure it out (only works when there's 1 code action at present - modify to run first if multiple)
 -- TODO: Review this, consider making the default ca behaviour
 local function code_action_apply()
-	vim.lsp.buf.code_action({
-		apply = true,
-	})
+    vim.lsp.buf.code_action({
+        apply = true,
+    })
 end
 set_keymap("n", "<leader>cl", "<cmd>LspInfo<CR>", "Open LspInfo")
 set_keymap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
 set_keymap("n", "<leader>cA", code_action_apply, "Code action")
 set_keymap("n", "K", vim.lsp.buf.hover, "Code hover")
 set_keymap("n", "gd", vim.diagnostic.open_float, "Diagnostic hover")
-set_keymap("n", "<leader>cf", vim.lsp.buf.format, "Code formatting")
 set_keymap("n", "]d", diagnostic_goto(true), "Next diagnostic")
 set_keymap("n", "[d", diagnostic_goto(false), "Previous diagnostic")
 set_keymap("n", "]e", diagnostic_goto(true, "ERROR"), "Next error")
@@ -253,76 +92,8 @@ set_keymap("n", "]h", diagnostic_goto(true, "HINT"), "Next hint")
 set_keymap("n", "[h", diagnostic_goto(false, "HINT"), "Previous hint")
 set_keymap("n", "]i", diagnostic_goto(true, "INFO"), "Next info")
 set_keymap("n", "[i", diagnostic_goto(false, "INFO"), "Previous info")
-set_keymap("n", "<leader>R", vim.lsp.buf.rename, "Rename current symbol")
-set_keymap("n", "<leader>r", vim.lsp.buf.rename, "Rename current symbol") -- TODO: Don't need both of these. Make a call, bucko
-
+set_keymap("n", "<leader>r", vim.lsp.buf.rename, "Rename current symbol")
 set_keymap("n", "<leader>cs", vim.lsp.buf.document_symbol, "View document symbols")
--- TypeScript
 set_keymap("n", "<leader>ci", function()
-	vim.lsp.buf.code_action({ context = { only = { "source.organizeImports" }, diagnostics = {} }, apply = true })
+    vim.lsp.buf.code_action({ context = { only = { "source.organizeImports" }, diagnostics = {} }, apply = true })
 end, "Organise imports")
-
--- DAP
-local dap = require("dap")
-set_keymap("n", "<leader>dt", dap.toggle_breakpoint, "Toggle debug breakpoint")
-set_keymap("n", "<leader>dd", function()
-	dap.continue({ new = true })
-end, "Start new debug session")
-set_keymap("n", "<leader>dc", dap.continue, "Continue debug session")
-set_keymap("n", "<leader>dD", dap.terminate, "Stop debug session")
-set_keymap("n", "<leader>ds", dap.step_over, "Step through code")
-set_keymap("n", "<leader>dS", dap.step_back, "Step back through code")
-set_keymap("n", "<leader>di", dap.repl.open, "Inspect debug state")
-require("which-key").add({
-	{ "<leader>d", group = "Debug", mode = { "n", "x" } },
-})
-set_keymap("n", "<leader>dn", dap.step_into, "Step into code")
-set_keymap("n", "<leader>do", dap.step_out, "Step out of code")
-set_keymap("n", "<leader>db", function()
-	vim.ui.input({ prompt = "Breakpoint condition: " }, function(condition)
-		if condition and condition ~= "" then
-			dap.set_breakpoint(condition)
-		end
-	end)
-end, "Set conditional breakpoint")
-set_keymap("n", "<leader>dr", dap.run_last, "Run last debug configuration")
-set_keymap("n", "<leader>du", function()
-	require("dapui").toggle()
-end, "Toggle debug UI")
-set_keymap({ "n", "x" }, "<leader>de", function()
-	require("dapui").eval()
-end, "Evaluate debug expression")
-
-if features.godot then
-	require("which-key").add({ { "<leader>o", group = "Godot" } })
-	-- Godot actions; Git keeps <leader>g and language actions keep <leader>c.
-	set_keymap("n", "<leader>or", "<cmd>GodotRunProject<CR>", "Run Godot project")
-	set_keymap("n", "<leader>os", "<cmd>GodotRunCurrentScene<CR>", "Run current Godot scene")
-	set_keymap("n", "<leader>of", "<cmd>GodotRunScenePicker<CR>", "Find and run Godot scene")
-	set_keymap("n", "<leader>ot", "<cmd>GodotSceneTree<CR>", "View Godot scene tree")
-	set_keymap("n", "<leader>ok", "<cmd>GodotDocsCursor<CR>", "Godot docs under cursor")
-	set_keymap("n", "<leader>oc", "<cmd>GodotShowConsole<CR>", "Show Godot console")
-	set_keymap("n", "<leader>ol", "<cmd>GodotReconnectLSP<CR>", "Reconnect Godot LSP")
-	set_keymap("n", "<leader>oh", "<cmd>checkhealth godotdev<CR>", "Check Godot integration")
-end
-
--- local jester = require("jester")
--- Jest
--- set_keymap("n", "<leader>ctt", jester.run, "Run Jest test under cursor")
--- set_keymap("n", "<leader>ctf", jester.run_file, "Run Jest tests in current file")
--- set_keymap("n", "<leader>ctl", jester.run_last, "Re-run last Jest test")
-
---set_keymap("n", "<leader>9", function()
---local buf = vim.api.nvim_create_buf(false, true)
---vim.api.nvim_buf_set_lines(buf, 0, -1, true, {"test", "text"})
---local opts = {relative='cursor', width=10, height=2, col=0, row=1, anchor='NW', style='minimal'}
---local win = vim.api.nvim_open_win(buf, false, opts)
--- optional: change highlight, otherwise Pmenu is used
--- vim.api.nvim_win_set_option(win, 'winhl', 'Normal:MyHighlight')
---end
---)
--- taskwarrior
-local task = require("taskwarrior_nvim")
-set_keymap("n", "<leader>T", function()
-	task.browser({ "ready" })
-end, "Open taskwarrior list")

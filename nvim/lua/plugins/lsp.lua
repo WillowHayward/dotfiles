@@ -1,272 +1,106 @@
-local language_servers = {
-	"stylua",
-	"lua-language-server",
-	"shellcheck",
-    "sonarlint-language-server",
-    -- "beautysh", -- TODO
-	"shfmt",
-	"flake8",
-	"typescript-language-server",
-	"tailwindcss-language-server",
-	"svelte-language-server",
-	"eslint-lsp",
-	"prettier",
-	"docker-compose-language-service",
-	"dockerfile-language-server",
+-- Language servers (nvim-lspconfig + Mason) and the tools conform/nvim-lint run. Mason installs
+-- everything in `packages` once its registry is available; mason-lspconfig then enables each
+-- installed server (rust-analyzer is left to rustaceanvim in plugins/test.lua).
+local features = require("whc.profile").features
+
+local packages = {
+    -- servers
+    "lua-language-server",
+    "typescript-language-server",
+    "tailwindcss-language-server",
+    "svelte-language-server",
+    "eslint-lsp",
+    "docker-compose-language-service",
+    "dockerfile-language-server",
+    "bash-language-server",
+    "json-lsp",
+    "yaml-language-server",
+    "taplo",
+    "marksman",
+    "html-lsp",
+    "css-lsp",
+    "pyright",
+    "ruff",
+    "rust-analyzer",
+    -- formatters and linters
+    "stylua",
+    "shellcheck",
+    "shfmt",
+    "prettier",
+    "yamllint",
 }
-local features = require("profile").features
 if features.godot then
-	table.insert(language_servers, "gdtoolkit")
+    table.insert(packages, "gdtoolkit") -- gdformat and gdlint
 end
 
+-- Settings merged into each server's default config.
+local servers = {
+    lua_ls = {
+        settings = {
+            Lua = {
+                workspace = { checkThirdParty = false },
+            },
+        },
+    },
+}
+
 return {
-	-- Github Copilot
-	-- {
-	-- 	"zbirenbaum/copilot.lua",
-	-- 	cmd = "Copilot",
-	-- 	event = "InsertEnter",
-	-- 	config = function()
-	-- 		require("copilot").setup({
-	-- 			suggestion = { enabled = false },
-	-- 			panel = { enabled = false },
-	-- 		})
-	-- 	end,
-	-- },
-	-- {
-	-- 	"zbirenbaum/copilot-cmp",
-	-- 	dependencies = {
-	-- 		"zbirenbaum/copilot.lua",
-	-- 	},
-	-- 	config = function()
-	-- 		require("copilot_cmp").setup()
-	-- 	end,
-	-- },
-	-- {
-	-- 	"CopilotC-Nvim/CopilotChat.nvim",
-	-- 	branch = "canary",
-	-- 	dependencies = {
-	-- 		{ "zbirenbaum/copilot.lua" },
-	-- 		{ "nvim-lua/plenary.nvim" },
-	-- 	},
-	-- 	opts = {
-	-- 		debug = true, -- Enable debugging
-	-- 		window = {
-	-- 			layout = "float", -- Set layout to float
-	-- 			title = "GitHub Copilot", -- Set title
-	-- 			width = 0.8,
-	-- 			height = 0.8,
-	-- 		},
-	-- 		submit_prompt = {
-	-- 			normal = "<CR>",
-	-- 			insert = "<CR><CR>",
-	-- 		},
-	-- 	},
-	-- },
-	-- autocompletion
-	{
-		"hrsh7th/nvim-cmp",
-		version = false, -- last release is way too old
-		event = "InsertEnter",
-		dependencies = {
-			"neovim/nvim-lspconfig",
-			"hrsh7th/cmp-nvim-lsp",
-			"hrsh7th/cmp-buffer",
-			"hrsh7th/cmp-path",
+    {
+        "neovim/nvim-lspconfig",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            { "folke/neoconf.nvim", cmd = "Neoconf", config = true },
+            "mason.nvim",
+            "williamboman/mason-lspconfig.nvim",
+            "saghen/blink.cmp",
+            { "j-hui/fidget.nvim", opts = {} }, -- Show LSP progress
+        },
+        config = function()
+            -- Every server gets the completion capabilities; declared servers add their settings.
+            vim.lsp.config("*", { capabilities = require("blink.cmp").get_lsp_capabilities() })
+            for server, options in pairs(servers) do
+                vim.lsp.config(server, options)
+            end
+            require("mason-lspconfig").setup({ automatic_enable = { exclude = { "rust_analyzer" } } })
 
-			-- New and experimental begin
-			"hrsh7th/cmp-cmdline",
-			-- New and experimental end
-			"hrsh7th/cmp-vsnip",
-			"hrsh7th/vim-vsnip",
-			"hrsh7th/cmp-nvim-lsp-signature-help",
-			"zbirenbaum/copilot-cmp",
-			"onsails/lspkind.nvim",
-		},
-		opts = function(_, opts)
-			local cmp = require("cmp")
-			local lspkind = require("lspkind")
-			return {
-				completion = {
-					completeopt = "menu,menuone,noinsert",
-				},
-				formatting = {
-					format = lspkind.cmp_format({
-						mode = "symbol_text",
-						max_width = 100,
-						symbol_map = { Copilot = "" },
-					}),
-				},
-				snippet = {
-					expand = function(args)
-						vim.fn["vsnip#anonymous"](args.body)
-					end,
-				},
-				mapping = {
-					["<CR>"] = cmp.mapping.confirm({ select = true }),
-					["<Tab>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "s" }),
-					["<S-Tab>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "s" }),
-					["<C-p>"] = cmp.mapping(cmp.mapping.scroll_docs(-3)),
-					["<C-n>"] = cmp.mapping(cmp.mapping.scroll_docs(3)),
-				},
-				sources = {
-					{ name = "copilot" },
-					{ name = "nvim_lsp_signature_help" },
-					{ name = "nvim_lsp" },
-					{ name = "vsnip" },
-					{ name = "buffer" },
-					{ name = "path" },
-				},
-				sorting = {
-					priority_weight = 2,
-					comparators = {
-						cmp.config.compare.exact, -- Prioritize exact matches over copilot suggestions
-						-- require("copilot_cmp.comparators").prioritize,
-						cmp.config.compare.offset,
-						cmp.config.compare.score,
-						cmp.config.compare.recently_used,
-						cmp.config.compare.locality,
-						cmp.config.compare.kind,
-						cmp.config.compare.sort_text,
-						cmp.config.compare.length,
-						cmp.config.compare.order,
-					},
-				},
-			}
-		end,
-	},
-	-- lsp
-	{
-		"neovim/nvim-lspconfig",
-		event = { "BufReadPre", "BufNewFile" },
-		dependencies = {
-			{
-				"folke/neoconf.nvim",
-				cmd = "Neoconf",
-				config = true,
-			},
-			{ "folke/neodev.nvim", opts = { experimental = { pathStrict = true } } },
-			"mason.nvim",
-			"williamboman/mason-lspconfig.nvim",
-			"hrsh7th/cmp-nvim-lsp",
-			-- "jose-elias-alvarez/typescript.nvim", -- TypeScript
-			"ray-x/lsp_signature.nvim",
-			{
-				"j-hui/fidget.nvim",
-				opts = { tag = "legacy" }, -- Show LSP progress
-			},
-		},
-		opts = {
-			servers = {
-				tailwindcss = {},
-				lua_ls = {
-					settings = {
-						Lua = {
-							workspace = {
-								checkThirdParty = false,
-							},
-						},
-					},
-				},
-                -- beautysh = {}
-			},
-			setup = {},
-		},
-		config = function(_, opts)
-			-- This is mostly lifted from LazyVim
-			local mlsp = require("mason-lspconfig")
-			local available = mlsp.get_available_servers()
-
-			local ensure_installed = {} ---@type string[]
-			local servers = opts.servers
-			local capabilities =
-				require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
-			local function setup(server)
-				local server_opts = vim.tbl_deep_extend("force", {
-					capabilities = vim.deepcopy(capabilities),
-				}, servers[server] or {})
-
-				if opts.setup[server] then
-					if opts.setup[server](server, server_opts) then
-						return
-					end
-				elseif opts.setup["*"] then
-					if opts.setup["*"](server, server_opts) then
-						return
-					end
-				end
-				vim.lsp.config(server, server_opts)
-			end
-			-- Every server needs our settings and capabilities, including the Mason-managed ones
-			-- that mason-lspconfig enables automatically (with defaults, unless configured here).
-			vim.lsp.config("*", { capabilities = vim.deepcopy(capabilities) })
-			for server, server_opts in pairs(servers) do
-				if server_opts then
-					server_opts = server_opts == true and {} or server_opts
-					setup(server)
-					if server_opts.mason ~= false and vim.tbl_contains(available, server) then
-						ensure_installed[#ensure_installed + 1] = server
-					end
-				end
-			end
-
-			require("mason-lspconfig").setup({ ensure_installed = ensure_installed })
-			-- require("mason-lspconfig").setup_handlers({ setup })
-			--require("lsp_signature").setup({}) -- TODO: Not super thrilled with the defaults, look into later
-			-- Consider "Issafalcon/lsp-overloads.nvim",
-			-- Format on save
-			vim.api.nvim_create_autocmd("BufWritePre", {
-				group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
-				callback = function(args)
-					local clients = vim.lsp.get_clients({ bufnr = args.buf, method = "textDocument/formatting" })
-					if #clients > 0 then
-						vim.lsp.buf.format({ bufnr = args.buf, timeout_ms = 3000 })
-					end
-				end,
-			})
-		end,
-	},
-	-- formatters
-	{
-		"nvimtools/none-ls.nvim",
-		event = { "BufReadPre", "BufNewFile" },
-		dependencies = { "mason.nvim" },
-		opts = function()
-			local nls = require("null-ls")
-			local sources = {
-				-- nls.builtins.formatting.prettierd,
-				nls.builtins.formatting.stylua,
-				-- flake8 left none-ls core, so nls.builtins.diagnostics.flake8 fails to load.
-				-- Re-add it from nvimtools/none-ls-extras.nvim (none-ls.diagnostics.flake8) if wanted.
-			}
-			if features.godot then
-				table.insert(sources, nls.builtins.formatting.gdformat)
-			end
-			return { sources = sources }
-		end,
-	},
-	--- lsp-management
-	{
-		"williamboman/mason.nvim",
-		cmd = "Mason",
-		opts = {
-			ensure_installed = language_servers,
-		},
-		---@param opts MasonSettings | {ensure_installed: string[]}
-		config = function(plugin, opts)
-			require("mason").setup()
-			local mr = require("mason-registry")
-			-- On a fresh machine the registry is empty until it has been fetched, and
-			-- mr.get_package throws for every tool until then.
-			mr.refresh(function()
-				for _, tool in ipairs(opts.ensure_installed) do
-					local ok, p = pcall(mr.get_package, tool)
-					if not ok then
-						vim.notify("Mason has no package named " .. tool, vim.log.levels.WARN)
-					elseif not p:is_installed() then
-						p:install()
-					end
-				end
-			end)
-		end,
-	},
+            -- Ruff is the linter/formatter; leave hover to pyright.
+            vim.api.nvim_create_autocmd("LspAttach", {
+                group = vim.api.nvim_create_augroup("WhcRuff", { clear = true }),
+                callback = function(args)
+                    local client = vim.lsp.get_client_by_id(args.data.client_id)
+                    if client and client.name == "ruff" then
+                        client.server_capabilities.hoverProvider = false
+                    end
+                end,
+            })
+        end,
+    },
+    {
+        "folke/lazydev.nvim", -- Lua LSP knowledge of the Neovim runtime
+        ft = "lua",
+        opts = {
+            library = { { path = "${3rd}/luv/library", words = { "vim%.uv" } } },
+        },
+    },
+    {
+        "williamboman/mason.nvim",
+        cmd = "Mason",
+        opts = {},
+        config = function(_, opts)
+            require("mason").setup(opts)
+            local registry = require("mason-registry")
+            -- On a fresh machine the registry is empty until it has been fetched, and
+            -- registry.get_package throws for every tool until then.
+            registry.refresh(function()
+                for _, tool in ipairs(packages) do
+                    local ok, package = pcall(registry.get_package, tool)
+                    if not ok then
+                        vim.notify("Mason has no package named " .. tool, vim.log.levels.WARN)
+                    elseif not package:is_installed() then
+                        package:install()
+                    end
+                end
+            end)
+        end,
+    },
 }

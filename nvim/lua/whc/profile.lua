@@ -4,24 +4,30 @@
 local M = {}
 
 local function read_profile()
-	local name = vim.env.WHC_PROFILE
-	if name and name ~= "" then
-		return name
-	end
-	local ok, lines = pcall(vim.fn.readfile, "/etc/environment")
-	if not ok then
-		return nil
-	end
-	for _, line in ipairs(lines) do
-		name = line:match('^%s*WHC_PROFILE%s*=%s*"?([%w_-]+)"?') or name
-	end
-	return name
+    local name = vim.env.WHC_PROFILE
+    if name and name ~= "" then
+        return name
+    end
+    local ok, lines = pcall(vim.fn.readfile, "/etc/environment")
+    if not ok then
+        return nil
+    end
+    for _, line in ipairs(lines) do
+        name = line:match('^%s*WHC_PROFILE%s*=%s*"?([%w_-]+)"?') or name
+    end
+    return name
 end
 
 M.name = read_profile() or "home"
+
+-- Agentic tools Sidekick offers, first one is the default: Claude and Codex on the
+-- personal machines, Copilot on the work machine. (Copilot *completion* is on everywhere.)
+local agent_tools = { home = { "codex", "claude" }, work = { "copilot" } }
+
 M.features = {
-	godot = M.name == "home", -- Game development happens on the home machine only.
-	ai = M.name ~= "remote", -- Sidekick/Codex; the remote profile uses plain Vim anyway.
+    godot = M.name == "home", -- Game development happens on the home machine only.
+    ai = agent_tools[M.name] ~= nil,
+    ai_tools = agent_tools[M.name] or {},
 }
 
 return M

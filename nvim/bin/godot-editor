@@ -18,7 +18,7 @@ if len(sys.argv) != 4:
     sys.exit("Usage: godot-editor FILE LINE COLUMN (start Neovim first)")
 filename = os.path.abspath(sys.argv[1]).replace("'", "''")
 line, column = max(1, int(sys.argv[2])), max(1, int(sys.argv[3]))
-expression = f"luaeval(\"require('server').open(_A)\", ['{filename}', {line}, {column}])"
+expression = f"luaeval(\"require('whc.server').open(_A)\", ['{filename}', {line}, {column}])"
 result = subprocess.run([
     "nvim", "--server", os.environ.get("NVIM_EDITOR_SOCKET") or default_socket(),
     "--remote-expr", expression,
