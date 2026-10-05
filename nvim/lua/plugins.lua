@@ -2,6 +2,10 @@
 -- lazy.nvim plugin manager
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.uv.fs_stat(lazypath) then
+	-- A new machine has no GitHub SSH key yet, so keep the SSH URL rewrite in ~/.gitconfig
+	-- out of this first session (lazy.nvim clones every plugin over https). Only this
+	-- Neovim process and its children are affected; later sessions use the normal config.
+	vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
 	vim.fn.system({
 		"git",
 		"clone",

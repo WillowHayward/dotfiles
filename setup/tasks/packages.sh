@@ -5,7 +5,7 @@
 # home only) is installed by task_desktop.
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
-        arch:core) printf '%s\n' git curl zsh tmux ripgrep fzf vim openssh ;;
+        arch:core) printf '%s\n' git curl zsh tmux ripgrep fzf vim less openssh ;;
         arch:dev) printf '%s\n' base-devel neovim lazygit fd jq unzip python tree-sitter-cli ;;
         arch:desktop)
             printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
@@ -13,7 +13,7 @@ tier_packages() {
                 pipewire wireplumber playerctl brightnessctl ddcutil libnotify \
                 noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
             ;;
-        debian:core) printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf vim ;;
+        debian:core) printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf vim less openssh-client ;;
         debian:dev) printf '%s\n' build-essential fd-find jq unzip python3 python3-pip python3-venv ;;
         *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
     esac

@@ -96,6 +96,12 @@ version_at_least() {
     [[ $(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1) == "$2" ]]
 }
 
+# Clone a public repository over https regardless of ~/.gitconfig: the profile
+# configs rewrite github.com URLs to SSH, and a new machine has no key yet.
+clone_public() {
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git clone "$@"
+}
+
 run_as_root() {
     if (( EUID == 0 )); then
         "$@"
