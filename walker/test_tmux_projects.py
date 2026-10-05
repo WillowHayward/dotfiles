@@ -2,6 +2,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch, Mock
 
@@ -9,6 +11,106 @@ from unittest.mock import patch, Mock
 spec = importlib.util.spec_from_file_location("tmux_projects", Path(__file__).with_name("tmux-projects.py"))
 projects = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(projects)
+
+
+class MetadataTests(unittest.TestCase):
+    def test_ticket_file_overrides_config_and_workspace_roots_are_resolved(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "nested" / "src").mkdir(parents=True)
+            (root / ".whc").write_text(
+                'session = "{{ project }} - {{ ticket }} - {{ branch }}"\n'
+                'ticket = "CONFIG-1"\n\n[workspace]\nroots = ["nested", "nested"]\n'
+            )
+            (root / ".ticket").write_text("FILE-2\n")
+            with patch.object(projects, "git_branch", return_value="feature/test"):
+                self.assertEqual(projects.session_label(root / "nested" / "src"),
+                                 f"{root.name} - FILE-2 - feature/test")
+            metadata = projects.load_metadata(root / "nested")
+            self.assertEqual(metadata["root"], root)
+            self.assertEqual(metadata["roots"], [root, root / "nested"])
+
+    def test_missing_template_value_is_an_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".whc").write_text('session = "Work - {{ ticket }}"\n')
+            with patch.object(projects, "git_branch", return_value="main"):
+                with self.assertRaisesRegex(ValueError, "ticket"):
+                    projects.session_label(root)
+
+    def test_detached_head_uses_short_commit(self):
+        replies = [Mock(stdout=""), Mock(stdout="abc1234\n")]
+        with patch.object(projects.subprocess, "run", side_effect=replies):
+            self.assertEqual(projects.git_branch(Path("/project")), "detached-abc1234")
+
+    def test_multiline_ticket_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".ticket").write_text("ONE\nTWO\n")
+            with self.assertRaisesRegex(ValueError, "exactly one"):
+                projects.load_metadata(root)
+
+    def test_workspace_root_cannot_escape_project(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            root = parent / "project"
+            root.mkdir()
+            (root / ".whc").write_text('[workspace]\nroots = [".."]\n')
+            with self.assertRaisesRegex(ValueError, "escapes"):
+                projects.load_metadata(root)
+
+    def test_explicit_ignored_repo_keeps_its_own_ignore_rules(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            nested = root / "nested"
+            (nested / ".git").mkdir(parents=True)
+            (root / ".gitignore").write_text("/nested/\n")
+            (nested / ".gitignore").write_text("ignored.txt\n")
+            (nested / "visible.txt").write_text("visible\n")
+            (nested / "ignored.txt").write_text("ignored\n")
+            result = subprocess.run(
+                ["rg", "--files", "--hidden", "--glob", "!**/.git/*", str(root), str(nested)],
+                cwd=root, text=True, capture_output=True, check=True,
+            ).stdout.splitlines()
+            self.assertIn(str(nested / "visible.txt"), result)
+            self.assertNotIn(str(nested / "ignored.txt"), result)
+            self.assertFalse(any("/.git/" in line for line in result))
+
+
+class SessionMetadataTests(unittest.TestCase):
+    def test_existing_project_session_is_renamed_by_stable_id(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sessions = [("$1", "old-name", str(root))]
+            with patch.object(projects, "tmux_sessions", return_value=sessions), \
+                    patch.object(projects, "session_label", return_value="Foo - TK-1234"), \
+                    patch.object(projects, "tmux") as tmux, \
+                    patch.dict(os.environ, {"XDG_RUNTIME_DIR": temporary}):
+                self.assertEqual(projects.ensure_project(root), "Foo - TK-1234")
+            tmux.assert_called_once_with("rename-session", "-t", "$1", "Foo - TK-1234")
+
+    def test_name_collision_gets_path_suffix(self):
+        directory = Path("/tmp/example")
+        name = projects.available_name("Foo", directory, [("$1", "Foo", "/other")])
+        self.assertRegex(name, r"^Foo-[0-9a-f]{8}$")
+
+
+class ProjectResolutionTests(unittest.TestCase):
+    def test_unique_basename_resolves(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "group" / "app"
+            project.mkdir(parents=True)
+            self.assertEqual(projects.resolve_project("app", [project], root), project.resolve())
+
+    def test_duplicate_basename_is_ambiguous(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            choices = [root / "one" / "app", root / "two" / "app"]
+            for choice in choices:
+                choice.mkdir(parents=True)
+            with self.assertRaisesRegex(ValueError, "Ambiguous"):
+                projects.resolve_project("app", choices, root)
 
 
 class WorkspaceTerminalTests(unittest.TestCase):
@@ -61,6 +163,14 @@ class WorkspaceTerminalTests(unittest.TestCase):
                 patch.object(projects.subprocess, "Popen") as spawn:
             projects.open_project(Path("/project"))
             spawn.assert_called_once_with(["foot", "tmux", "attach-session", "-t", "=project"], start_new_session=True)
+
+    def test_terminal_open_attaches_in_current_terminal(self):
+        with patch.dict(os.environ, {}, clear=True), \
+                patch.object(projects, "ensure_project", return_value="Foo - TK-1234"), \
+                patch.object(projects.os, "execvp") as execute:
+            projects.open_project(Path("/project"), graphical=False)
+            execute.assert_called_once_with(
+                "tmux", ["tmux", "attach-session", "-t", "=Foo - TK-1234"])
 
 
 if __name__ == "__main__":
