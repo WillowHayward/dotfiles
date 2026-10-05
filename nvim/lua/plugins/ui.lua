@@ -7,7 +7,22 @@ return {
         "Mofiqul/dracula.nvim",
         lazy = false,
         priority = 1000,
-        config = function()
+        opts = {
+            -- Dracula's own Markdown convention: every heading is purple and bold. The theme's
+            -- default links headings to its rainbow palette (white, pink, cyan, green, ...).
+            overrides = function(colors)
+                local overrides = {}
+                for level = 1, 6 do
+                    local heading = { fg = colors.purple, bold = true }
+                    overrides["@markup.heading." .. level .. ".markdown"] = heading
+                    overrides["RenderMarkdownH" .. level] = heading
+                    overrides["RenderMarkdownH" .. level .. "Bg"] = { bg = colors.selection }
+                end
+                return overrides
+            end,
+        },
+        config = function(_, opts)
+            require("dracula").setup(opts)
             vim.cmd.colorscheme("dracula")
         end,
     },
