@@ -1,1 +1,5 @@
 .env
+*.log
+*.bak
+*.bak.*
+__pycache__/
