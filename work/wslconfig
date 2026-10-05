@@ -1,0 +1,13 @@
+# Windows-side settings: copy to %UserProfile%\.wslconfig, then run `wsl --shutdown`.
+[wsl2]
+# Windows 11 22H2+: share the host's network interfaces (localhost works both ways, VPNs behave).
+networkingMode=mirrored
+# Uncomment to cap resources (defaults are half the RAM and all the CPUs):
+# memory=8GB
+# processors=4
+# Return unused memory to Windows gradually.
+autoMemoryReclaim=gradual
+
+[experimental]
+# Reclaim disk space from the virtual disk automatically.
+sparseVhd=true

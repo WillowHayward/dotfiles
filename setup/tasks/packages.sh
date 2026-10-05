@@ -40,7 +40,35 @@ tier_optional_packages() {
     esac
 }
 
+# Every package name in the profile's manifest, one per line, tagged with its tier.
+manifest_packages() {
+    local tier name
+    for tier in core dev; do
+        profile_has "$tier" || continue
+        while read -r name; do printf '%s\t%s\n' "$name" "$tier"; done < <(tier_packages "$tier")
+        while read -r name; do printf '%s\t%s (optional)\n' "$name" "$tier"; done < <(tier_optional_packages "$tier")
+    done
+    if profile_has desktop; then
+        while read -r name; do printf '%s\tdesktop\n' "$name"; done < <(tier_packages desktop)
+    fi
+}
+
+packages_diff() {
+    local manifest installed
+    manifest=$(manifest_packages | cut -f1 | sort -u)
+    case "$PACKAGE_FAMILY" in
+        arch) installed=$(pacman -Qqe | sort -u) ;;
+        debian) installed=$(apt-mark showmanual | sort -u) ;;
+    esac
+    printf 'Installed explicitly but not in the manifest (add to tier_packages, or ignore):\n'
+    comm -13 <(printf '%s\n' "$manifest") <(printf '%s\n' "$installed")
+}
+
 task_packages() {
+    case "${WHC_PACKAGES_MODE:-}" in
+        list) manifest_packages | sort; return ;;
+        diff) packages_diff; return ;;
+    esac
     local tier
     local -a packages=() optional=()
     for tier in core dev; do

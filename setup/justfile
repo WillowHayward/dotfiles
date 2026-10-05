@@ -8,13 +8,13 @@ default:
 init-system:
     bash setup.sh init-system
 
-# Install the profile's package baseline.
-packages:
-    bash setup.sh packages
+# Install the profile's package baseline (--list prints it, --diff shows packages missing from it).
+packages *flag:
+    bash setup.sh packages {{ flag }}
 
-# Link profile-appropriate dotfiles into the home directory.
-links:
-    bash setup.sh links
+# Link profile-appropriate dotfiles (--relink fixes wrong symlinks, --adopt also backs up real files).
+links *flag:
+    bash setup.sh links {{ flag }}
 
 # Install and configure zsh and Antidote.
 shell:
@@ -35,6 +35,30 @@ node:
 # Install uv for Python tools and virtual environments (home and work).
 python:
     bash setup.sh python
+
+# Add the shared ssh defaults and ~/.ssh/config.d to ~/.ssh/config without replacing it.
+ssh:
+    bash setup.sh ssh
+
+# Source the tiny bashrc fallback from ~/.bashrc without replacing it.
+bash:
+    bash setup.sh bash
+
+# Install Docker Engine from Docker's apt repository (remote profile).
+docker:
+    bash setup.sh docker
+
+# Install the WSL config templates (work profile, WSL only).
+wsl:
+    bash setup.sh wsl
+
+# Harden sshd, automatic updates and the firewall; asks before each change (remote profile).
+harden:
+    bash setup.sh harden
+
+# Report missing tools, wrong links and drift for this machine's profile.
+doctor:
+    bash setup.sh doctor
 
 # Install and link the Hyprland desktop (home profile only).
 desktop:
