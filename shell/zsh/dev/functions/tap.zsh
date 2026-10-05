@@ -6,6 +6,7 @@
 function tap() {
     if [ $# -eq 0 ]; then
         echo "Must provide a project. And a description, actually. Whaddaya doing, pal"
+        return 1
     fi
 
     task add project:$@

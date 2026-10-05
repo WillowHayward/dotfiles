@@ -16,11 +16,11 @@ function cdp() {
     fi
 }
 
-# Autocomplete for `cdp`
-_cdp_dirs() {
-  local -a dirs
-  dirs=($(ls -d "$WHC_PROJECTS_DIR"/*/))
-  _describe 'directory' dirs
+# Autocomplete for `cdp`: project directory names, not full paths
+_cdp() {
+    local -a projects
+    projects=("$WHC_PROJECTS_DIR"/*(N/:t))
+    _describe 'project' projects
 }
 
-compctl -K _cdp_dirs cdp
+compdef _cdp cdp

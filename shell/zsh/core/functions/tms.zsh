@@ -30,10 +30,10 @@ function tms() {
     fi
 
     # Check if a session with the same name already exists
-    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    if tmux has-session -t "=$SESSION_NAME" 2>/dev/null; then
         # If a session with the same name exists, append a number to make it unique
         i=1
-        while tmux has-session -t "${SESSION_NAME}_$i" 2>/dev/null; do
+        while tmux has-session -t "=${SESSION_NAME}_$i" 2>/dev/null; do
             i=$((i+1))
         done
         SESSION_NAME="${SESSION_NAME}_$i"
