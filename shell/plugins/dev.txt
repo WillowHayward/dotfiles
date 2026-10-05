@@ -1,7 +1,7 @@
 # Added on top of core.txt for home and work.
 ohmyzsh/ohmyzsh path:plugins/taskwarrior
 
-# TODO: Assess this, tbh
+# artisan aliases and completion; kept for the upcoming Laravel project.
 ohmyzsh/ohmyzsh path:plugins/laravel
 
 jscutlery/nx-completion
