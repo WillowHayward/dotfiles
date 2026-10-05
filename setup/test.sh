@@ -100,7 +100,7 @@ run_setup "$legacy_case/environment" "$legacy_case/os-release" "$legacy_case/use
 
 conflict_case=$test_root/conflict
 mkdir -p -- "$conflict_case/user"
-write_environment "$conflict_case/environment" home bessie
+write_environment "$conflict_case/environment" home testbox
 write_os_release "$conflict_case/os-release" arch
 touch "$conflict_case/user/.zshrc"
 if run_setup "$conflict_case/environment" "$conflict_case/os-release" "$conflict_case/user" links 2>/dev/null; then

@@ -147,7 +147,7 @@ Reference: https://wiki.hypr.land/hypr-ecosystem/user/hypridle/
   ticket = "TK-1234"
 
   [workspace]
-  roots = ["ship", "bessie", "common"]
+  roots = ["api", "web", "common"]
   ```
 
 - `<C-t>`, `<leader>/`, and `<leader>*` search the project root plus every configured workspace root. Explicit roots expose independently cloned, superproject-ignored repositories while retaining each repository's own ignore rules. `<leader>gf` remains scoped to the current Git repository.
