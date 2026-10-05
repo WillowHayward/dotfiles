@@ -3,7 +3,6 @@
 	name = Willow Hayward
 	username = WillowHayward
 [core]
-	editor = nvim
 	excludesfile = ~/.gitignore.global
 	# Fall back to plain paging where diff-so-fancy is not installed.
 	pager = "( command -v diff-so-fancy >/dev/null 2>&1 && diff-so-fancy || cat ) | less --tabs=4 -RFX"

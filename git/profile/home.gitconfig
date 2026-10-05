@@ -1,4 +1,6 @@
 # Personal machines authenticate to GitHub with SSH keys.
+[core]
+	editor = nvim
 [url "git@github.com:"]
 	insteadOf = https://github.com/
 [interactive]

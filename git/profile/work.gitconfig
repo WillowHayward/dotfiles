@@ -1,4 +1,6 @@
 # Work machine (WSL). Put the work email address in ~/.gitconfig.local.
+[core]
+	editor = nvim
 [url "git@github.com:"]
 	insteadOf = https://github.com/
 [interactive]

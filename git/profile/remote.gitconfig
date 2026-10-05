@@ -1,1 +1,3 @@
 # Servers usually have no SSH key for GitHub, so leave https clone URLs alone.
+# The editor comes from $VISUAL/$EDITOR (see shell/zsh/core/env.zsh): Neovim is not
+# installed here, so core.editor must not be hardcoded to it.
