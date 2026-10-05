@@ -2,4 +2,11 @@
 *.log
 *.bak
 *.bak.*
+bak/
 __pycache__/
+tmp/
+docs/
+.worktrees/
+setup/devices.local
+hypr/local.lua
+nvim/lua/willow.lua
