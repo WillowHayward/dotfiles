@@ -45,6 +45,8 @@ link_group() {
                 "$repo_root/misc/mimeapps.list|$setup_config_home/mimeapps.list"
                 "$repo_root/misc/chrome-flags.conf|$setup_config_home/chrome-flags.conf"
                 "$repo_root/misc/chromium-flags.conf|$setup_config_home/chromium-flags.conf"
+                "$repo_root/systemd/user/elephant.service|$setup_config_home/systemd/user/elephant.service"
+                "$repo_root/systemd/user/udiskie.service|$setup_config_home/systemd/user/udiskie.service"
             )
             ;;
         *) die "unknown link group '$1'" ;;

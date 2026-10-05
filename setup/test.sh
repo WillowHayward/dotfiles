@@ -32,7 +32,8 @@ write_os_release "$home_case/os-release" arch
 run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
 run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
 for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim .config/swayimg .config/hypr \
-    .config/walker/config.toml .config/elephant/menus/session.toml .config/mimeapps.list; do
+    .config/walker/config.toml .config/elephant/menus/session.toml .config/mimeapps.list \
+    .config/systemd/user/udiskie.service; do
     [[ -L $home_case/user/$link ]] || { printf 'Expected home link: %s\n' "$link" >&2; exit 1; }
 done
 [[ $(readlink "$home_case/user/.gitconfig.profile") == */git/profile/home.gitconfig ]]
