@@ -1,0 +1,31 @@
+name = "connectivity"
+name_pretty = "Connectivity"
+description = "Wi-Fi and radios (Bluetooth and audio have their own prefixes)"
+icon = "network-wireless"
+action = "%VALUE%"
+fixed_order = true
+history = false
+
+[[entries]]
+text = "Wi-Fi on"
+icon = "network-wireless"
+keywords = ["wifi", "wireless", "enable"]
+value = "nmcli radio wifi on"
+
+[[entries]]
+text = "Wi-Fi off"
+icon = "network-wireless-disabled"
+keywords = ["wifi", "wireless", "disable"]
+value = "nmcli radio wifi off"
+
+[[entries]]
+text = "Airplane mode on"
+icon = "airplane-mode"
+keywords = ["flight", "radios", "rfkill"]
+value = "rfkill block all"
+
+[[entries]]
+text = "Airplane mode off"
+icon = "airplane-mode-disabled"
+keywords = ["flight", "radios", "rfkill"]
+value = "rfkill unblock all"

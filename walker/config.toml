@@ -6,11 +6,24 @@ previous = ["Up", "ctrl p", "ctrl k"]
 next = ["Down", "ctrl n", "ctrl j"]
 
 [providers]
-default = ["desktopapplications", "calc", "websearch", "menus:session"]
+default = ["desktopapplications", "calc", "websearch", "menus:session", "menus:connectivity"]
 
 [[providers.prefixes]]
 prefix = "#"
 provider = "menus:projects"
+
+# Clipboard history, Bluetooth devices and audio outputs/inputs (Elephant providers).
+[[providers.prefixes]]
+prefix = ":"
+provider = "clipboard"
+
+[[providers.prefixes]]
+prefix = "@"
+provider = "bluetooth"
+
+[[providers.prefixes]]
+prefix = "&"
+provider = "wireplumber"
 
 [placeholders]
 "menus:projects" = { input = "Projects", list = "No matching projects" }
