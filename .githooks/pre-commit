@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Enabled by `just setup links` (core.hooksPath = .githooks). Scans staged changes for
+# secrets and runs the quick checks. Bypass once with `git commit --no-verify`.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks protect --staged --redact --no-banner
+else
+    echo "pre-commit: gitleaks is not installed, so staged changes were not scanned for secrets." >&2
+fi
+if command -v just >/dev/null 2>&1; then
+    just check
+fi
