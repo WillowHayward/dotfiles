@@ -15,3 +15,6 @@ Thumbs.db
 #log/
 #*.log
 
+# Per-project local workflow metadata
+.whc
+.ticket
