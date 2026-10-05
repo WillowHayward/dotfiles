@@ -233,4 +233,19 @@ grep -qx 'Host keep' "$shell_case/user/.ssh/config"
 grep -qx 'export KEEP=1' "$shell_case/user/.bashrc"
 [[ -d $shell_case/user/.ssh/config.d ]]
 
+# greetd rendering: user filled in, uwsm only when installed and not opted out.
+(
+    # shellcheck source=lib/common.sh
+    source "$setup_dir/lib/common.sh"
+    # shellcheck source=tasks/manual-lock.sh
+    source "$setup_dir/tasks/manual-lock.sh"
+    with_uwsm=$(render_greetd_config tester yes)
+    without_uwsm=$(render_greetd_config tester no)
+    opted_out=$(WHC_NO_UWSM=1 render_greetd_config tester yes)
+    grep -q -- '--user tester --cmd uwsm start hyprland.desktop' <<<"$with_uwsm"
+    grep -q -- '--user tester --cmd start-hyprland' <<<"$without_uwsm"
+    grep -q -- '--cmd start-hyprland' <<<"$opted_out"
+    ! grep -q '@' <<<"$with_uwsm"
+)
+
 printf '%s\n' 'Setup tests passed.'

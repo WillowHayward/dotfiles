@@ -29,6 +29,9 @@ link_group() {
                 "$repo_root/lazygit/config.yml|$setup_config_home/lazygit/config.yml"
             )
             ;;
+        hypr)
+            LINKS+=("$repo_root/hypr|$setup_config_home/hypr")
+            ;;
         vim)
             LINKS+=("$repo_root/vim/.vimrc|$setup_home/.vimrc")
             ;;
