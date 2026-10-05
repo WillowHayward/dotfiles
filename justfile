@@ -33,11 +33,14 @@ run script *args:
     fi
     bash "$script_path" {{ args }}
 
-# Check justfiles and shell-script syntax.
+# Check justfiles, shell, zsh and Python syntax.
 check:
     just --fmt --check
-    @find scripts setup -type f -name '*.sh' -print0 | xargs -0 bash -n
+    @find scripts setup hypr -type f -name '*.sh' -print0 | xargs -0 bash -n
+    @find shell -type f \( -name '.zshrc' -o -name '*.zsh' \) -print0 | xargs -0 -n1 zsh -n
+    @python3 -c "import ast, sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]" walker/tmux-projects.py nvim/bin/godot-editor nvim/bin/godot-session
 
-# Run the isolated setup test suite.
+# Run the setup and project-picker test suites.
 test: check
     bash setup/test.sh
+    python3 -B -m unittest discover -s walker -p 'test_*.py'
