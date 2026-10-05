@@ -255,12 +255,18 @@ return {
 		config = function(plugin, opts)
 			require("mason").setup()
 			local mr = require("mason-registry")
-			for _, tool in ipairs(opts.ensure_installed) do
-				local p = mr.get_package(tool)
-				if not p:is_installed() then
-					p:install()
+			-- On a fresh machine the registry is empty until it has been fetched, and
+			-- mr.get_package throws for every tool until then.
+			mr.refresh(function()
+				for _, tool in ipairs(opts.ensure_installed) do
+					local ok, p = pcall(mr.get_package, tool)
+					if not ok then
+						vim.notify("Mason has no package named " .. tool, vim.log.levels.WARN)
+					elseif not p:is_installed() then
+						p:install()
+					end
 				end
-			end
+			end)
 		end,
 	},
 }

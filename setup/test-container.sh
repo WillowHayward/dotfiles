@@ -77,5 +77,16 @@ else
     [[ $rewrites == https://github.com/ ]] || fail "work should rewrite github URLs to SSH"
 fi
 ok "git profile config"
+if [[ $PROFILE == work ]]; then
+    # First start: lazy.nvim bootstraps every plugin over https, then Mason's
+    # registry loads. Any plugin that fails to configure shows up here.
+    echo 'local x = 1' > /tmp/x.lua
+    WHC_PROFILE=work timeout 300 nvim --headless /tmp/x.lua \
+        "+lua vim.defer_fn(function() vim.cmd('qa!') end, 150000)" >/tmp/nvim.out 2>&1 || true
+    if sed 's/\x1b\[[0-9;]*m//g' /tmp/nvim.out | tr '\r' '\n' | grep -E 'Failed to run|^E[0-9]+:|Error executing'; then
+        fail "Neovim reported errors on first start"
+    fi
+    ok "Neovim starts cleanly on first run"
+fi
 printf 'All checks passed for %s.\n' "$PROFILE"
 CONTAINER
