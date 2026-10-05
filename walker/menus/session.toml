@@ -1,0 +1,31 @@
+name = "session"
+name_pretty = "Session"
+description = "Power and session actions"
+icon = "system-shutdown"
+action = "%VALUE%"
+fixed_order = true
+history = false
+
+[[entries]]
+text = "Shutdown"
+icon = "system-shutdown"
+keywords = ["power off", "poweroff"]
+value = "systemctl poweroff"
+
+[[entries]]
+text = "Reboot"
+icon = "system-reboot"
+keywords = ["restart"]
+value = "systemctl reboot"
+
+[[entries]]
+text = "Lock"
+icon = "system-lock-screen"
+keywords = ["lock screen"]
+value = "loginctl lock-session"
+
+[[entries]]
+text = "Log Out"
+icon = "system-log-out"
+keywords = ["logout", "sign out"]
+value = "hyprctl dispatch exit"

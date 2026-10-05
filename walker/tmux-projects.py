@@ -15,11 +15,12 @@ def tmux(*args, check=True):
     return subprocess.run(["tmux", *args], text=True, capture_output=True, check=check)
 
 
-def projects(root):
+def projects(root, infra):
     entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
-    infra = root / "infra"
     if infra.is_dir():
-        entries += [p for p in infra.iterdir() if p.is_dir() and not p.name.startswith(".")]
+        entries.append(infra)
+        entries += [p for p in infra.iterdir()
+                    if p.is_dir() and not p.name.startswith(".") and (p / ".git").exists()]
     dotfiles = Path.home() / "dotfiles"
     if dotfiles.is_dir() and dotfiles.resolve() not in {p.resolve() for p in entries}:
         entries.append(dotfiles)
@@ -180,6 +181,7 @@ def main():
     parser.add_argument("target", nargs="?")
     args = parser.parse_args()
     root = Path(os.environ.get("WHC_PROJECTS_DIR", str(Path.home() / "projects"))).expanduser()
+    infra = Path(os.environ.get("WHC_INFRA_DIR", str(Path.home() / "infra"))).expanduser()
     if args.action in ("layout", "start"):
         action = layout if args.action == "layout" else start_project
         action(args.target or os.environ.get("TMUX_PANE", ""))
@@ -191,7 +193,7 @@ def main():
         else:
             open_project(Path(args.target))
     else:
-        choices = projects(root)
+        choices = projects(root, infra)
         labels = [project_label(p, root).replace("\n", "\\n") for p in choices]
         if args.action == "entries":
             print(json.dumps([{"Text": label, "Value": str(path.resolve())}

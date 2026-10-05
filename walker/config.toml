@@ -5,6 +5,9 @@ global_argument_delimiter = "::"
 previous = ["Down", "ctrl p", "ctrl k"]
 next = ["Down", "ctrl n", "ctrl j"]
 
+[providers]
+default = ["desktopapplications", "calc", "websearch", "menus:session"]
+
 [[providers.prefixes]]
 prefix = "#"
 provider = "menus:projects"
