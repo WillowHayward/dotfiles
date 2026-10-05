@@ -19,6 +19,16 @@ link_group() {
                 LINKS+=("$repo_root/shell/.tmux.session.conf|$setup_home/.tmux.session.conf")
             fi
             ;;
+        atuin)
+            LINKS+=("$repo_root/atuin/config.toml|$setup_config_home/atuin/config.toml")
+            ;;
+        dev)
+            LINKS+=(
+                "$repo_root/direnv/direnvrc|$setup_config_home/direnv/direnvrc"
+                "$repo_root/direnv/direnv.toml|$setup_config_home/direnv/direnv.toml"
+                "$repo_root/lazygit/config.yml|$setup_config_home/lazygit/config.yml"
+            )
+            ;;
         vim)
             LINKS+=("$repo_root/vim/.vimrc|$setup_home/.vimrc")
             ;;
@@ -45,6 +55,11 @@ link_group() {
                 "$repo_root/misc/mimeapps.list|$setup_config_home/mimeapps.list"
                 "$repo_root/misc/chrome-flags.conf|$setup_config_home/chrome-flags.conf"
                 "$repo_root/misc/chromium-flags.conf|$setup_config_home/chromium-flags.conf"
+                "$repo_root/foot/foot.ini|$setup_config_home/foot/foot.ini"
+                "$repo_root/mako/config|$setup_config_home/mako/config"
+                "$repo_root/gtk-3.0/settings.ini|$setup_config_home/gtk-3.0/settings.ini"
+                "$repo_root/gtk-4.0/settings.ini|$setup_config_home/gtk-4.0/settings.ini"
+                "$repo_root/xdg-desktop-portal/hyprland-portals.conf|$setup_config_home/xdg-desktop-portal/hyprland-portals.conf"
                 "$repo_root/systemd/user/elephant.service|$setup_config_home/systemd/user/elephant.service"
                 "$repo_root/systemd/user/udiskie.service|$setup_config_home/systemd/user/udiskie.service"
             )
@@ -56,9 +71,9 @@ link_group() {
 # The groups each profile receives: remote is the lightweight baseline,
 # work adds the developer tooling, and home adds the desktop.
 profile_link_groups() {
-    printf '%s\n' shell git tmux vim
+    printf '%s\n' shell git tmux vim atuin
     if profile_has dev; then
-        printf '%s\n' nvim node tasks
+        printf '%s\n' nvim node tasks dev
     fi
     if profile_has desktop; then
         printf '%s\n' desktop
@@ -88,4 +103,8 @@ task_links() {
     mapfile -t groups < <(profile_link_groups)
     remove_legacy_links
     link_groups "${groups[@]}"
+    # Commit hooks (secret scan, checks) apply when the repo is a checkout we manage.
+    if [[ -d $repo_root/.githooks && $setup_home == "$HOME" ]]; then
+        git -C "$repo_root" config core.hooksPath .githooks
+    fi
 }

@@ -22,7 +22,8 @@ run_setup() {
     WHC_OS_RELEASE_FILE=$os_release \
     WHC_SETUP_HOME=$setup_home \
     WHC_SETUP_CONFIG_HOME=$setup_home/.config \
-        "$setup_dir/setup.sh" "$task"
+    WHC_APT_FRESH_SECONDS=${WHC_APT_FRESH_SECONDS:-0} \
+        "$setup_dir/setup.sh" $task # unquoted: a task may carry a flag
 }
 
 home_case=$test_root/home
@@ -33,7 +34,8 @@ run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" lin
 run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
 for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim .config/swayimg .config/hypr \
     .config/walker/config.toml .config/elephant/menus/session.toml .config/mimeapps.list \
-    .config/systemd/user/udiskie.service; do
+    .config/systemd/user/udiskie.service .config/foot/foot.ini .config/mako/config \
+    .config/atuin/config.toml .config/direnv/direnvrc .config/lazygit/config.yml .config/gtk-4.0/settings.ini; do
     [[ -L $home_case/user/$link ]] || { printf 'Expected home link: %s\n' "$link" >&2; exit 1; }
 done
 [[ $(readlink "$home_case/user/.gitconfig.profile") == */git/profile/home.gitconfig ]]
@@ -43,14 +45,14 @@ mkdir -p -- "$remote_case/user"
 write_environment "$remote_case/environment" remote ship
 write_os_release "$remote_case/os-release" debian debian
 run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" links
-for link in .zshrc .gitconfig .tmux.conf .vimrc; do
+for link in .zshrc .gitconfig .tmux.conf .vimrc .config/atuin/config.toml; do
     [[ -L $remote_case/user/$link ]] || { printf 'Expected remote link: %s\n' "$link" >&2; exit 1; }
 done
-for link in .config/nvim .config/swayimg .config/hypr .npmrc .taskrc .tmux.session.conf; do
+for link in .config/nvim .config/swayimg .config/hypr .npmrc .taskrc .tmux.session.conf .config/direnv .config/lazygit .config/foot; do
     [[ ! -e $remote_case/user/$link ]] || { printf 'Remote must not link: %s\n' "$link" >&2; exit 1; }
 done
 [[ $(readlink "$remote_case/user/.gitconfig.profile") == */git/profile/remote.gitconfig ]]
-for task in manual-lock desktop node; do
+for task in manual-lock desktop node python; do
     if run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" "$task" 2>/dev/null; then
         printf 'Expected %s to reject the remote profile.\n' "$task" >&2
         exit 1
@@ -168,6 +170,14 @@ if grep -qE 'build-essential|neovim|lazygit' "$package_case/commands"; then
 fi
 [[ ! -s $package_case/stderr ]]
 
+# Fresh apt lists are not refreshed again.
+: > "$package_case/commands"
+touch "$package_case/apt-stamp"
+WHC_APT_STAMP=$package_case/apt-stamp WHC_APT_FRESH_SECONDS=3600 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
+    run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2> "$package_case/stderr"
+! grep -q '^apt-get update' "$package_case/commands"
+grep -q '^apt-get install' "$package_case/commands"
+
 (
     # shellcheck source=lib/common.sh
     source "$setup_dir/lib/common.sh"
@@ -177,5 +187,51 @@ fi
     ! version_at_least 0.10.4 0.11
     ! version_at_least 0.9.5 0.11
 )
+
+# --relink replaces a wrong symlink; --adopt also backs up a real file. Plain links refuses both.
+mode_case=$test_root/mode
+mkdir -p -- "$mode_case/user"
+write_environment "$mode_case/environment" remote ship
+write_os_release "$mode_case/os-release" debian debian
+ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
+printf 'mine\n' > "$mode_case/user/.vimrc"
+if run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" links 2>/dev/null; then
+    printf '%s\n' 'Expected links to refuse a wrong symlink and a real file.' >&2
+    exit 1
+fi
+if run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --relink" 2>/dev/null; then
+    printf '%s\n' 'Expected --relink to refuse a real file.' >&2
+    exit 1
+fi
+rm "$mode_case/user/.zshrc"
+ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
+rm "$mode_case/user/.vimrc"
+run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --relink" >/dev/null
+[[ $(readlink "$mode_case/user/.zshrc") == */shell/.zshrc ]]
+printf 'mine\n' > "$mode_case/user/.gitignore.global"
+rm "$mode_case/user/.gitignore.global" "$mode_case/user/.vimrc"
+printf 'mine\n' > "$mode_case/user/.vimrc"
+run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --adopt" >/dev/null
+[[ -L $mode_case/user/.vimrc ]]
+grep -rqx mine "$mode_case/user/.local/state/whc/backups"
+
+# ssh and bash tasks add their lines once and keep the existing files.
+shell_case=$test_root/shellfiles
+mkdir -p -- "$shell_case/user/.ssh"
+printf 'Host keep\n    HostName example.test\n' > "$shell_case/user/.ssh/config"
+printf 'export KEEP=1\n' > "$shell_case/user/.bashrc"
+write_environment "$shell_case/environment" remote ship
+write_os_release "$shell_case/os-release" debian debian
+for _ in 1 2; do
+    run_setup "$shell_case/environment" "$shell_case/os-release" "$shell_case/user" ssh
+    run_setup "$shell_case/environment" "$shell_case/os-release" "$shell_case/user" bash
+done
+[[ $(grep -c 'whc-dotfiles config.d' "$shell_case/user/.ssh/config") == 1 ]]
+[[ $(grep -c 'whc-dotfiles defaults' "$shell_case/user/.ssh/config") == 1 ]]
+[[ $(head -1 "$shell_case/user/.ssh/config") == Include* ]]
+grep -qx 'Host keep' "$shell_case/user/.ssh/config"
+[[ $(grep -c whc-dotfiles "$shell_case/user/.bashrc") == 1 ]]
+grep -qx 'export KEEP=1' "$shell_case/user/.bashrc"
+[[ -d $shell_case/user/.ssh/config.d ]]
 
 printf '%s\n' 'Setup tests passed.'

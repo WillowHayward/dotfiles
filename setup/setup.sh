@@ -17,12 +17,16 @@ Usage: setup/setup.sh TASK
 Tasks:
   init-system  Set WHC_PROFILE and WHC_DEVICE in /etc/environment
   packages     Install the profile's package baseline
-  links        Link profile-appropriate dotfiles
+  links [--relink|--adopt]  Link profile-appropriate dotfiles (--relink: replace wrong symlinks;
+               --adopt: also move conflicting real files to a backup)
   shell        Configure zsh and Antidote
   nvim         Install Neovim 0.11+ and link its configuration
   tmux         Install and configure tmux and TPM
   node         Install fnm and the latest LTS Node.js (home and work)
   python       Install uv (home and work)
+  ssh          Add the shared ssh defaults and config.d to ~/.ssh/config
+  bash         Source the tiny bashrc from ~/.bashrc
+  docker       Install Docker Engine from Docker's apt repository (remote)
   desktop      Install and link the Hyprland desktop (home only)
   manual-lock  Configure greetd, hyprlock, hypridle, and logind (home only)
   all          Run every task the profile includes
@@ -30,6 +34,10 @@ EOF
 }
 
 task=${1:-}
+if [[ $# -eq 2 && $task == links && ( $2 == --relink || $2 == --adopt ) ]]; then
+    export WHC_LINK_MODE=${2#--}
+    set -- "$task"
+fi
 if [[ $# -ne 1 ]]; then
     usage
     exit 2
@@ -39,7 +47,7 @@ case "$task" in
     init-system)
         task_init_system
         ;;
-    packages|links|shell|nvim|tmux|node|python|desktop|manual-lock|all)
+    packages|links|shell|nvim|tmux|node|python|ssh|bash|docker|desktop|manual-lock|all)
         load_system_identity
         validate_profile_os
         "task_${task//-/_}"

@@ -9,6 +9,8 @@ setup_home=${WHC_SETUP_HOME:-$HOME}
 setup_config_home=${WHC_SETUP_CONFIG_HOME:-${XDG_CONFIG_HOME:-$setup_home/.config}}
 declare -A requested_packages=()
 apt_updated=false
+# apt lists newer than this many seconds are not refreshed again.
+apt_fresh_seconds=${WHC_APT_FRESH_SECONDS:-86400}
 
 die() {
     printf 'setup: %s\n' "$*" >&2
@@ -136,6 +138,14 @@ run_as_root() {
     fi
 }
 
+# True when apt's package lists were refreshed recently (see apt_fresh_seconds).
+apt_lists_fresh() {
+    local stamp=${WHC_APT_STAMP:-/var/lib/apt/periodic/update-success-stamp} mtime
+    [[ -e $stamp ]] || stamp=/var/lib/apt/lists
+    mtime=$(stat -c %Y -- "$stamp" 2>/dev/null) || return 1
+    (( $(date +%s) - mtime < apt_fresh_seconds ))
+}
+
 # Install packages once per run, skipping any already requested by an earlier task.
 install_packages() {
     local package
@@ -150,7 +160,7 @@ install_packages() {
             ;;
         debian)
             if [[ $apt_updated == false ]]; then
-                run_as_root apt-get update
+                apt_lists_fresh || run_as_root apt-get update
                 apt_updated=true
             fi
             run_as_root apt-get install -y "${missing[@]}"
@@ -161,24 +171,62 @@ install_packages() {
     done
 }
 
+# Like install_packages, but quietly skips packages the repositories do not offer.
+install_optional_packages() {
+    local package
+    local -a available=()
+    for package in "$@"; do
+        case "$PACKAGE_FAMILY" in
+            arch) pacman -Si "$package" >/dev/null 2>&1 && available+=("$package") ;;
+            debian) apt-cache show "$package" >/dev/null 2>&1 && available+=("$package") ;;
+        esac
+    done
+    (( ${#available[@]} == 0 )) || install_packages "${available[@]}"
+}
+
 paths_match() {
     local source=$1 target=$2
     [[ -L $target ]] || return 1
     [[ $(readlink -f -- "$target") == "$(readlink -f -- "$source")" ]]
 }
 
+# How link_set treats a target that is not already the right link:
+#   strict (default) refuse; relink replace a wrong symlink (never a real file);
+#   adopt replace a wrong symlink, and move a real file or directory to a backup first.
+link_backup_dir=
+backup_target() {
+    local target=$1
+    [[ -n $link_backup_dir ]] \
+        || link_backup_dir=${XDG_STATE_HOME:-$setup_home/.local/state}/whc/backups/$(date +%Y%m%d-%H%M%S)
+    mkdir -p -- "$link_backup_dir/$(dirname -- "${target#/}")"
+    mv -- "$target" "$link_backup_dir/${target#/}"
+    printf 'Moved %s to %s\n' "$target" "$link_backup_dir/${target#/}"
+}
+
 check_link() {
     local source=$1 target=$2
     [[ -e $source ]] || die "link source does not exist: $source"
     if [[ -e $target || -L $target ]]; then
-        paths_match "$source" "$target" \
-            || { printf 'Refusing to replace %s\n' "$target" >&2; return 1; }
+        paths_match "$source" "$target" && return 0
+        case "${WHC_LINK_MODE:-strict}" in
+            relink) [[ -L $target ]] && return 0 ;;
+            adopt) return 0 ;;
+        esac
+        printf 'Refusing to replace %s (use --relink for a wrong symlink, --adopt to back up a real file)\n' "$target" >&2
+        return 1
     fi
 }
 
 create_link() {
     local source=$1 target=$2
     paths_match "$source" "$target" && return 0
+    if [[ -e $target || -L $target ]]; then
+        if [[ -L $target ]]; then
+            rm -- "$target"
+        else
+            backup_target "$target"
+        fi
+    fi
     mkdir -p -- "$(dirname -- "$target")"
     ln -s -- "$source" "$target"
     printf 'Linked %s -> %s\n' "$target" "$source"

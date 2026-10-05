@@ -7,10 +7,15 @@ task_all() {
     task_links
     task_shell
     task_tmux
+    task_ssh
+    task_bash
     if profile_has dev; then
         task_nvim
         task_node
         task_python
+    fi
+    if [[ $WHC_PROFILE == remote ]]; then
+        task_docker
     fi
     if profile_has desktop; then
         task_desktop
