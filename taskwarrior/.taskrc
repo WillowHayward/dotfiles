@@ -15,7 +15,7 @@
 # Use the command 'task show' to see all defaults and overrides
 
 # Files
-data.location=$HOME/willhay/.task
+# data.location is left at the Taskwarrior default (~/.task).
 
 # To use the default location of the XDG directories,
 # move this configuration file from ~/.taskrc to ~/.config/task/taskrc and uncomment below
@@ -40,21 +40,11 @@ include dark-gray-blue-256.theme
 #include solarized-light-256.theme
 #   include no-color.theme
 
-context.rot-stoppers.read=project:rot-stoppers
-context.rot-stoppers.write=project:rot-stoppers
-context.decay-defenders.read=project:decay-defenders
-context.decay-defenders.write=project:decay-defenders
-context.horace.read=project:horace
-context.horace.write=project:horace
-context.lipwig.read=project:lipwig
-context.lipwig.write=project:lipwig
 context.work.read=project:work
 context.work.write=project:work
 
 # Priority "L" should be lower than unset priority, and more than counterbalance blocking
 urgency.uda.priority.L.coefficient=-20
-context.lifesuite.read=project:lifesuite
-context.lifesuite.write=project:lifesuite
-context.rpi.read=project:rpi
-context.rpi.write=project:rpi
-context=lifesuite
+
+# Personal contexts are not tracked here. Taskwarrior fails on a missing include, so define
+# them per machine with `task context define` (it rewrites this file; do not commit those).
