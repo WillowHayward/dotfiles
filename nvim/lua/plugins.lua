@@ -133,6 +133,7 @@ require("lazy").setup({
 	-- GitHub
 	{
 		"pwntester/octo.nvim",
+		cmd = "Octo", -- Needs the gh CLI; do not load it (and fail) until it is used.
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			"nvim-telescope/telescope.nvim",

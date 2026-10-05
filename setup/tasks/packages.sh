@@ -6,7 +6,7 @@
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
         arch:core) printf '%s\n' git curl zsh tmux ripgrep fzf vim less openssh ;;
-        arch:dev) printf '%s\n' base-devel neovim lazygit fd jq unzip python tree-sitter-cli ;;
+        arch:dev) printf '%s\n' base-devel neovim lazygit github-cli fd jq unzip python tree-sitter-cli ;;
         arch:desktop)
             printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
                 foot thunar firefox udiskie mako grim flameshot swayimg wl-clipboard \
@@ -14,7 +14,7 @@ tier_packages() {
                 noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
             ;;
         debian:core) printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf vim less openssh-client ;;
-        debian:dev) printf '%s\n' build-essential fd-find jq unzip python3 python3-pip python3-venv ;;
+        debian:dev) printf '%s\n' build-essential gh fd-find jq unzip python3 python3-pip python3-venv ;;
         *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
     esac
 }
@@ -35,4 +35,10 @@ task_packages() {
         fi
     fi
     install_packages "${packages[@]}"
+    # Debian names the binary fdfind; the tools and muscle memory expect fd.
+    if [[ $PACKAGE_FAMILY == debian ]] && profile_has dev \
+        && command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+        mkdir -p -- "$setup_home/.local/bin"
+        ln -sfn -- "$(command -v fdfind)" "$setup_home/.local/bin/fd"
+    fi
 }
