@@ -11,7 +11,8 @@ mkdir -p -- "$history_dir"
 chmod 700 -- "$history_dir"
 export HISTFILE="$history_dir/$key.bash_history"
 export HISTSIZE=10000 HISTFILESIZE=20000
-export BASH_ENV="$HOME/dotfiles/shell/ai.bashrc"
-source "$HOME/dotfiles/shell/node.bash"
+dotfiles=${WHC_DOTFILES_DIR:-$HOME/dotfiles}
+export BASH_ENV="$dotfiles/shell/ai.bashrc"
+source "$dotfiles/shell/node.bash"
 unset WHC_PROJECT_ROOT
 exec "$@"

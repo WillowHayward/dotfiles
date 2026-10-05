@@ -1,7 +1,7 @@
 # Used only by AI Bash processes (interactive rcfile and noninteractive BASH_ENV).
 export WHC_AI=true
 export SHELL=/bin/bash
-source "$HOME/dotfiles/shell/node.bash"
+source "${WHC_DOTFILES_DIR:-$HOME/dotfiles}/shell/node.bash"
 HISTSIZE=10000
 HISTFILESIZE=20000
 HISTCONTROL=ignoredups

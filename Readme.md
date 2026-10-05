@@ -2,7 +2,7 @@ These are the dotfiles I use to make my dev experience more universal across dev
 
 # Usage
 
-Install Git and a module-capable version of [just](https://github.com/casey/just), then clone this repository to `~/dotfiles`. Without `just`, run the same tasks with `setup/setup.sh <task>`.
+Install Git and a module-capable version of [just](https://github.com/casey/just), then clone this repository to `~/dotfiles` (shell and scripts use `$WHC_DOTFILES_DIR`, defaulting to that path). Without `just`, run the same tasks with `setup/setup.sh <task>`.
 
 Initialize the machine identity once, then run every setup task the machine's profile includes:
 
@@ -39,13 +39,23 @@ Create a `.env` file in the root of this repo for non-identity variables, using 
 
 Set up automatically occurs in .zshrc
 
+## Directory shortcuts
+
+| Command | Goes to | Root variable (default) |
+|---|---|---|
+| `cdd [name]` | the dotfiles repo, or one of its immediate subdirectories | `WHC_DOTFILES_DIR` (`~/dotfiles`) |
+| `cdp [name]` | the projects directory, or one of its immediate subdirectories | `WHC_PROJECTS_DIR` (`~/projects`) |
+| `cdi [name]` | the infra directory, or one of its immediate subdirectories | `WHC_INFRA_DIR` (`~/infra`) |
+
+Tab completion offers the immediate subdirectories (hidden ones once you type a dot), and nested paths such as `cdp app/src` are rejected. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` can be overridden in `.env`; `WHC_DOTFILES_DIR` has to be exported before the shell starts because `.env` lives inside it. The tmux project picker uses the same variables.
+
 ## Terminal appearance
 
 Tmux uses Neovim's Dracula palette with a compact session/window bar. Zsh loads the official [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote, including its two-line layout, icons, Git status, and right-side status segments. The configuration uses explicit Dracula RGB colours so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration and the red remote-device segment live in `shell/zsh/prompt.zsh`. The theme has no trailing prompt arrow. Use a Nerd Font for its icons and Powerline separators.
 
 The `remote` profile shows `WHC_DEVICE` in a red Powerline segment. SSH sessions also show this segment automatically. An empty device name falls back to the short hostname. Local sessions with other profiles omit the segment.
 
-Open a new shell to load the prompt, or run `source ~/dotfiles/shell/zsh/prompt.zsh` in an existing shell. Reload tmux with `tmux source-file ~/dotfiles/shell/.tmux.conf`. The true-color terminal setting applies to new panes.
+Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh/core/prompt.zsh"` in an existing shell. Reload tmux with `tmux source-file ~/.tmux.conf`. The true-color terminal setting applies to new panes.
 
 ## Symlinks
 
@@ -87,7 +97,7 @@ Logind uses `systemd/logind-dotfiles.conf` (linked as a service drop-in) to expo
 - `Ctrl-Space`, then `M`: arrange up to four panes as one main area above three equal-width lower areas. Missing panes are added; more than four panes are left untouched. The lower row is 12 lines high when there is room.
 - Ordinary new windows remain single-pane. `c`, `n`, `p`, `%`, and `"` after the prefix open windows/splits in the current pane's directory.
 - Open Walker (`Super+Return`) and type `#` to browse projects, or `#name` to filter them. You can also search for **Projects**. `just setup desktop` links the Elephant menu and desktop entry; restart Elephant to load the menu. There is no separate project-picker keybind. Walker uses `::` for application arguments so `#` remains available for project search.
-- The picker lists directories directly under `~/projects`, plus `~/infra` itself and any of its immediate subdirectories that are Git repositories. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` override those roots.
+- The picker lists directories directly under `~/projects`, plus `~/infra` itself and any of its immediate subdirectories that are Git repositories. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` override those roots (see Directory shortcuts).
 - A new project session uses the directory's name, four panes, and Neovim in the main pane. Quitting Neovim returns to a shell. Reopening reuses the session without resetting its panes and switches the existing foot/tmux terminal on the current workspace when one is available. Dots/colons become underscores; conflicting names receive a path-derived suffix (`general` is reserved).
 - Project Neovim starts Codex in a local Sidekick terminal, initially hidden, without an extra tmux session. Toggle/prompt shortcuts automatically reuse the running context for the current directory. `<leader>as` remains an explicit context picker. `Ctrl+G` or `Alt+Q` hides Sidekick while a command keeps running; `Ctrl+\`, then `Ctrl+N` enters terminal normal mode. Closing Neovim ends its local AI process.
 - AI processes use `WHC_AI=true`, `SHELL=/bin/bash`, and per-project Bash history under `${XDG_STATE_HOME:-~/.local/state}/whc-ai/`. Both interactive Bash commands and noninteractive `bash -c` commands use this history; normal zsh history is separate.
@@ -97,4 +107,4 @@ Logind uses `systemd/logind-dotfiles.conf` (linked as a service drop-in) to expo
 
 [fnm](https://github.com/Schniz/fnm) manages Node versions. Run `just setup node` (home and work) to install fnm when missing and select the latest LTS Node as the default. Zsh initializes fnm before attaching to tmux and automatically switches using `.node-version` or `.nvmrc`, including in parent directories. Launcher-started Neovim and AI Bash commands also load fnm.
 
-Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually. New shells load the setup; in an existing zsh shell, run `source ~/dotfiles/shell/zsh/fnm.zsh`.
+Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually. New shells load the setup; in an existing zsh shell, run `source "$WHC_DOTFILES_DIR/shell/zsh/dev/fnm.zsh"`.

@@ -15,13 +15,17 @@ def tmux(*args, check=True):
     return subprocess.run(["tmux", *args], text=True, capture_output=True, check=check)
 
 
+def dotfiles_dir():
+    return Path(os.environ.get("WHC_DOTFILES_DIR") or Path.home() / "dotfiles").expanduser()
+
+
 def projects(root, infra):
     entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
     if infra.is_dir():
         entries.append(infra)
         entries += [p for p in infra.iterdir()
                     if p.is_dir() and not p.name.startswith(".") and (p / ".git").exists()]
-    dotfiles = Path.home() / "dotfiles"
+    dotfiles = dotfiles_dir()
     if dotfiles.is_dir() and dotfiles.resolve() not in {p.resolve() for p in entries}:
         entries.append(dotfiles)
     return sorted(entries, key=lambda p: (p.resolve() != dotfiles.resolve(),
@@ -29,7 +33,7 @@ def projects(root, infra):
 
 
 def project_label(directory, root):
-    if directory.resolve() == (Path.home() / "dotfiles").resolve():
+    if directory.resolve() == dotfiles_dir().resolve():
         return "dotfiles"
     if directory.is_relative_to(root):
         return str(directory.relative_to(root))
@@ -180,8 +184,8 @@ def main():
     parser.add_argument("action", choices=["pick", "list", "entries", "open", "ensure", "layout", "start"])
     parser.add_argument("target", nargs="?")
     args = parser.parse_args()
-    root = Path(os.environ.get("WHC_PROJECTS_DIR", str(Path.home() / "projects"))).expanduser()
-    infra = Path(os.environ.get("WHC_INFRA_DIR", str(Path.home() / "infra"))).expanduser()
+    root = Path(os.environ.get("WHC_PROJECTS_DIR") or str(Path.home() / "projects")).expanduser()
+    infra = Path(os.environ.get("WHC_INFRA_DIR") or str(Path.home() / "infra")).expanduser()
     if args.action in ("layout", "start"):
         action = layout if args.action == "layout" else start_project
         action(args.target or os.environ.get("TMUX_PANE", ""))

@@ -10,7 +10,7 @@ Action = "lua:OpenProject"
 local function quote(value)
     return "'" .. value:gsub("'", "'\\''") .. "'"
 end
-local script = os.getenv("HOME") .. "/dotfiles/walker/tmux-projects.py"
+local script = (os.getenv("WHC_DOTFILES_DIR") or (os.getenv("HOME") .. "/dotfiles")) .. "/walker/tmux-projects.py"
 
 function GetEntries()
     local handle = assert(io.popen("python3 " .. quote(script) .. " entries"))

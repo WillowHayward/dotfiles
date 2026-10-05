@@ -2,8 +2,8 @@
 # machine-specific ones in profile/.
 
 # Location shortcuts
-# cdp defined as function - cds to $WHC_PROJECTS_DIR or subdirectory
-alias cdd='cd $HOME/dotfiles/'
+# cdd, cdp and cdi are functions (core/functions/cd-dirs.zsh): they cd to
+# $WHC_DOTFILES_DIR, $WHC_PROJECTS_DIR and $WHC_INFRA_DIR, or to an immediate subdirectory.
 alias cdc='cd $HOME/docker/' # TODO: Consider "containers"?
 alias cdh='cd $HOME/'
 
@@ -16,7 +16,7 @@ alias zshr='source ~/.zshrc'
 # Tmux
 alias tm='tmux'
 # tms defined as function - creates new session
-alias tmsd='tms ~/dotfiles'
+alias tmsd='tms "$WHC_DOTFILES_DIR"'
 
 # Git # TODO: Check against https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh#L103
 alias gs='git status'

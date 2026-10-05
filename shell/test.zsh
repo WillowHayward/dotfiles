@@ -23,4 +23,21 @@ whc_source dev/fnm.zsh
 [[ ${path[1]} == "$home/.local/share/fnm" ]] || { print -u2 "fnm.zsh did not put the fnm directory first: $path"; exit 1 }
 (( $+commands[fnm] )) || { print -u2 "fnm is not resolvable after fnm.zsh: $path"; exit 1 }
 [[ ${#path} == ${#${(u)path}} ]] || { print -u2 "path has duplicates: $path"; exit 1 }
+
+# cdd/cdp/cdi: root, immediate subdirectory, and rejections.
+export WHC_DOTFILES_DIR=$home/dot WHC_PROJECTS_DIR=$home/proj WHC_INFRA_DIR=$home/infra
+mkdir -p "$WHC_DOTFILES_DIR/shell" "$WHC_PROJECTS_DIR/app/src" "$WHC_INFRA_DIR/web"
+compdef() { :; } # completion is not initialised in this test
+source "$root/zsh/core/functions/cd-dirs.zsh"
+cdp; [[ $PWD == $WHC_PROJECTS_DIR ]] || { print -u2 "cdp did not go to the projects root"; exit 1 }
+cdp app/; [[ $PWD == $WHC_PROJECTS_DIR/app ]] || { print -u2 "cdp app failed"; exit 1 }
+cdi web; [[ $PWD == $WHC_INFRA_DIR/web ]] || { print -u2 "cdi web failed"; exit 1 }
+cdd; [[ $PWD == $WHC_DOTFILES_DIR ]] || { print -u2 "cdd did not go to the dotfiles root"; exit 1 }
+cdd shell; [[ $PWD == $WHC_DOTFILES_DIR/shell ]] || { print -u2 "cdd shell failed"; exit 1 }
+cd "$home"
+for bad in app/src .. . missing; do
+    if cdp $bad 2>/dev/null; then print -u2 "cdp accepted '$bad'"; exit 1; fi
+    [[ $PWD == $home ]] || { print -u2 "cdp moved on rejected '$bad'"; exit 1 }
+done
+if cdp a b 2>/dev/null; then print -u2 "cdp accepted two arguments"; exit 1; fi
 print "zsh loader tests passed."

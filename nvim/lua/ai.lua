@@ -37,7 +37,7 @@ return {
                 tools = {
                     codex = {
                         cmd = {
-                            vim.fn.expand("~/dotfiles/scripts/ai-codex.sh"),
+                            vim.fn.expand((vim.env.WHC_DOTFILES_DIR or "~/dotfiles") .. "/scripts/ai-codex.sh"),
                             codex ~= "" and codex or "codex",
                         },
                         env = { WHC_AI = "true", SHELL = "/bin/bash", TMUX = false, TMUX_PANE = false },

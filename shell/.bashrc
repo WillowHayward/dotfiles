@@ -9,7 +9,8 @@ export EDITOR="$VISUAL"
 set -o vi
 
 # Node (fnm replaced nvm)
-[ -r "$HOME/dotfiles/shell/node.bash" ] && source "$HOME/dotfiles/shell/node.bash"
+whc_dotfiles=${WHC_DOTFILES_DIR:-$HOME/dotfiles}
+[ -r "$whc_dotfiles/shell/node.bash" ] && source "$whc_dotfiles/shell/node.bash"
 
 # Launch tmux for local shells only
 if [ -z "$TMUX" ] && [ -z "$SSH_CONNECTION" ] && [ "${WHC_AI:-}" != true ] && command -v tmux >/dev/null 2>&1; then

@@ -1,6 +1,8 @@
 # Environment variables - To be run at the start of zsh launch
 # WHC_ prefix for Willow Hayward Code stuff
-export WHC_DOTFILES_DIR="$HOME/dotfiles"
+# The repo location is needed to find .env, so WHC_DOTFILES_DIR cannot be set there;
+# export it before the shell starts to relocate the repo.
+export WHC_DOTFILES_DIR="${WHC_DOTFILES_DIR:-$HOME/dotfiles}"
 if [[ -f "$WHC_DOTFILES_DIR/.env" ]]; then # Global environment variables not for committing
     set -o allexport
     source "$WHC_DOTFILES_DIR/.env"
@@ -54,7 +56,10 @@ else
     export WHC_LOCAL=true
 fi
 
-export WHC_PROJECTS_DIR="$HOME/projects"
+# Roots for the cdd/cdp/cdi shortcuts and the tmux project picker; .env may override them.
+: ${WHC_PROJECTS_DIR:=$HOME/projects}
+: ${WHC_INFRA_DIR:=$HOME/infra}
+export WHC_PROJECTS_DIR WHC_INFRA_DIR
 
 # Servers do not always have Neovim; never leave EDITOR pointing at a missing binary.
 if (( $+commands[nvim] )); then
