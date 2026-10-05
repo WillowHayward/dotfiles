@@ -62,7 +62,7 @@ require("titlebars")
 require("keybinds")
 require("workspaces")
 
-local super = "SUPER" -- Sets "Windows" key as main modifier
+local super = require("constants").keys.super -- "Windows" key is the main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(
