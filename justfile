@@ -92,6 +92,7 @@ test: check
     bash setup/test.sh
     zsh shell/test.zsh
     nvim -l hypr/test.lua
+    bash scripts/test-tmux-clear-idle.sh
     python3 -B -m unittest discover -s walker -p 'test_*.py'
 
 # Run a profile's real setup in a throw-away Debian container (needs docker and network).
