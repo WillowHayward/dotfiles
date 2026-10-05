@@ -44,3 +44,7 @@ check:
 test: check
     bash setup/test.sh
     python3 -B -m unittest discover -s walker -p 'test_*.py'
+
+# Run a profile's real setup in a throw-away Debian container (needs docker and network).
+test-container profile:
+    bash setup/test-container.sh {{ profile }}
