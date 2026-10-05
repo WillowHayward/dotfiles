@@ -1,0 +1,45 @@
+set shell := ["bash", "-cu"]
+
+# List setup recipes.
+default:
+    @just --justfile ../justfile --working-directory .. --list setup
+
+# Set the machine profile and device name in /etc/environment.
+init-system:
+    bash setup.sh init-system
+
+# Install the common developer package baseline.
+packages:
+    bash setup.sh packages
+
+# Link profile-appropriate dotfiles into the home directory.
+links:
+    bash setup.sh links
+
+# Install and configure zsh and Antidote.
+shell:
+    bash setup.sh shell
+
+# Install Neovim and link its configuration.
+nvim:
+    bash setup.sh nvim
+
+# Install tmux, TPM, and link the tmux configuration.
+tmux:
+    bash setup.sh tmux
+
+# Install fnm and configure the latest LTS version of Node.js.
+node:
+    bash setup.sh node
+
+# Install the home-profile login, lock, and sleep configuration.
+manual-lock:
+    bash setup.sh manual-lock
+
+# Run all core setup tasks.
+all:
+    bash setup.sh all
+
+# Run isolated setup tests.
+test:
+    bash test.sh
