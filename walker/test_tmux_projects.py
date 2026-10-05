@@ -113,6 +113,39 @@ class ProjectResolutionTests(unittest.TestCase):
                 projects.resolve_project("app", choices, root)
 
 
+class PickerListTests(unittest.TestCase):
+    def layout(self, infra_whc=None):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        base = Path(temp.name).resolve()
+        for name in ("projects/alpha", "projects/beta", "infra/ship", "infra/bessie", "infra/notes", "dotfiles"):
+            (base / name).mkdir(parents=True)
+        (base / "projects/.hidden").mkdir()
+        if infra_whc is not None:
+            (base / "infra/.whc").write_text(infra_whc)
+        env = {"WHC_DOTFILES_DIR": str(base / "dotfiles")}
+        return base, env
+
+    def names(self, base, env):
+        with patch.dict(os.environ, env, clear=False):
+            return [path.name for path in projects.projects(base / "projects", base / "infra")]
+
+    def test_infra_is_one_option_without_a_whc_file(self):
+        base, env = self.layout()
+        self.assertEqual(set(self.names(base, env)), {"dotfiles", "alpha", "beta", "infra"})
+
+    def test_infra_workspace_roots_are_listed_once_it_has_a_whc_file(self):
+        base, env = self.layout('[workspace]\nroots = ["ship", "bessie"]\n')
+        names = self.names(base, env)
+        self.assertEqual(set(names), {"dotfiles", "alpha", "beta", "bessie", "infra", "ship"})
+        self.assertEqual(names[0], "dotfiles")
+        self.assertNotIn("notes", names)
+
+    def test_broken_infra_whc_does_not_empty_the_picker(self):
+        base, env = self.layout("not = [valid")
+        self.assertEqual(set(self.names(base, env)), {"dotfiles", "alpha", "beta", "infra"})
+
+
 class WorkspaceTerminalTests(unittest.TestCase):
     def test_compositor_selection(self):
         instances = [

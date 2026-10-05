@@ -26,8 +26,12 @@ def projects(root, infra):
     entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
     if infra.is_dir():
         entries.append(infra)
-        entries += [p for p in infra.iterdir()
-                    if p.is_dir() and not p.name.startswith(".") and (p / ".git").exists()]
+        # Infra stays one option until it has a .whc file; then its workspace roots are listed too.
+        if (infra / ".whc").is_file():
+            try:
+                entries += load_metadata(infra)["roots"][1:]
+            except (OSError, ValueError):
+                pass  # A broken .whc must not empty the picker; opening infra itself reports it.
     dotfiles = dotfiles_dir()
     if dotfiles.is_dir() and dotfiles.resolve() not in {p.resolve() for p in entries}:
         entries.append(dotfiles)
