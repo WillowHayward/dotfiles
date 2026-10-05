@@ -192,8 +192,9 @@ set_keymap("n", "<leader>L", "<cmd>Lazy<cr>", "Lazy")
 
 -- Telescope
 local telescope = require("telescope.builtin")
-set_keymap("n", "<leader>/", telescope.live_grep, "Find in files")
-set_keymap("n", "<C-t>", telescope.find_files, "Find files")
+local project = require("project")
+set_keymap("n", "<leader>/", project.live_grep, "Find in workspace")
+set_keymap("n", "<C-t>", project.find_files, "Find workspace files")
 set_keymap("n", "<leader>fb", telescope.buffers, "Find buffers")
 set_keymap("n", "<leader>fh", telescope.help_tags, "Find help tags")
 set_keymap("n", "<C-r>", telescope.oldfiles, "Find recent files")
@@ -217,7 +218,7 @@ set_keymap("n", "<leader>gI", "<cmd>Octo issue create<CR>", "Create GitHub issue
 set_keymap("n", "gD", telescope.lsp_definitions, "Find definition")
 set_keymap("n", "gr", telescope.lsp_references, "References")
 --set_keymap("n", "<leader>ct", telescope.lsp_type_definitions, "Find type definition") -- Deprecated for copilot tests (also I don't think it worked lol)
-set_keymap("n", "<leader>*", telescope.grep_string, "Search current string or selection")
+set_keymap("n", "<leader>*", project.grep_string, "Search current string in workspace")
 
 -- cmp keybinds in lsp.lua
 
