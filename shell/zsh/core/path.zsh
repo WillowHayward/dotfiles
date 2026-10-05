@@ -1,5 +1,5 @@
 # Keep PATH unique; zsh ties the `path` array to $PATH.
-typeset -U path
+typeset -gU path
 path=("$HOME/.local/bin" $path)
 
 # Optional toolchains: only add what exists on this machine.

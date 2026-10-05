@@ -44,6 +44,7 @@ check:
 # Run the setup and project-picker test suites.
 test: check
     bash setup/test.sh
+    zsh shell/test.zsh
     python3 -B -m unittest discover -s walker -p 'test_*.py'
 
 # Run a profile's real setup in a throw-away Debian container (needs docker and network).
