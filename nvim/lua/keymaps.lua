@@ -267,10 +267,37 @@ set_keymap("n", "<leader>dd", function()
 	dap.continue({ new = true })
 end, "Start new debug session")
 set_keymap("n", "<leader>dc", dap.continue, "Continue debug session")
-set_keymap("n", "<leader>dD", dap.close, "Stop debug session")
+set_keymap("n", "<leader>dD", dap.terminate, "Stop debug session")
 set_keymap("n", "<leader>ds", dap.step_over, "Step through code")
 set_keymap("n", "<leader>dS", dap.step_back, "Step back through code")
 set_keymap("n", "<leader>di", dap.repl.open, "Inspect debug state")
+require("which-key").add({
+	{ "<leader>d", group = "Debug", mode = { "n", "x" } },
+	{ "<leader>o", group = "Godot" },
+})
+set_keymap("n", "<leader>dn", dap.step_into, "Step into code")
+set_keymap("n", "<leader>do", dap.step_out, "Step out of code")
+set_keymap("n", "<leader>db", function()
+	vim.ui.input({ prompt = "Breakpoint condition: " }, function(condition)
+		if condition and condition ~= "" then
+			dap.set_breakpoint(condition)
+		end
+	end)
+end, "Set conditional breakpoint")
+set_keymap("n", "<leader>dr", dap.run_last, "Run last debug configuration")
+set_keymap("n", "<leader>du", function() require("dapui").toggle() end, "Toggle debug UI")
+set_keymap({ "n", "x" }, "<leader>de", function() require("dapui").eval() end, "Evaluate debug expression")
+
+-- Godot actions; Git keeps <leader>g and language actions keep <leader>c.
+set_keymap("n", "<leader>or", "<cmd>GodotRunProject<CR>", "Run Godot project")
+set_keymap("n", "<leader>os", "<cmd>GodotRunCurrentScene<CR>", "Run current Godot scene")
+set_keymap("n", "<leader>of", "<cmd>GodotRunScenePicker<CR>", "Find and run Godot scene")
+set_keymap("n", "<leader>ot", "<cmd>GodotSceneTree<CR>", "View Godot scene tree")
+set_keymap("n", "<leader>ok", "<cmd>GodotDocsCursor<CR>", "Godot docs under cursor")
+set_keymap("n", "<leader>oc", "<cmd>GodotShowConsole<CR>", "Show Godot console")
+set_keymap("n", "<leader>ol", "<cmd>GodotReconnectLSP<CR>", "Reconnect Godot LSP")
+set_keymap("n", "<leader>oh", "<cmd>checkhealth godotdev<CR>", "Check Godot integration")
+
 
 -- local jester = require("jester")
 -- Jest

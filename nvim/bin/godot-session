@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Stop only graphical game instances belonging to an exact Godot project."""
+import json
+import os
+from pathlib import Path
+import select
+import re
+import signal
+import subprocess
+import sys
+import time
+
+
+def hypr(*args):
+    try:
+        result = subprocess.run(['hyprctl', *args], capture_output=True, text=True, timeout=2)
+        return result.stdout if result.returncode == 0 else ''
+    except (OSError, subprocess.TimeoutExpired):
+        return ''
+
+
+def clients():
+    try:
+        return json.loads(hypr('-j', 'clients') or '[]')
+    except ValueError:
+        return []
+
+
+def is_game(proc, root):
+    try:
+        if proc.stat().st_uid != os.getuid() or not (proc / 'exe').resolve().name.lower().startswith('godot'):
+            return False
+        args = (proc / 'cmdline').read_bytes().decode().split('\0')[:-1]
+        args = args[:next((i for i, arg in enumerate(args) if arg in ('--', '++')), len(args))]
+        if any(arg in args for arg in ('--editor', '-e', '--project-manager', '-p', '--headless', '--script', '-s', '--import', '--check-only')):
+            return False
+        cwd = (proc / 'cwd').resolve()
+        path = Path(args[args.index('--path') + 1]) if '--path' in args else cwd
+        return (cwd / path).resolve() == root
+    except (OSError, ValueError, IndexError, UnicodeError):
+        return False
+
+
+def stop(root):
+    windows = clients()
+    previous = None
+    handles = []
+    try:
+        for proc in Path('/proc').iterdir():
+            if not proc.name.isdigit() or not is_game(proc, root):
+                continue
+            try:
+                pid = int(proc.name)
+                fd = os.pidfd_open(pid)
+                if not is_game(proc, root):
+                    os.close(fd)
+                    continue
+                handles.append(fd)
+                previous = next((w for w in windows if w['pid'] == pid), previous)
+                signal.pidfd_send_signal(fd, signal.SIGTERM)
+            except ProcessLookupError:
+                continue
+        deadline = time.monotonic() + 3
+        for fd in handles:
+            if not select.select([fd], [], [], max(0, deadline - time.monotonic()))[0]:
+                signal.pidfd_send_signal(fd, signal.SIGKILL)
+                if not select.select([fd], [], [], 2)[0]:
+                    raise RuntimeError('Previous game did not stop; refusing to duplicate it')
+    finally:
+        for fd in handles:
+            os.close(fd)
+    return previous
+
+
+def place(pid, previous):
+    if not os.environ.get('HYPRLAND_INSTANCE_SIGNATURE'):
+        return
+    for _ in range(60):
+        window = next((w for w in clients() if w['pid'] == pid), None)
+        if window:
+            if not re.fullmatch(r'0x[0-9a-fA-F]+', window['address']):
+                raise ValueError('Unexpected window address')
+            target = 'window="address:' + window['address'] + '"'
+            def dispatch(action, fields=''):
+                code = 'hl.dispatch(hl.dsp.window.' + action + '({' + target + (',' + fields if fields else '') + '}))'
+                output = hypr('eval', code)
+                if output.strip() != 'ok':
+                    raise RuntimeError('Could not place game window: ' + output)
+            if previous and previous.get('workspace', {}).get('id', -1) > 0:
+                dispatch('move', 'workspace=' + str(int(previous['workspace']['id'])) + ',follow=false')
+            floating = previous.get('floating', True) if previous else True
+            dispatch('float', 'action="' + ('set' if floating else 'unset') + '"')
+            if floating:
+                # Respect the project's requested size (and compositor rules) on first launch.
+                size = previous['size'] if previous else window['size']
+                dispatch('resize', f'x={int(size[0])},y={int(size[1])}')
+                if previous:
+                    x, y = previous['at']
+                    dispatch('move', f'x={int(x)},y={int(y)}')
+                else:
+                    dispatch('center')
+            return
+        time.sleep(0.05)
+
+
+if __name__ == '__main__':
+    if sys.argv[1] == 'stop':
+        print(json.dumps(stop(Path(sys.argv[2]).resolve())))
+    elif sys.argv[1] == 'place':
+        place(int(sys.argv[2]), json.loads(sys.argv[3]))

@@ -17,5 +17,16 @@
 return {
     'nvim-treesitter/nvim-treesitter',
     lazy = false,
-    build = ':TSUpdate'
+    build = ':TSUpdate',
+    config = function()
+        require("nvim-treesitter").install({ "gdscript", "gdshader" })
+        vim.api.nvim_create_autocmd("FileType", {
+            group = vim.api.nvim_create_augroup("GodotTreesitter", { clear = true }),
+            pattern = { "gdscript", "gdshader" },
+            callback = function(args)
+                -- First-time parser installation is asynchronous.
+                pcall(vim.treesitter.start, args.buf)
+            end,
+        })
+    end,
 }

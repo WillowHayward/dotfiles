@@ -164,7 +164,6 @@ return {
 						},
 					},
 				},
-				gdscript = {},
                 -- beautysh = {}
 			},
 			setup = {
@@ -216,7 +215,15 @@ return {
 			--require("lsp_signature").setup({}) -- TODO: Not super thrilled with the defaults, look into later
 			-- Consider "Issafalcon/lsp-overloads.nvim",
 			-- Format on save
-			vim.cmd([[autocmd BufWritePre <buffer> lua vim.lsp.buf.format()]])
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
+				callback = function(args)
+					local clients = vim.lsp.get_clients({ bufnr = args.buf, method = "textDocument/formatting" })
+					if #clients > 0 then
+						vim.lsp.buf.format({ bufnr = args.buf, timeout_ms = 3000 })
+					end
+				end,
+			})
 		end,
 	},
 	-- formatters
@@ -230,29 +237,8 @@ return {
 				sources = {
 					-- nls.builtins.formatting.prettierd,
 					nls.builtins.formatting.stylua,
+					nls.builtins.formatting.gdformat,
 					nls.builtins.diagnostics.flake8,
-				},
-			}
-		end,
-	},
-	--- DAP
-	{
-		"mfussenegger/nvim-dap",
-		event = { "BufReadPre", "BufNewFile" },
-		config = function()
-			local dap = require("dap")
-			dap.adapters.godot = {
-				type = "server",
-				host = "127.0.0.1",
-				port = 6006,
-			}
-			dap.configurations.gdscript = {
-				{
-					type = "godot",
-					request = "launch",
-					name = "Launch scene",
-					project = "${workspaceFolder}",
-					launch_scene = true,
 				},
 			}
 		end,
