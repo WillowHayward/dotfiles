@@ -33,6 +33,7 @@ printf '%-34s %-14s %-14s %s\n' pin pinned latest status
 report neovim "$NVIM_VERSION" "$(latest_release neovim/neovim)"
 report fnm "$FNM_VERSION" "$(latest_release Schniz/fnm)"
 report uv "$UV_VERSION" "$(latest_release astral-sh/uv)"
+report tree-sitter-cli "$TREE_SITTER_CLI_VERSION" "$(curl -fsSL --max-time 15 https://registry.npmjs.org/tree-sitter-cli/latest 2>/dev/null | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])' 2>/dev/null || true)"
 report antidote "$ANTIDOTE_REF" "$(latest_head mattmc3/antidote)"
 report tpm "$TPM_REF" "$(latest_head tmux-plugins/tpm)"
 
