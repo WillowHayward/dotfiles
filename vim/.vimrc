@@ -1,3 +1,7 @@
+" A vimrc disables the built-in defaults (syntax, incsearch, ...); load them back.
+unlet! skip_defaults_mod
+source $VIMRUNTIME/defaults.vim
+
 set autoindent
 set expandtab
 set tabstop=4
