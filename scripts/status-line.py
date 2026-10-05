@@ -6,8 +6,10 @@ Usage: scripts/status-line.py [ai|battery]   (no argument prints both)
 AI usage depends on the profile (WHC_PROFILE):
   home  Codex and Claude: remaining 5-hour / remaining weekly percentages.
         Codex comes from the rate limits its own session logs record (~/.codex/sessions).
-        Claude has no local source for plan limits, so its segment shows what
-        WHC_CLAUDE_USAGE_CMD prints (a command that outputs e.g. "72%/85%"); without it, a dash.
+        Claude's usage comes from Anthropic's OAuth usage endpoint, called with the access token that
+        Claude Code stores in ~/.claude/.credentials.json (read-only, sent only to api.anthropic.com,
+        never printed or cached). WHC_CLAUDE_USAGE_CMD, if set, replaces that with your own command
+        printing e.g. "72%/85%".
   work  Copilot: remaining AI credits and the percentage used, from `gh api /copilot_internal/user`.
 Results are cached under ~/.cache/whc/status/ so the status bar stays cheap; failures print a dash
 instead of an error. Icons are Nerd Font glyphs; override with WHC_ICON_CODEX, WHC_ICON_CLAUDE,
@@ -19,6 +21,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "whc" / "status"
@@ -124,17 +127,38 @@ def codex_segment():
     return f"{colour('purple', ICONS['codex'])} {pair(five_hour, weekly)}"
 
 
+def claude_usage():
+    """Remaining 5-hour and weekly percentages from the OAuth usage endpoint, as JSON text."""
+    credentials = json.loads(Path.home().joinpath(".claude/.credentials.json").read_text())
+    token = credentials["claudeAiOauth"]["accessToken"]
+    request = urllib.request.Request(
+        "https://api.anthropic.com/api/oauth/usage",
+        headers={"Authorization": f"Bearer {token}", "anthropic-beta": "oauth-2025-04-20", "User-Agent": "whc-status-line"},
+    )
+    with urllib.request.urlopen(request, timeout=8) as response:
+        usage = json.load(response)
+
+    def left(window):
+        used = (usage.get(window) or {}).get("utilization")
+        return None if used is None else max(0.0, 100.0 - float(used))
+
+    return json.dumps([left("five_hour"), left("seven_day")])
+
+
 def claude_segment():
     command = os.environ.get("WHC_CLAUDE_USAGE_CMD")
+    icon = colour("orange", ICONS["claude"])
+    if command:
+        def produce():
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10, check=True)
+            return result.stdout.strip()
 
-    def produce():
-        if not command:
-            return None
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10, check=True)
-        return result.stdout.strip()
-
-    text = cached("claude.txt", 120, produce).strip() if command else ""
-    return f"{colour('orange', ICONS['claude'])} {text or colour('dim', '-/-')}"
+        return f"{icon} {cached('claude.txt', 120, produce).strip() or colour('dim', '-/-')}"
+    try:
+        five_hour, weekly = json.loads(cached("claude.json", 120, claude_usage) or "[null, null]")
+    except ValueError:
+        five_hour = weekly = None
+    return f"{icon} {pair(five_hour, weekly)}"
 
 
 def copilot_segment():
