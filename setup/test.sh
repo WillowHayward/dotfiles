@@ -45,7 +45,7 @@ done
 
 remote_case=$test_root/remote
 mkdir -p -- "$remote_case/user"
-write_environment "$remote_case/environment" remote ship
+write_environment "$remote_case/environment" remote testbox
 write_os_release "$remote_case/os-release" debian debian
 run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" links
 for link in .zshrc .gitconfig .tmux.conf .vimrc .config/atuin/config.toml; do
@@ -92,7 +92,7 @@ fi
 
 legacy_case=$test_root/legacy
 mkdir -p -- "$legacy_case/user"
-write_environment "$legacy_case/environment" remote ship
+write_environment "$legacy_case/environment" remote testbox
 write_os_release "$legacy_case/os-release" debian debian
 ln -s "$(cd "$setup_dir/.." && pwd)/shell/.zsh_plugins.txt" "$legacy_case/user/.zsh_plugins.txt"
 run_setup "$legacy_case/environment" "$legacy_case/os-release" "$legacy_case/user" links
@@ -174,7 +174,7 @@ grep -q 'apt-get install -y' "$package_case/commands"
 grep -q 'build-essential' "$package_case/commands"
 grep -q 'lazygit is unavailable' "$package_case/stderr"
 
-write_environment "$package_case/environment" remote ship
+write_environment "$package_case/environment" remote testbox
 : >"$package_case/commands"
 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
     run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2>"$package_case/stderr"
@@ -206,7 +206,7 @@ grep -q '^apt-get install' "$package_case/commands"
 # --relink replaces a wrong symlink; --adopt also backs up a real file. Plain links refuses both.
 mode_case=$test_root/mode
 mkdir -p -- "$mode_case/user"
-write_environment "$mode_case/environment" remote ship
+write_environment "$mode_case/environment" remote testbox
 write_os_release "$mode_case/os-release" debian debian
 ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
 printf 'mine\n' >"$mode_case/user/.vimrc"
@@ -234,7 +234,7 @@ shell_case=$test_root/shellfiles
 mkdir -p -- "$shell_case/user/.ssh"
 printf 'Host keep\n    HostName example.test\n' >"$shell_case/user/.ssh/config"
 printf 'export KEEP=1\n' >"$shell_case/user/.bashrc"
-write_environment "$shell_case/environment" remote ship
+write_environment "$shell_case/environment" remote testbox
 write_os_release "$shell_case/os-release" debian debian
 for _ in 1 2; do
     run_setup "$shell_case/environment" "$shell_case/os-release" "$shell_case/user" ssh
