@@ -51,23 +51,17 @@ cp -r /src /root/dotfiles
 cd /root/dotfiles
 printf 'WHC_PROFILE="%s"\nWHC_DEVICE="test"\n' "$PROFILE" > /etc/environment
 
-if [[ $PROFILE == work ]]; then
-    bash setup/setup.sh all >/tmp/setup.log 2>&1 || { tail -30 /tmp/setup.log; fail "setup all"; }
-else
-    for task in packages links shell tmux; do
-        bash setup/setup.sh "$task" >"/tmp/$task.log" 2>&1 || { tail -30 "/tmp/$task.log"; fail "setup $task"; }
-    done
-fi
+bash setup/setup.sh all >/tmp/setup.log 2>&1 || { tail -40 /tmp/setup.log; fail "setup all"; }
 ok "setup completed"
 export PATH="$HOME/.local/bin:$HOME/.local/share/fnm:$PATH"
 
-for command in zsh tmux git vim fzf rg less; do
+for command in zsh tmux git vim fzf rg less delta jq bat fd; do
     command -v "$command" >/dev/null || fail "$command is missing"
 done
 ok "core commands installed"
 
 if [[ $PROFILE == work ]]; then
-    for command in nvim fnm lazygit gh; do
+    for command in nvim fnm lazygit gh uv direnv; do
         command -v "$command" >/dev/null || fail "$command is missing"
     done
     nvim --version | head -1 | grep -qE 'NVIM v0\.(1[1-9]|[2-9][0-9])' || fail "Neovim is older than 0.11"
@@ -76,7 +70,8 @@ else
     for command in nvim fnm node lazygit; do
         ! command -v "$command" >/dev/null || fail "remote must not install $command"
     done
-    ok "no developer tools on remote"
+    docker --version >/dev/null || fail "docker is missing on remote"
+    ok "no developer tools on remote; $(docker --version)"
 fi
 
 # An interactive zsh must load the profile, plugins and prompt without errors.
@@ -96,12 +91,17 @@ grep -q 'EDITOR_OK=yes' <<<"$output" || { printf '%s\n' "$output"; fail "git edi
 grep -qiE 'command not found|no such file|parse error|error' <<<"$output" && { printf '%s\n' "$output"; fail "zsh printed errors"; }
 ok "zsh loads the $PROFILE profile; git editor resolves"
 
-# Git: https stays https on remote, is rewritten to SSH on work.
-rewrites=$(git config --get-all url.git@github.com:.insteadof || true)
+# doctor must pass: required tools installed and every link correct.
+bash setup/setup.sh doctor >/tmp/doctor.log 2>&1 || { cat /tmp/doctor.log; fail "doctor reported problems"; }
+ok "doctor passes"
+
+# Git: https everywhere for fetches; pushes go over SSH on work only.
+rewrites=$(git config --get-all url.git@github.com:.pushinsteadof || true)
 if [[ $PROFILE == remote ]]; then
     [[ -z $rewrites ]] || fail "remote must not rewrite github URLs"
 else
-    [[ $rewrites == https://github.com/ ]] || fail "work should rewrite github URLs to SSH"
+    [[ $rewrites == https://github.com/ ]] || fail "work should push to github over SSH"
+    [[ -z $(git config --get-all url.git@github.com:.insteadof || true) ]] || fail "fetches must stay on https"
 fi
 ok "git profile config"
 if [[ $PROFILE == work ]]; then

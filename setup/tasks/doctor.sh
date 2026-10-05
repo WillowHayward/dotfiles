@@ -90,6 +90,13 @@ doctor_stale_builds() {
 }
 
 task_doctor() {
+    # Node tools live under fnm; load it like an interactive shell would.
+    local fnm_dir=${FNM_DIR:-$setup_home/.local/share/fnm}
+    if [[ -x $fnm_dir/fnm ]]; then
+        export PATH="$fnm_dir:$PATH"
+        eval "$("$fnm_dir/fnm" env --shell bash)"
+        fnm use default >/dev/null 2>&1 || true
+    fi
     printf 'Profile %s (%s), device %s\n' "$WHC_PROFILE" "$PACKAGE_FAMILY" "${WHC_DEVICE:-unset}"
     doctor_commands "core tools" git zsh tmux fzf rg curl less delta jq bat
     if command -v fd >/dev/null 2>&1 || command -v fdfind >/dev/null 2>&1; then doctor_ok fd; else doctor_miss fd; fi
