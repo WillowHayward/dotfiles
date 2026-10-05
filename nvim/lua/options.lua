@@ -17,6 +17,4 @@ vim.g.indentLine_setColors = 0
 
 -- color scheme
 vim.opt.termguicolors = true
-vim.g.edge_style = "aura"
-vim.g.edge_better_performance = 1
 vim.cmd([[colorscheme dracula]])
