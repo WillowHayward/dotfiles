@@ -40,4 +40,19 @@ for bad in app/src .. . missing; do
     [[ $PWD == $home ]] || { print -u2 "cdp moved on rejected '$bad'"; exit 1 }
 done
 if cdp a b 2>/dev/null; then print -u2 "cdp accepted two arguments"; exit 1; fi
+
+# pp dispatch: terminal picker, direct open, and refresh without an empty argument.
+source "$root/zsh/dev/functions/pp.zsh"
+python3() { pp_args=("$@"); }
+typeset -a pp_args
+pp
+[[ ${pp_args[-1]} == terminal-pick ]] || { print -u2 "pp did not open the terminal picker"; exit 1; }
+pp app
+[[ ${pp_args[-2,-1]} == (terminal-open app) ]] || { print -u2 "pp did not open app"; exit 1; }
+pp --refresh
+[[ ${#pp_args} == 2 && ${pp_args[-1]} == refresh ]] \
+    || { print -u2 "pp --refresh passed an unexpected target"; exit 1; }
+pp --refresh app
+[[ ${pp_args[-2,-1]} == (refresh app) ]] || { print -u2 "pp did not refresh app"; exit 1; }
+if pp one two 2>/dev/null; then print -u2 "pp accepted too many arguments"; exit 1; fi
 print "zsh loader tests passed."
