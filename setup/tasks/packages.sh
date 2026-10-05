@@ -5,7 +5,7 @@
 # home only) is installed by task_desktop.
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
-        arch:core) printf '%s\n' git curl zsh tmux ripgrep fzf vim less openssh ;;
+        arch:core) printf '%s\n' git curl zsh tmux ripgrep fzf bat vim less openssh ;;
         arch:dev) printf '%s\n' base-devel neovim lazygit github-cli fd jq unzip python tree-sitter-cli ;;
         arch:desktop)
             printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
@@ -13,7 +13,7 @@ tier_packages() {
                 pipewire wireplumber playerctl brightnessctl ddcutil libnotify \
                 noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
             ;;
-        debian:core) printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf vim less openssh-client ;;
+        debian:core) printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf bat vim less openssh-client ;;
         debian:dev) printf '%s\n' build-essential gh fd-find jq unzip python3 python3-pip python3-venv ;;
         *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
     esac
@@ -40,5 +40,11 @@ task_packages() {
         && command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
         mkdir -p -- "$setup_home/.local/bin"
         ln -sfn -- "$(command -v fdfind)" "$setup_home/.local/bin/fd"
+    fi
+    # Debian installs bat as batcat; SessionX expects the upstream command name.
+    if [[ $PACKAGE_FAMILY == debian ]] \
+        && command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then
+        mkdir -p -- "$setup_home/.local/bin"
+        ln -sfn -- "$(command -v batcat)" "$setup_home/.local/bin/bat"
     fi
 }
