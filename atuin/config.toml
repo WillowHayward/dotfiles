@@ -1,0 +1,11 @@
+# Atuin shell history (Ctrl-R). Syncing only happens after `atuin register` / `atuin login`;
+# the account key lives in ~/.local/share/atuin and is never tracked.
+auto_sync = true
+update_check = false
+search_mode = "fuzzy"
+filter_mode = "global"
+style = "compact"
+inline_height = 20
+show_preview = true
+enter_accept = false
+secrets_filter = true
