@@ -1,49 +1,45 @@
+# Loader only: the configuration lives in zsh/ and is layered by profile.
+#
+#   core/     every profile (including remote): prompt, plugins, history, aliases
+#   dev/      home and work: language toolchains and developer tooling
+#   profile/  one file per WHC_PROFILE (home, work, remote)
+#   context/  how the shell was reached (local terminal vs. SSH)
+#
+# WHC_PROFILE comes from /etc/environment (see `just setup init-system`).
 
-source_files() {
-    local files=("$@")
-    for file in $files; do
-        source $zsh_root/$file
-    done
+zsh_root=${${(%):-%x}:A:h}/zsh # Resolve the .zshrc symlink so the repo can live anywhere.
+
+whc_source() {
+    [[ -r $zsh_root/$1 ]] && source "$zsh_root/$1"
 }
 
-autoload -U add-zsh-hook
-autoload -U +X compinit && compinit
+# env.zsh derives WHC_PROFILE; everything below branches on it. The prompt is
+# configured before plugins load, and compinit runs first because Oh My Zsh
+# plugins call compdef while loading.
+whc_source core/env.zsh
+whc_source core/path.zsh
+whc_source core/prompt.zsh
+autoload -Uz compinit && compinit
+whc_source core/plugins.zsh
+whc_source core/functions.zsh
+whc_source core/keys.zsh
+whc_source core/aliases.zsh
 
-zsh_root="$HOME/dotfiles/shell/zsh"
-load_first=(env.zsh functions.zsh prompt.zsh) # Configure the prompt before plugins.
-load_last=(history.zsh)
-skip=(home.zsh work.zsh remote.zsh local.zsh)
-
-# Source the first files
-source_files $load_first
-
-# Get all zsh files and source them, excluding the first and last files
-all_files=($(ls $zsh_root))
-for file in $all_files; do
-    if (( ${load_first[(Ie)$file]} == 0 && ${load_last[(Ie)$file]} == 0 && ${skip[(Ie)$file]} == 0 )); then
-        source $zsh_root/$file
-    fi
-done
-
-# Source the last files
-source_files $load_last
-
-
-# Load environment-specific files
-# Note - home/work are exclusive, and local/remote are exclusive, but those pairs can (and usually will be) mixed and matches
-declare -A envs # A map of env vars to test and the files in ./zsh/ to source. envs[ENV_VAR]="file.zsh"
-envs[WHC_HOME]="home.zsh"
-envs[WHC_WORK]="work.zsh"
-envs[WHC_LOCAL]="local.zsh"
-envs[WHC_REMOTE]="remote.zsh"
-
-for var in "${(@k)envs}"; do
-    if [[ -v ${var} ]]; then
-        source $zsh_root/${envs[$var]}
-    fi
-done
-
-# Load Angular CLI autocompletion when installed for this Node version.
-if (( $+commands[ng] )); then
-    source <(ng completion script)
+if [[ -v WHC_DEV ]]; then
+    whc_source dev/fnm.zsh
+    whc_source dev/aliases.zsh
+    for file in "$zsh_root"/dev/functions/*.zsh(N); do
+        source "$file"
+    done
+    whc_source dev/completions.zsh
 fi
+
+whc_source core/history.zsh # Last, so nothing above overrides the history settings.
+
+# Profile and connection context. Profile (home/work/remote) is exclusive;
+# context (local/SSH) is independent of it. context/local.zsh may exec tmux,
+# so it must stay last.
+whc_source profile/${WHC_PROFILE:-remote}.zsh
+[[ -v WHC_LOCAL ]] && whc_source context/local.zsh
+
+unset file

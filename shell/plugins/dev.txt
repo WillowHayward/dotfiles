@@ -1,0 +1,7 @@
+# Added on top of core.txt for home and work.
+ohmyzsh/ohmyzsh path:plugins/taskwarrior
+
+# TODO: Assess this, tbh
+ohmyzsh/ohmyzsh path:plugins/laravel
+
+jscutlery/nx-completion

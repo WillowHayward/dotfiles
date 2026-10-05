@@ -1,12 +1,17 @@
+# Bash fallback for machines where zsh is unavailable. Zsh is the primary shell
+# (see .zshrc); this is not linked by `just setup`, so link it by hand if needed.
+[[ $- == *i* ]] || return
+
 # Set vi/vim/nvim settings
-export VISUAL=nvim
+if command -v nvim >/dev/null 2>&1; then VISUAL=nvim; elif command -v vim >/dev/null 2>&1; then VISUAL=vim; else VISUAL=vi; fi
+export VISUAL
 export EDITOR="$VISUAL"
 set -o vi
-# setxkbmap -option caps:swapescape # Swap caps and escape
 
-# Load NVM
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# Node (fnm replaced nvm)
+[ -r "$HOME/dotfiles/shell/node.bash" ] && source "$HOME/dotfiles/shell/node.bash"
 
-# Launch tmux
-[ -z "$TMUX"  ] && { tmux attach || exec tmux new-session && exit;}
+# Launch tmux for local shells only
+if [ -z "$TMUX" ] && [ -z "$SSH_CONNECTION" ] && [ "${WHC_AI:-}" != true ] && command -v tmux >/dev/null 2>&1; then
+    exec tmux new-session -A -s general
+fi

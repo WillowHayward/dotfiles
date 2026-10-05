@@ -1,5 +1,5 @@
 # Dracula Powerlevel10k theme with explicit RGB colours. Load before Antidote.
-source "${${(%):-%x}:A:h:h}/themes/dracula-powerlevel10k/p10k.zsh"
+source "${${(%):-%x}:A:h:h:h}/themes/dracula-powerlevel10k/p10k.zsh"
 
 # Local integration settings; keep integration separate from theme colours.
 typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
