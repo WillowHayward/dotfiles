@@ -5,6 +5,8 @@ if [[ -f "$WHC_DOTFILES_DIR/.env" ]]; then # Global environment variables not fo
     set -o allexport
     source "$WHC_DOTFILES_DIR/.env"
     set +o allexport
+    # A blank TZ copied from .env.example would make every program run in UTC.
+    [[ -v TZ && -z $TZ ]] && unset TZ
 fi
 
 # Machine identity is managed by `just setup init-system`. Read it again after
