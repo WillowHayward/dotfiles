@@ -1,0 +1,20 @@
+# mako notifications, Dracula palette.
+font=Adwaita Sans 11
+background-color=#282a36
+text-color=#f8f8f2
+border-color=#bd93f9
+progress-color=over #44475a
+border-size=2
+border-radius=8
+padding=10
+margin=10
+width=380
+default-timeout=6000
+max-visible=5
+
+[urgency=low]
+border-color=#6272a4
+
+[urgency=critical]
+border-color=#ff5555
+default-timeout=0

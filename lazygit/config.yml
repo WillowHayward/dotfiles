@@ -1,0 +1,16 @@
+# lazygit: delta for diffs, Neovim as the editor, Dracula-ish borders.
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never
+os:
+  editPreset: nvim
+gui:
+  nerdFontsVersion: "3"
+  showFileTree: true
+  theme:
+    activeBorderColor: ['#bd93f9', bold]
+    inactiveBorderColor: ['#6272a4']
+    selectedLineBgColor: ['#44475a']
+    optionsTextColor: ['#8be9fd']
+    unstagedChangesColor: ['#ff5555']
