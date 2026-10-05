@@ -10,6 +10,7 @@ task_all() {
     if profile_has dev; then
         task_nvim
         task_node
+        task_python
     fi
     if profile_has desktop; then
         task_desktop

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 repo_root=$(cd -- "$setup_dir/.." && pwd)
+# shellcheck source=../pins.env
+source "$setup_dir/pins.env"
 environment_file=${WHC_ENVIRONMENT_FILE:-/etc/environment}
 os_release_file=${WHC_OS_RELEASE_FILE:-/etc/os-release}
 setup_home=${WHC_SETUP_HOME:-$HOME}
@@ -96,10 +98,33 @@ version_at_least() {
     [[ $(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1) == "$2" ]]
 }
 
-# Clone a public repository over https regardless of ~/.gitconfig: the profile
-# configs rewrite github.com URLs to SSH, and a new machine has no key yet.
+# Clone a public repository over https regardless of ~/.gitconfig, so a machine
+# without a GitHub key can bootstrap. Usage: clone_public URL DIR [COMMIT]; with a
+# commit the checkout is pinned to it.
 clone_public() {
-    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git clone "$@"
+    local url=$1 dir=$2 ref=${3:-}
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git clone --quiet "$url" "$dir"
+    if [[ -n $ref ]]; then
+        git -C "$dir" -c advice.detachedHead=false checkout --quiet "$ref"
+    fi
+}
+
+# Map uname -m onto the architecture names used by release assets: sets ARCH_X86_64
+# style suffix in $release_arch (X86_64 or ARM64) or dies.
+detect_release_arch() {
+    case "$(uname -m)" in
+        x86_64) release_arch=X86_64 ;;
+        aarch64|arm64) release_arch=ARM64 ;;
+        *) die "no pinned release for architecture '$(uname -m)'." ;;
+    esac
+}
+
+# Download URL to FILE and refuse it unless its sha256 matches.
+download_verified() {
+    local url=$1 expected=$2 file=$3
+    curl -fL --retry 3 --silent --show-error "$url" -o "$file"
+    printf '%s  %s\n' "$expected" "$file" | sha256sum -c - >/dev/null \
+        || die "download of $url failed its checksum; refusing to install it."
 }
 
 run_as_root() {

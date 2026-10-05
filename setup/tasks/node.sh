@@ -1,19 +1,29 @@
 #!/usr/bin/env bash
 
+# fnm from its pinned release zip (setup/pins.env), not the unpinned install script.
+install_fnm() {
+    local release_arch asset expected_var tmp
+    detect_release_arch
+    [[ $release_arch == X86_64 ]] && asset=fnm-linux.zip || asset=fnm-arm64.zip
+    expected_var=FNM_SHA256_$release_arch
+    install_packages unzip
+    tmp=$(mktemp -d)
+    trap 'rm -rf -- "$tmp"' RETURN
+    download_verified "https://github.com/Schniz/fnm/releases/download/v$FNM_VERSION/$asset" \
+        "${!expected_var}" "$tmp/fnm.zip"
+    unzip -q "$tmp/fnm.zip" -d "$tmp"
+    mkdir -p -- "$FNM_DIR"
+    install -m 0755 "$tmp/fnm" "$FNM_DIR/fnm"
+    rm -rf -- "$tmp"
+    trap - RETURN
+}
+
 task_node() {
     profile_has dev || die "node is only set up on the home and work profiles."
     install_packages curl
     export FNM_DIR=${FNM_DIR:-$setup_home/.local/share/fnm}
     export PATH="$FNM_DIR:$PATH"
-    if ! command -v fnm >/dev/null 2>&1; then
-        local installer
-        installer=$(mktemp)
-        trap 'rm -f -- "$installer"' RETURN
-        curl -fsSL https://fnm.vercel.app/install -o "$installer"
-        bash "$installer" --skip-shell
-        rm -f -- "$installer"
-        trap - RETURN
-    fi
+    command -v fnm >/dev/null 2>&1 || install_fnm
     eval "$(fnm env --shell bash)"
     fnm install --lts
     fnm default lts-latest

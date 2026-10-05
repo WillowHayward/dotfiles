@@ -15,7 +15,7 @@ task_tmux() {
             || die "refusing to replace non-TPM path: $tpm_dir"
     else
         mkdir -p -- "$(dirname -- "$tpm_dir")"
-        clone_public https://github.com/tmux-plugins/tpm "$tpm_dir"
+        clone_public https://github.com/tmux-plugins/tpm "$tpm_dir" "$TPM_REF"
     fi
 
     link_groups tmux

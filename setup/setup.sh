@@ -22,6 +22,7 @@ Tasks:
   nvim         Install Neovim 0.11+ and link its configuration
   tmux         Install and configure tmux and TPM
   node         Install fnm and the latest LTS Node.js (home and work)
+  python       Install uv (home and work)
   desktop      Install and link the Hyprland desktop (home only)
   manual-lock  Configure greetd, hyprlock, hypridle, and logind (home only)
   all          Run every task the profile includes
@@ -38,7 +39,7 @@ case "$task" in
     init-system)
         task_init_system
         ;;
-    packages|links|shell|nvim|tmux|node|desktop|manual-lock|all)
+    packages|links|shell|nvim|tmux|node|python|desktop|manual-lock|all)
         load_system_identity
         validate_profile_os
         "task_${task//-/_}"

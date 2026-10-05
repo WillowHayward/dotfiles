@@ -32,6 +32,10 @@ tmux:
 node:
     bash setup.sh node
 
+# Install uv for Python tools and virtual environments (home and work).
+python:
+    bash setup.sh python
+
 # Install and link the Hyprland desktop (home profile only).
 desktop:
     bash setup.sh desktop

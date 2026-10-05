@@ -9,7 +9,7 @@ task_shell() {
             || die "refusing to replace non-Antidote path: $antidote_dir"
     else
         mkdir -p -- "$(dirname -- "$antidote_dir")"
-        clone_public --depth=1 https://github.com/mattmc3/antidote.git "$antidote_dir"
+        clone_public https://github.com/mattmc3/antidote.git "$antidote_dir" "$ANTIDOTE_REF"
     fi
 
     link_groups shell
