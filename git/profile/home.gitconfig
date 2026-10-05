@@ -1,0 +1,5 @@
+# Personal machines authenticate to GitHub with SSH keys.
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+[interactive]
+	diffFilter = diff-so-fancy --patch

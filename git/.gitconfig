@@ -4,18 +4,20 @@
 	username = WillowHayward
 [core]
 	editor = nvim
-    excludesfile = ~/.gitignore.global
-    pager = diff-so-fancy | less --tabs=4 -RF
+	excludesfile = ~/.gitignore.global
+	# Fall back to plain paging where diff-so-fancy is not installed.
+	pager = "( command -v diff-so-fancy >/dev/null 2>&1 && diff-so-fancy || cat ) | less --tabs=4 -RFX"
 [push]
-    followTags = true
+	followTags = true
 [alias]
-    s = status
-    c = commit
-    ca = commit --all
-    d = diff
+	s = status
+	c = commit
+	ca = commit --all
+	d = diff
 [init]
 	defaultBranch = main
-[interactive]
-    diffFilter = diff-so-fancy --patch
-[url "git@github.com:"]
-	insteadOf = https://github.com/
+# Per-profile settings (git/profile/*.gitconfig, linked by `just setup links`)
+# and per-machine overrides that are not committed, e.g. a work email address.
+[include]
+	path = ~/.gitconfig.profile
+	path = ~/.gitconfig.local
