@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Baseline server hardening for the remote profile. Deliberately small, and a candidate
-# to move into the infra repo (see docs/future-willow.md). Each step explains itself and
+# to move into the infra repo (it may move there). Each step explains itself and
 # asks before changing anything; WHC_ASSUME_YES=1 skips the questions and
 # WHC_HARDEN_STEPS (default "ssh,upgrades,ufw") picks the steps. fail2ban joins with
 # WHC_HARDEN_FAIL2BAN=1. Nothing here runs from `all`.
