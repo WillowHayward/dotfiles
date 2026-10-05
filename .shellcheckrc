@@ -1,0 +1,3 @@
+# The setup tasks are sourced by setup.sh, so variables look unassigned or unused in isolation.
+external-sources=true
+disable=SC1091,SC2154,SC2034

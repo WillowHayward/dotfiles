@@ -37,6 +37,7 @@ run script *args:
 check:
     just --fmt --check
     @find scripts setup hypr -type f -name '*.sh' -print0 | xargs -0 bash -n
+    @if command -v shellcheck >/dev/null 2>&1; then find scripts setup hypr -type f -name '*.sh' -print0 | xargs -0 shellcheck -x; else echo 'shellcheck not installed; skipping'; fi
     @find shell -type f \( -name '.zshrc' -o -name '*.zsh' \) -print0 | xargs -0 -n1 zsh -n
     @python3 -c "import ast, sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]" walker/tmux-projects.py nvim/bin/godot-editor nvim/bin/godot-session
 
