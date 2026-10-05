@@ -5,7 +5,8 @@ environment_file=${WHC_ENVIRONMENT_FILE:-/etc/environment}
 os_release_file=${WHC_OS_RELEASE_FILE:-/etc/os-release}
 setup_home=${WHC_SETUP_HOME:-$HOME}
 setup_config_home=${WHC_SETUP_CONFIG_HOME:-${XDG_CONFIG_HOME:-$setup_home/.config}}
-packages_ready=false
+declare -A requested_packages=()
+apt_updated=false
 
 die() {
     printf 'setup: %s\n' "$*" >&2
@@ -80,6 +81,21 @@ validate_profile_os() {
     export PACKAGE_FAMILY
 }
 
+# Capability tiers: every profile has "core"; "dev" is home and work; "desktop" is home only.
+profile_has() {
+    case "$1" in
+        core) return 0 ;;
+        dev) [[ $WHC_PROFILE == home || $WHC_PROFILE == work ]] ;;
+        desktop) [[ $WHC_PROFILE == home ]] ;;
+        *) die "unknown profile tier '$1'" ;;
+    esac
+}
+
+# True when version $1 is greater than or equal to version $2 (dotted numbers).
+version_at_least() {
+    [[ $(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1) == "$2" ]]
+}
+
 run_as_root() {
     if (( EUID == 0 )); then
         "$@"
@@ -89,18 +105,29 @@ run_as_root() {
     fi
 }
 
+# Install packages once per run, skipping any already requested by an earlier task.
 install_packages() {
-    (( $# > 0 )) || return 0
-    [[ $packages_ready == true ]] && return 0
+    local package
+    local -a missing=()
+    for package in "$@"; do
+        [[ -n ${requested_packages[$package]:-} ]] || missing+=("$package")
+    done
+    (( ${#missing[@]} > 0 )) || return 0
     case "$PACKAGE_FAMILY" in
         arch)
-            run_as_root pacman -S --needed --noconfirm "$@"
+            run_as_root pacman -S --needed --noconfirm "${missing[@]}"
             ;;
         debian)
-            run_as_root apt-get update
-            run_as_root apt-get install -y "$@"
+            if [[ $apt_updated == false ]]; then
+                run_as_root apt-get update
+                apt_updated=true
+            fi
+            run_as_root apt-get install -y "${missing[@]}"
             ;;
     esac
+    for package in "${missing[@]}"; do
+        requested_packages[$package]=1
+    done
 }
 
 paths_match() {

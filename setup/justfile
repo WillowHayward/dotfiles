@@ -8,7 +8,7 @@ default:
 init-system:
     bash setup.sh init-system
 
-# Install the common developer package baseline.
+# Install the profile's package baseline.
 packages:
     bash setup.sh packages
 
@@ -20,7 +20,7 @@ links:
 shell:
     bash setup.sh shell
 
-# Install Neovim and link its configuration.
+# Install Neovim 0.11+ and link its configuration.
 nvim:
     bash setup.sh nvim
 
@@ -32,11 +32,15 @@ tmux:
 node:
     bash setup.sh node
 
+# Install and link the Hyprland desktop (home profile only).
+desktop:
+    bash setup.sh desktop
+
 # Install the home-profile login, lock, and sleep configuration.
 manual-lock:
     bash setup.sh manual-lock
 
-# Run all core setup tasks.
+# Run every setup task the machine's profile includes.
 all:
     bash setup.sh all
 

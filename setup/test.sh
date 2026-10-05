@@ -31,20 +31,54 @@ write_environment "$home_case/environment" home cowgirl
 write_os_release "$home_case/os-release" arch
 run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
 run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
-[[ -L $home_case/user/.zshrc ]]
-[[ -L $home_case/user/.config/swayimg ]]
+for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim .config/swayimg .config/hypr \
+    .config/walker/config.toml .config/elephant/menus/session.toml .config/mimeapps.list; do
+    [[ -L $home_case/user/$link ]] || { printf 'Expected home link: %s\n' "$link" >&2; exit 1; }
+done
+[[ $(readlink "$home_case/user/.gitconfig.profile") == */git/profile/home.gitconfig ]]
 
 remote_case=$test_root/remote
 mkdir -p -- "$remote_case/user"
 write_environment "$remote_case/environment" remote ship
 write_os_release "$remote_case/os-release" debian debian
 run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" links
-[[ -L $remote_case/user/.zshrc ]]
-[[ ! -e $remote_case/user/.config/swayimg ]]
-if run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" manual-lock 2>/dev/null; then
-    printf '%s\n' 'Expected manual-lock to reject the remote profile.' >&2
+for link in .zshrc .gitconfig .tmux.conf .vimrc; do
+    [[ -L $remote_case/user/$link ]] || { printf 'Expected remote link: %s\n' "$link" >&2; exit 1; }
+done
+for link in .config/nvim .config/swayimg .config/hypr .npmrc .taskrc .tmux.session.conf; do
+    [[ ! -e $remote_case/user/$link ]] || { printf 'Remote must not link: %s\n' "$link" >&2; exit 1; }
+done
+[[ $(readlink "$remote_case/user/.gitconfig.profile") == */git/profile/remote.gitconfig ]]
+for task in manual-lock desktop node; do
+    if run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" "$task" 2>/dev/null; then
+        printf 'Expected %s to reject the remote profile.\n' "$task" >&2
+        exit 1
+    fi
+done
+
+work_case=$test_root/work
+mkdir -p -- "$work_case/user"
+write_environment "$work_case/environment" work work
+write_os_release "$work_case/os-release" debian debian
+run_setup "$work_case/environment" "$work_case/os-release" "$work_case/user" links
+for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim; do
+    [[ -L $work_case/user/$link ]] || { printf 'Expected work link: %s\n' "$link" >&2; exit 1; }
+done
+for link in .config/swayimg .config/hypr; do
+    [[ ! -e $work_case/user/$link ]] || { printf 'Work must not link: %s\n' "$link" >&2; exit 1; }
+done
+if run_setup "$work_case/environment" "$work_case/os-release" "$work_case/user" desktop 2>/dev/null; then
+    printf '%s\n' 'Expected desktop to reject the work profile.' >&2
     exit 1
 fi
+
+legacy_case=$test_root/legacy
+mkdir -p -- "$legacy_case/user"
+write_environment "$legacy_case/environment" remote ship
+write_os_release "$legacy_case/os-release" debian debian
+ln -s "$(cd "$setup_dir/.." && pwd)/shell/.zsh_plugins.txt" "$legacy_case/user/.zsh_plugins.txt"
+run_setup "$legacy_case/environment" "$legacy_case/os-release" "$legacy_case/user" links
+[[ ! -e $legacy_case/user/.zsh_plugins.txt && ! -L $legacy_case/user/.zsh_plugins.txt ]]
 
 conflict_case=$test_root/conflict
 mkdir -p -- "$conflict_case/user"
@@ -109,13 +143,38 @@ WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
     run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages
 grep -q 'pacman -S --needed --noconfirm' "$package_case/commands"
 
-write_environment "$package_case/environment" remote ship
+grep -q 'neovim' "$package_case/commands"
+[[ $(grep -c '^pacman' "$package_case/commands") == 1 ]]
+
+write_environment "$package_case/environment" work work
 write_os_release "$package_case/os-release" ubuntu debian
 : > "$package_case/commands"
 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
     run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2> "$package_case/stderr"
-grep -q 'apt-get update' "$package_case/commands"
+[[ $(grep -c '^apt-get update' "$package_case/commands") == 1 ]]
 grep -q 'apt-get install -y' "$package_case/commands"
+grep -q 'build-essential' "$package_case/commands"
 grep -q 'lazygit is unavailable' "$package_case/stderr"
+
+write_environment "$package_case/environment" remote ship
+: > "$package_case/commands"
+WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
+    run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2> "$package_case/stderr"
+grep -q ' zsh ' "$package_case/commands"
+if grep -qE 'build-essential|neovim|lazygit' "$package_case/commands"; then
+    printf '%s\n' 'Remote must not install developer packages.' >&2
+    exit 1
+fi
+[[ ! -s $package_case/stderr ]]
+
+(
+    # shellcheck source=lib/common.sh
+    source "$setup_dir/lib/common.sh"
+    version_at_least 0.12.5 0.11
+    version_at_least 0.11 0.11
+    version_at_least 0.12 0.9.5
+    ! version_at_least 0.10.4 0.11
+    ! version_at_least 0.9.5 0.11
+)
 
 printf '%s\n' 'Setup tests passed.'

@@ -12,6 +12,5 @@ task_tmux() {
         git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
     fi
 
-    local -a tmux_links=("$repo_root/shell/.tmux.conf|$setup_home/.tmux.conf")
-    link_set tmux_links
+    link_groups tmux
 }

@@ -16,14 +16,15 @@ Usage: setup/setup.sh TASK
 
 Tasks:
   init-system  Set WHC_PROFILE and WHC_DEVICE in /etc/environment
-  packages     Install the common developer package baseline
+  packages     Install the profile's package baseline
   links        Link profile-appropriate dotfiles
   shell        Configure zsh and Antidote
-  nvim         Install and configure Neovim
+  nvim         Install Neovim 0.11+ and link its configuration
   tmux         Install and configure tmux and TPM
-  node         Install fnm and the latest LTS Node.js
-  manual-lock  Configure greetd, hyprlock, hypridle, and logind
-  all          Run the core setup tasks
+  node         Install fnm and the latest LTS Node.js (home and work)
+  desktop      Install and link the Hyprland desktop (home only)
+  manual-lock  Configure greetd, hyprlock, hypridle, and logind (home only)
+  all          Run every task the profile includes
 EOF
 }
 
@@ -37,7 +38,7 @@ case "$task" in
     init-system)
         task_init_system
         ;;
-    packages|links|shell|nvim|tmux|node|manual-lock|all)
+    packages|links|shell|nvim|tmux|node|desktop|manual-lock|all)
         load_system_identity
         validate_profile_os
         "task_${task//-/_}"

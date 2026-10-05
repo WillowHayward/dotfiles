@@ -33,10 +33,6 @@ run script *args:
     fi
     bash "$script_path" {{ args }}
 
-# Install the tmux project picker integration.
-tmux-projects:
-    bash scripts/setup-tmux-projects.sh
-
 # Check justfiles and shell-script syntax.
 check:
     just --fmt --check

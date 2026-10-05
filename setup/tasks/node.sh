@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 task_node() {
+    profile_has dev || die "node is only set up on the home and work profiles."
     install_packages curl
     export FNM_DIR=${FNM_DIR:-$setup_home/.local/share/fnm}
     export PATH="$FNM_DIR:$PATH"
@@ -18,11 +19,7 @@ task_node() {
     fnm default lts-latest
     fnm use default
 
-    local -a node_links=(
-        "$repo_root/node/.npmrc|$setup_home/.npmrc"
-        "$repo_root/node/.yarnrc.yml|$setup_home/.yarnrc.yml"
-    )
-    link_set node_links
+    link_groups node
     fnm --version
     node --version
     npm --version

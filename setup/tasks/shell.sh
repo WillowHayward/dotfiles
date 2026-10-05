@@ -12,11 +12,7 @@ task_shell() {
         git clone --depth=1 https://github.com/mattmc3/antidote.git "$antidote_dir"
     fi
 
-    local -a shell_links=(
-        "$repo_root/shell/.zshrc|$setup_home/.zshrc"
-        "$repo_root/shell/.zsh_plugins.txt|$setup_home/.zsh_plugins.txt"
-    )
-    link_set shell_links
+    link_groups shell
 
     local zsh_path login_shell current_user
     zsh_path=$(command -v zsh) || die "zsh was not found after installation."
