@@ -208,8 +208,7 @@ ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
 rm "$mode_case/user/.vimrc"
 run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --relink" >/dev/null
 [[ $(readlink "$mode_case/user/.zshrc") == */shell/.zshrc ]]
-printf 'mine\n' > "$mode_case/user/.gitignore.global"
-rm "$mode_case/user/.gitignore.global" "$mode_case/user/.vimrc"
+rm "$mode_case/user/.vimrc" # a link from the previous step
 printf 'mine\n' > "$mode_case/user/.vimrc"
 run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --adopt" >/dev/null
 [[ -L $mode_case/user/.vimrc ]]
