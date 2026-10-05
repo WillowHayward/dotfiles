@@ -1,6 +1,18 @@
 -- Shared RPC endpoint for external editors (including Godot).
+-- The default lives in the per-user runtime directory (falling back to Neovim's
+-- state directory) rather than world-writable /tmp, where another local user
+-- could pre-create the path or connect to the socket. bin/godot-editor must
+-- resolve the same default.
 local M = {}
-local pipepath = vim.env.NVIM_EDITOR_SOCKET or "/tmp/server.pipe"
+local function default_pipepath()
+	local directory = vim.env.XDG_RUNTIME_DIR
+	if not directory or directory == "" then
+		directory = vim.fn.stdpath("state")
+		vim.fn.mkdir(directory, "p", "0o700")
+	end
+	return directory .. "/nvim-editor.pipe"
+end
+local pipepath = vim.env.NVIM_EDITOR_SOCKET or default_pipepath()
 local listening = false
 if vim.uv.fs_stat(pipepath) then
 	local ok, channel = pcall(vim.fn.sockconnect, "pipe", pipepath, { rpc = true })

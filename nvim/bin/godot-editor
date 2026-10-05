@@ -4,13 +4,23 @@ import os
 import subprocess
 import sys
 
+
+def default_socket():
+    """Mirror lua/server.lua: the per-user runtime directory, else Neovim's state directory."""
+    directory = os.environ.get("XDG_RUNTIME_DIR")
+    if not directory:
+        state_home = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+        directory = os.path.join(state_home, "nvim")
+    return os.path.join(directory, "nvim-editor.pipe")
+
+
 if len(sys.argv) != 4:
     sys.exit("Usage: godot-editor FILE LINE COLUMN (start Neovim first)")
 filename = os.path.abspath(sys.argv[1]).replace("'", "''")
 line, column = max(1, int(sys.argv[2])), max(1, int(sys.argv[3]))
 expression = f"luaeval(\"require('server').open(_A)\", ['{filename}', {line}, {column}])"
 result = subprocess.run([
-    "nvim", "--server", os.environ.get("NVIM_EDITOR_SOCKET", "/tmp/server.pipe"),
+    "nvim", "--server", os.environ.get("NVIM_EDITOR_SOCKET") or default_socket(),
     "--remote-expr", expression,
 ], capture_output=True, text=True)
 if result.returncode:
