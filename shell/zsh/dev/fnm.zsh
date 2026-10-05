@@ -1,4 +1,4 @@
-# fnm replaces nvm. Keep initialization before local.zsh attaches to tmux.
+# fnm replaces nvm.
 path=("${FNM_DIR:-$HOME/.local/share/fnm}" $path)
 typeset -gU path
 if (( $+commands[fnm] )); then
