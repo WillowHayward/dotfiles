@@ -1,5 +1,6 @@
 -- Git: hunks and blame (gitsigns), full-screen review and history (diffview), a Magit-style
--- status buffer (neogit), lazygit for everything quick, GitHub issues/PRs (octo), SOPS files.
+-- status buffer (neogit), lazygit through Snacks (themed from the colour scheme, opens files in
+-- this Neovim; see plugins/ui.lua), GitHub issues/PRs (octo), SOPS files.
 -- All keys live under <leader>g.
 return {
     {
@@ -71,11 +72,6 @@ return {
             { "<leader>gn", "<cmd>Neogit<CR>", desc = "Neogit status" },
             { "<leader>gC", "<cmd>Neogit commit<CR>", desc = "Neogit commit" },
         },
-    },
-    {
-        "kdheepak/lazygit.nvim",
-        cmd = { "LazyGit", "LazyGitCurrentFile", "LazyGitFilter" },
-        keys = { { "<leader>gg", "<cmd>LazyGit <CR>", desc = "Open LazyGit" } },
     },
     {
         "nvim-telescope/telescope.nvim",

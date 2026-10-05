@@ -78,8 +78,39 @@ return {
             indent = { enabled = true },
             picker = { enabled = true },
             rename = { enabled = true },
+            lazygit = { enabled = true }, -- Themed from the colour scheme; edits open in this Neovim
+            gitbrowse = { enabled = true },
         },
         keys = {
+            {
+                "<leader>gg",
+                function()
+                    Snacks.lazygit()
+                end,
+                desc = "Open LazyGit",
+            },
+            {
+                "<leader>gF",
+                function()
+                    Snacks.lazygit.log_file()
+                end,
+                desc = "LazyGit log for this file",
+            },
+            {
+                "<leader>gL",
+                function()
+                    Snacks.lazygit.log()
+                end,
+                desc = "LazyGit log",
+            },
+            {
+                "<leader>gx",
+                function()
+                    Snacks.gitbrowse()
+                end,
+                mode = { "n", "x" },
+                desc = "Open on GitHub (line or selection)",
+            },
             {
                 "<leader>R",
                 function()
