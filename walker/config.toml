@@ -2,7 +2,7 @@
 global_argument_delimiter = "::"
 
 [keybinds]
-previous = ["Down", "ctrl p", "ctrl k"]
+previous = ["Up", "ctrl p", "ctrl k"]
 next = ["Down", "ctrl n", "ctrl j"]
 
 [providers]
