@@ -64,7 +64,7 @@ done
 ok "core commands installed"
 
 if [[ $PROFILE == work ]]; then
-    for command in nvim fnm node lazygit gh; do
+    for command in nvim fnm lazygit gh; do
         command -v "$command" >/dev/null || fail "$command is missing"
     done
     nvim --version | head -1 | grep -qE 'NVIM v0\.(1[1-9]|[2-9][0-9])' || fail "Neovim is older than 0.11"
@@ -79,12 +79,16 @@ fi
 # An interactive zsh must load the profile, plugins and prompt without errors.
 cat > /tmp/probe.zsh <<'PROBE'
 print -r -- "PROFILE=$WHC_PROFILE DEV=${WHC_DEV:-} P10K=$+functions[p10k] SUGGEST=$+functions[_zsh_autosuggest_start]"
+print -r -- "NODE=$(node --version 2>/dev/null || echo none)"
 editor=$(git var GIT_EDITOR)
 print -r -- "EDITOR_OK=$(command -v ${editor%% *} >/dev/null && echo yes || echo no) ($editor)"
 PROBE
 output=$(script -qec "zsh -i /tmp/probe.zsh" /dev/null </dev/null 2>&1 | tr -d "\r" || true)
 grep -q "PROFILE=$PROFILE" <<<"$output" || { printf '%s\n' "$output"; fail "zsh did not load profile $PROFILE"; }
 grep -q 'P10K=1 SUGGEST=1' <<<"$output" || { printf '%s\n' "$output"; fail "zsh plugins did not load"; }
+if [[ $PROFILE == work ]]; then
+    grep -q 'NODE=v' <<<"$output" || { printf '%s\n' "$output"; fail "fnm did not provide node in zsh"; }
+fi
 grep -q 'EDITOR_OK=yes' <<<"$output" || { printf '%s\n' "$output"; fail "git editor is not installed"; }
 grep -qiE 'command not found|no such file|parse error|error' <<<"$output" && { printf '%s\n' "$output"; fail "zsh printed errors"; }
 ok "zsh loads the $PROFILE profile; git editor resolves"
