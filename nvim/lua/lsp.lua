@@ -169,12 +169,7 @@ return {
 				},
                 -- beautysh = {}
 			},
-			setup = {
-				tsserver = function(_, opts)
-					require("typescript").setup({ server = opts })
-					return true
-				end,
-			},
+			setup = {},
 		},
 		config = function(_, opts)
 			-- This is mostly lifted from LazyVim
@@ -201,13 +196,14 @@ return {
 				end
 				vim.lsp.config(server, server_opts)
 			end
+			-- Every server needs our settings and capabilities, including the Mason-managed ones
+			-- that mason-lspconfig enables automatically (with defaults, unless configured here).
+			vim.lsp.config("*", { capabilities = vim.deepcopy(capabilities) })
 			for server, server_opts in pairs(servers) do
 				if server_opts then
 					server_opts = server_opts == true and {} or server_opts
-					-- run manual setup if mason=false or if this is a server that cannot be installed with mason-lspconfig
-					if server_opts.mason == false or not vim.tbl_contains(available, server) then
-						setup(server)
-					else
+					setup(server)
+					if server_opts.mason ~= false and vim.tbl_contains(available, server) then
 						ensure_installed[#ensure_installed + 1] = server
 					end
 				end
@@ -239,7 +235,8 @@ return {
 			local sources = {
 				-- nls.builtins.formatting.prettierd,
 				nls.builtins.formatting.stylua,
-				nls.builtins.diagnostics.flake8,
+				-- flake8 left none-ls core, so nls.builtins.diagnostics.flake8 fails to load.
+				-- Re-add it from nvimtools/none-ls-extras.nvim (none-ls.diagnostics.flake8) if wanted.
 			}
 			if features.godot then
 				table.insert(sources, nls.builtins.formatting.gdformat)
