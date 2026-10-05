@@ -2,4 +2,4 @@
 
 hl.monitor({ output = "eDP-1", mode = "2736x1824@59.96", position = "288x-60", scale = 2.00 })
 hl.monitor({ output = "DP-1", mode = "2560x1440@59.97", position = "160x-960", scale = 1.60 })
-hl.monitor({ output = "DVI-I-2", mode = "1920x1080@60.00", position = "1760x-864", scale = 1.50 })
+hl.monitor({ output = "DVI-I-1", mode = "1920x1080@60.00", position = "1760x-864", scale = 1.50 })

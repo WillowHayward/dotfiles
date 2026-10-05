@@ -29,6 +29,10 @@ Connection context is separate from the machine role: SSH sessions set `WHC_REMO
 
 On a new server, `scripts/create-user.sh` (run as root) creates a login user with zsh, sudo and an SSH key.
 
+## Testing
+
+`just check` validates `just`, shell, zsh and Python syntax, and `just test` adds the hermetic setup tests (fake `/etc/environment`, fake os-release, shimmed package managers) and the project-picker unit tests. `just test-container remote` or `just test-container work` runs that profile's real setup in a throw-away Debian container (needs docker and network) and checks that zsh, git and, for `work`, Neovim start cleanly on a first run.
+
 ## Environment variables
 
 Create a `.env` file in the root of this repo for non-identity variables, using `.env.example` as a reference. `WHC_PROFILE` and `WHC_DEVICE` are managed in `/etc/environment`, not `.env`.
