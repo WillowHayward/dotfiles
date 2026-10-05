@@ -1,0 +1,6 @@
+target = "~/"
+include = [
+  ".claude/CLAUDE.md",
+  ".codex/AGENTS.md",
+  ".copilot/copilot-instructions.md",
+]
