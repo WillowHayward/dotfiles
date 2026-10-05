@@ -21,35 +21,40 @@ valid_device() {
     [[ -n $1 && $1 != *$'\n'* && $1 != *$'\r'* && $1 != *\"* && $1 != *\\* ]]
 }
 
+# Device-name presets come from an untracked file (setup/devices.local, one name per line,
+# # for comments) so machine names stay out of the public repo. Without it, type a name.
+device_presets() {
+    local file=${WHC_DEVICES_FILE:-$repo_root/setup/devices.local} line
+    [[ -r $file ]] || return 0
+    while IFS= read -r line; do
+        line=${line%%#*}
+        line=${line//[[:space:]]/}
+        [[ -n $line ]] && valid_device "$line" && printf '%s\n' "$line"
+    done < "$file"
+}
+
 prompt_device() {
-    local current=$1 answer custom
+    local current=$1 answer index
+    local -a presets
+    mapfile -t presets < <(device_presets)
     while true; do
         printf '\nWHC_DEVICE names this machine:\n' >&2
-        printf '  1) cowgirl\n  2) bessie\n  3) ship\n  4) work\n  5) custom\n' >&2
+        for index in "${!presets[@]}"; do
+            printf '  %d) %s\n' "$((index + 1))" "${presets[$index]}" >&2
+        done
+        printf '  Or type a name (default: %s)\n' "$(hostname -s 2>/dev/null || echo localhost)" >&2
         [[ -n $current ]] && printf 'Press Enter to keep: %s\n' "$current" >&2
-        read -r -p 'Device [1-5]: ' answer
-        [[ -z $answer && -n $current ]] && answer=$current
-        case "$answer" in
-            1|cowgirl) printf 'cowgirl\n'; return ;;
-            2|bessie) printf 'bessie\n'; return ;;
-            3|ship) printf 'ship\n'; return ;;
-            4|work) printf 'work\n'; return ;;
-            5|custom)
-                read -r -p 'Custom device name: ' custom
-                if valid_device "$custom"; then
-                    printf '%s\n' "$custom"
-                    return
-                fi
-                printf 'Device name must be non-empty and cannot contain quotes, backslashes, or newlines.\n' >&2
-                ;;
-            *)
-                if valid_device "$answer"; then
-                    printf '%s\n' "$answer"
-                    return
-                fi
-                printf 'Choose a preset or enter a valid custom device name.\n' >&2
-                ;;
-        esac
+        read -r -p "Device: " answer
+        if [[ -z $answer ]]; then
+            answer=${current:-$(hostname -s 2>/dev/null || true)}
+        elif [[ $answer =~ ^[0-9]+$ ]] && (( answer >= 1 && answer <= ${#presets[@]} )); then
+            answer=${presets[$((answer - 1))]}
+        fi
+        if valid_device "$answer"; then
+            printf '%s\n' "$answer"
+            return
+        fi
+        printf 'Device names must be non-empty and cannot contain quotes, backslashes, or newlines.\n' >&2
     done
 }
 

@@ -248,4 +248,16 @@ grep -qx 'export KEEP=1' "$shell_case/user/.bashrc"
     ! grep -q '@' <<<"$with_uwsm"
 )
 
+# Device presets are read from an untracked file, ignoring comments and invalid names.
+(
+    # shellcheck source=lib/common.sh
+    source "$setup_dir/lib/common.sh"
+    # shellcheck source=tasks/init-system.sh
+    source "$setup_dir/tasks/init-system.sh"
+    presets=$test_root/devices
+    printf '# note\nalpha\n\nbeta # trailing\nba"d\n' > "$presets"
+    [[ $(WHC_DEVICES_FILE=$presets device_presets | tr '\n' ' ') == 'alpha beta ' ]]
+    [[ -z $(WHC_DEVICES_FILE=$test_root/missing device_presets) ]]
+)
+
 printf '%s\n' 'Setup tests passed.'
