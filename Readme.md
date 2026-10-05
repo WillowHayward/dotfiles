@@ -97,8 +97,21 @@ Logind uses `systemd/logind-dotfiles.conf` (linked as a service drop-in) to expo
 - `Ctrl-Space`, then `M`: arrange up to four panes as one main area above three equal-width lower areas. Missing panes are added; more than four panes are left untouched. The lower row is 12 lines high when there is room.
 - Ordinary new windows remain single-pane. `c`, `n`, `p`, `%`, and `"` after the prefix open windows/splits in the current pane's directory.
 - Open Walker (`Super+Return`) and type `#` to browse projects, or `#name` to filter them. You can also search for **Projects**. `just setup desktop` links the Elephant menu and desktop entry; restart Elephant to load the menu. There is no separate project-picker keybind. Walker uses `::` for application arguments so `#` remains available for project search.
+- Run `pp` for the same list in terminal `fzf`, or `pp <project>` to open a displayed label, unique basename, or path. Zsh completes project names. Outside tmux, `pp` attaches in the current terminal; Walker retains its focus-or-spawn Foot behaviour.
 - The picker lists directories directly under `~/projects`, plus `~/infra` itself and any of its immediate subdirectories that are Git repositories. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` override those roots (see Directory shortcuts).
-- A new project session uses the directory's name, four panes, and Neovim in the main pane. Quitting Neovim returns to a shell. Reopening reuses the session without resetting its panes and switches the existing foot/tmux terminal on the current workspace when one is available. Dots/colons become underscores; conflicting names receive a path-derived suffix (`general` is reserved).
+- A new project session uses the directory's name, four panes, and Neovim in the main pane. Quitting Neovim returns to a shell. Reopening reuses the session without resetting its panes and switches the existing foot/tmux terminal on the current workspace when one is available. Stable identity lives in `@project-root`, so the visible name can change safely. Dots/colons become underscores; conflicting names receive a path-derived suffix (`general` is reserved).
+- Per-project `.whc` and `.ticket` files are globally ignored. `.whc` is TOML and may define `session`, a fallback `ticket`, and explicit Neovim workspace roots. `.ticket` overrides the fallback. Templates support `{{ project }}`, `{{ ticket }}`, and `{{ branch }}`. Opening a project refreshes its name; use `pp --refresh [project]` after changing a ticket or branch in an already-open session.
+
+  ```toml
+  session = "Foo - {{ ticket }}"
+  ticket = "TK-1234"
+
+  [workspace]
+  roots = ["ship", "bessie", "common"]
+  ```
+
+- `<C-t>`, `<leader>/`, and `<leader>*` search the project root plus every configured workspace root. Explicit roots expose independently cloned, superproject-ignored repositories while retaining each repository's own ignore rules. `<leader>gf` remains scoped to the current Git repository.
+- `prefix s` opens SessionX for fuzzy switching, previews, renaming, and deleting live sessions. SessionX replaces tmux-resurrect; install or update TPM plugins with `prefix I` after setup or a plugin change.
 - Project Neovim starts Codex in a local Sidekick terminal, initially hidden, without an extra tmux session. Toggle/prompt shortcuts automatically reuse the running context for the current directory. `<leader>as` remains an explicit context picker. `Ctrl+G` or `Alt+Q` hides Sidekick while a command keeps running; `Ctrl+\`, then `Ctrl+N` enters terminal normal mode. Closing Neovim ends its local AI process.
 - AI processes use `WHC_AI=true`, `SHELL=/bin/bash`, and per-project Bash history under `${XDG_STATE_HOME:-~/.local/state}/whc-ai/`. Both interactive Bash commands and noninteractive `bash -c` commands use this history; normal zsh history is separate.
 - New Neovim instances load the Sidekick changes. Existing tmux panes and sessions are preserved when reloading the config.
