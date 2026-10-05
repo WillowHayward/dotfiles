@@ -39,10 +39,10 @@ EOF
 
 task=${1:-}
 # Optional flag: links --relink|--adopt, packages --list|--diff.
-if [[ $# -eq 2 && $task == links && ( $2 == --relink || $2 == --adopt ) ]]; then
+if [[ $# -eq 2 && $task == links && ($2 == --relink || $2 == --adopt) ]]; then
     export WHC_LINK_MODE=${2#--}
     set -- "$task"
-elif [[ $# -eq 2 && $task == packages && ( $2 == --list || $2 == --diff ) ]]; then
+elif [[ $# -eq 2 && $task == packages && ($2 == --list || $2 == --diff) ]]; then
     export WHC_PACKAGES_MODE=${2#--}
     set -- "$task"
 fi
@@ -52,17 +52,17 @@ if [[ $# -ne 1 ]]; then
 fi
 
 case "$task" in
-    init-system)
-        task_init_system
-        ;;
-    packages|links|shell|nvim|tmux|node|python|ssh|bash|docker|wsl|harden|doctor|desktop|manual-lock|all)
-        load_system_identity
-        validate_profile_os
-        "task_${task//-/_}"
-        ;;
-    *)
-        printf 'Unknown setup task: %s\n' "$task" >&2
-        usage
-        exit 2
-        ;;
+init-system)
+    task_init_system
+    ;;
+packages | links | shell | nvim | tmux | node | python | ssh | bash | docker | wsl | harden | doctor | desktop | manual-lock | all)
+    load_system_identity
+    validate_profile_os
+    "task_${task//-/_}"
+    ;;
+*)
+    printf 'Unknown setup task: %s\n' "$task" >&2
+    usage
+    exit 2
+    ;;
 esac

@@ -8,14 +8,17 @@ set -euo pipefail
 
 profile=${1:-}
 case "$profile" in
-    remote|work) image=${2:-debian:stable-slim} ;;
-    home) image=${2:-archlinux:latest} ;;
-    *)
-        printf 'Usage: %s remote|work|home [image]\n' "$0" >&2
-        exit 2
-        ;;
+remote | work) image=${2:-debian:stable-slim} ;;
+home) image=${2:-archlinux:latest} ;;
+*)
+    printf 'Usage: %s remote|work|home [image]\n' "$0" >&2
+    exit 2
+    ;;
 esac
-command -v docker >/dev/null 2>&1 || { printf 'docker is required.\n' >&2; exit 1; }
+command -v docker >/dev/null 2>&1 || {
+    printf 'docker is required.\n' >&2
+    exit 1
+}
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 
 if [[ $profile == home ]]; then

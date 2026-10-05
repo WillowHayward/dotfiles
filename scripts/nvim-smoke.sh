@@ -5,7 +5,7 @@ set -euo pipefail
 file=$(mktemp --suffix=.lua)
 log=$(mktemp)
 trap 'rm -f -- "$file" "$log"' EXIT
-echo 'local x = 1' > "$file"
+echo 'local x = 1' >"$file"
 NVIM_EDITOR_SOCKET=$(mktemp -u) timeout 60 nvim --headless "$file" \
     "+lua vim.defer_fn(function() vim.cmd('qa!') end, ${NVIM_SMOKE_MS:-8000})" >"$log" 2>&1 || true
 if sed 's/\x1b\[[0-9;]*m//g' "$log" | tr '\r' '\n' | grep -E 'Failed to run|^E[0-9]+:|Error executing|stack traceback'; then

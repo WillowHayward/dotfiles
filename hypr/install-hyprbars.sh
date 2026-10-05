@@ -4,7 +4,8 @@ set -euo pipefail
 build_dir=$(mktemp -d)
 trap 'rm -rf "$build_dir"' EXIT
 curl -fsSL https://raw.githubusercontent.com/hyprwm/hyprland-plugins/main/hyprpm.toml -o "$build_dir/hyprpm.toml"
-plugin_commit=$(python3 - "$build_dir/hyprpm.toml" <<'PYCODE'
+plugin_commit=$(
+    python3 - "$build_dir/hyprpm.toml" <<'PYCODE'
 import pathlib, re, sys, tomllib
 headers = pathlib.Path('/usr/include/hyprland/src/version.h').read_text()
 commit = re.search(r'#define GIT_COMMIT_HASH\s+"([a-f0-9]+)"', headers).group(1)

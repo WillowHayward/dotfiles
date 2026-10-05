@@ -5,8 +5,8 @@ task_shell() {
 
     local antidote_dir=${ANTIDOTE_DIR:-${ZDOTDIR:-$setup_home}/.antidote}
     if [[ -e $antidote_dir ]]; then
-        [[ -d $antidote_dir && -d $antidote_dir/.git ]] \
-            || die "refusing to replace non-Antidote path: $antidote_dir"
+        [[ -d $antidote_dir && -d $antidote_dir/.git ]] ||
+            die "refusing to replace non-Antidote path: $antidote_dir"
     else
         mkdir -p -- "$(dirname -- "$antidote_dir")"
         clone_public https://github.com/mattmc3/antidote.git "$antidote_dir" "$ANTIDOTE_REF"

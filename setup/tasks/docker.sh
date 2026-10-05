@@ -20,8 +20,8 @@ task_docker() {
     key=$(mktemp)
     trap 'rm -f -- "$key"' RETURN
     curl -fsSL "https://download.docker.com/linux/$id/gpg" -o "$key"
-    gpg --show-keys --with-colons "$key" | awk -F: '$1 == "fpr" { print $10 }' | grep -qx "$docker_key_fingerprint" \
-        || die "Docker's repository key does not match the expected fingerprint; refusing to trust it."
+    gpg --show-keys --with-colons "$key" | awk -F: '$1 == "fpr" { print $10 }' | grep -qx "$docker_key_fingerprint" ||
+        die "Docker's repository key does not match the expected fingerprint; refusing to trust it."
     run_as_root install -d -m 0755 /etc/apt/keyrings
     run_as_root install -m 0644 "$key" /etc/apt/keyrings/docker.asc
     rm -f -- "$key"
@@ -30,7 +30,7 @@ task_docker() {
     local sources
     sources=$(mktemp)
     printf 'Types: deb\nURIs: https://download.docker.com/linux/%s\nSuites: %s\nComponents: stable\nSigned-By: /etc/apt/keyrings/docker.asc\n' \
-        "$id" "$codename" > "$sources"
+        "$id" "$codename" >"$sources"
     run_as_root install -m 0644 "$sources" /etc/apt/sources.list.d/docker.sources
     rm -f -- "$sources"
 

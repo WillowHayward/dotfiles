@@ -5,29 +5,29 @@
 # home only) is installed by task_desktop.
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
-        arch:core)
-            printf '%s\n' git curl zsh tmux ripgrep fzf bat vim less openssh git-delta fd \
-                htop ncdu rsync jq unzip tree man-db eza zoxide atuin
-            ;;
-        arch:dev)
-            printf '%s\n' base-devel neovim lazygit github-cli python tree-sitter-cli direnv \
-                shellcheck shfmt gitleaks task stylua yamllint
-            ;;
-        arch:desktop)
-            printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
-                xdg-desktop-portal-gtk uwsm foot thunar firefox udiskie mako grim flameshot swayimg \
-                wl-clipboard pipewire wireplumber playerctl brightnessctl ddcutil libnotify \
-                noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
-            ;;
-        debian:core)
-            printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf bat vim less openssh-client \
-                git-delta fd-find htop ncdu rsync jq unzip tree man-db
-            ;;
-        debian:dev)
-            printf '%s\n' build-essential gh python3 python3-pip python3-venv direnv shfmt \
-                taskwarrior yamllint
-            ;;
-        *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
+    arch:core)
+        printf '%s\n' git curl zsh tmux ripgrep fzf bat vim less openssh git-delta fd \
+            htop ncdu rsync jq unzip tree man-db eza zoxide atuin
+        ;;
+    arch:dev)
+        printf '%s\n' base-devel neovim lazygit github-cli python tree-sitter-cli direnv \
+            shellcheck shfmt gitleaks task stylua yamllint
+        ;;
+    arch:desktop)
+        printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
+            xdg-desktop-portal-gtk uwsm foot thunar firefox udiskie mako grim flameshot swayimg \
+            wl-clipboard pipewire wireplumber playerctl brightnessctl ddcutil libnotify \
+            noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
+        ;;
+    debian:core)
+        printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf bat vim less openssh-client \
+            git-delta fd-find htop ncdu rsync jq unzip tree man-db
+        ;;
+    debian:dev)
+        printf '%s\n' build-essential gh python3 python3-pip python3-venv direnv shfmt \
+            taskwarrior yamllint
+        ;;
+    *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
     esac
 }
 
@@ -35,8 +35,8 @@ tier_packages() {
 # repositories offer it (the shell guards every use with `command -v`).
 tier_optional_packages() {
     case "$PACKAGE_FAMILY:$1" in
-        debian:core) printf '%s\n' eza zoxide atuin ;;
-        debian:dev) printf '%s\n' shellcheck gitleaks ;;
+    debian:core) printf '%s\n' eza zoxide atuin ;;
+    debian:dev) printf '%s\n' shellcheck gitleaks ;;
     esac
 }
 
@@ -57,8 +57,8 @@ packages_diff() {
     local manifest installed
     manifest=$(manifest_packages | cut -f1 | sort -u)
     case "$PACKAGE_FAMILY" in
-        arch) installed=$(pacman -Qqe | sort -u) ;;
-        debian) installed=$(apt-mark showmanual | sort -u) ;;
+    arch) installed=$(pacman -Qqe | sort -u) ;;
+    debian) installed=$(apt-mark showmanual | sort -u) ;;
     esac
     printf 'Installed explicitly but not in the manifest (add to tier_packages, or ignore):\n'
     comm -13 <(printf '%s\n' "$manifest") <(printf '%s\n' "$installed")
@@ -66,8 +66,14 @@ packages_diff() {
 
 task_packages() {
     case "${WHC_PACKAGES_MODE:-}" in
-        list) manifest_packages | sort; return ;;
-        diff) packages_diff; return ;;
+    list)
+        manifest_packages | sort
+        return
+        ;;
+    diff)
+        packages_diff
+        return
+        ;;
     esac
     local tier
     local -a packages=() optional=()

@@ -6,10 +6,14 @@ doctor_failed=false
 
 doctor_ok() { printf '  ok       %s\n' "$*"; }
 doctor_warn() { printf '  WARN     %s\n' "$*"; }
-doctor_miss() { printf '  MISSING  %s\n' "$*"; doctor_failed=true; }
+doctor_miss() {
+    printf '  MISSING  %s\n' "$*"
+    doctor_failed=true
+}
 
 doctor_commands() {
-    local label=$1 command; shift
+    local label=$1 command
+    shift
     printf '%s\n' "$label"
     for command in "$@"; do
         if command -v "$command" >/dev/null 2>&1; then
@@ -53,7 +57,8 @@ doctor_nvim_lock() {
     [[ -r $lock && -d $plugins ]] || return 0
     command -v python3 >/dev/null 2>&1 || return 0
     local drift
-    drift=$(python3 - "$lock" "$plugins" <<'PY'
+    drift=$(
+        python3 - "$lock" "$plugins" <<'PY'
 import json, subprocess, sys
 lock = json.load(open(sys.argv[1]))
 drift = []
@@ -64,23 +69,23 @@ for name, info in lock.items():
         drift.append(name)
 print(" ".join(drift))
 PY
-)
-    [[ -z $drift ]] && doctor_ok "Neovim plugins match lazy-lock.json" \
-        || doctor_warn "Neovim plugins differ from lazy-lock.json: $drift (:Lazy restore, or commit the lockfile)"
+    )
+    [[ -z $drift ]] && doctor_ok "Neovim plugins match lazy-lock.json" ||
+        doctor_warn "Neovim plugins differ from lazy-lock.json: $drift (:Lazy restore, or commit the lockfile)"
 }
 
 # The hand-built desktop binaries must be rebuilt after Hyprland or Qt upgrades.
 doctor_stale_builds() {
     local plugin=$setup_home/.local/lib/hyprland/hyprbars.so flameshot=$setup_home/.local/lib/flameshot-hyprland/flameshot
     if [[ -e $plugin ]]; then
-        [[ $plugin -nt $(command -v Hyprland) ]] && doctor_ok "hyprbars is newer than Hyprland" \
-            || doctor_warn "hyprbars is older than Hyprland: run hypr/install-hyprbars.sh"
+        [[ $plugin -nt $(command -v Hyprland) ]] && doctor_ok "hyprbars is newer than Hyprland" ||
+            doctor_warn "hyprbars is older than Hyprland: run hypr/install-hyprbars.sh"
     fi
     if [[ -e $flameshot ]]; then
         local qt
         qt=$(ls /usr/lib/libQt6Core.so.6 2>/dev/null || true)
-        [[ -z $qt || $flameshot -nt $qt ]] && doctor_ok "patched flameshot is newer than Qt" \
-            || doctor_warn "patched flameshot is older than Qt: run hypr/install-flameshot.sh"
+        [[ -z $qt || $flameshot -nt $qt ]] && doctor_ok "patched flameshot is newer than Qt" ||
+            doctor_warn "patched flameshot is older than Qt: run hypr/install-flameshot.sh"
     fi
 }
 

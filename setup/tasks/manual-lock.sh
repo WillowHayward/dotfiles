@@ -23,7 +23,7 @@ task_manual_lock() {
     command -v uwsm >/dev/null 2>&1 && uwsm=yes
     rendered=$(mktemp)
     trap 'rm -f -- "$rendered"' RETURN
-    render_greetd_config "$(id -un)" "$uwsm" > "$rendered"
+    render_greetd_config "$(id -un)" "$uwsm" >"$rendered"
 
     run_as_root install -d /etc/greetd /etc/systemd/logind.conf.d
     run_as_root install -m 0644 "$rendered" /etc/greetd/config.toml

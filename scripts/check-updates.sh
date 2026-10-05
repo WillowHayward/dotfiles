@@ -21,8 +21,8 @@ report() { # name pinned latest
 }
 
 latest_release() { # owner/repo
-    curl -fsSL --max-time 15 "https://api.github.com/repos/$1/releases/latest" 2>/dev/null \
-        | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || true
+    curl -fsSL --max-time 15 "https://api.github.com/repos/$1/releases/latest" 2>/dev/null |
+        python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || true
 }
 
 latest_head() { # owner/repo
@@ -41,14 +41,16 @@ declare -A seen=()
 for list in "$root"/shell/plugins/*.txt; do
     while read -r repo rest; do
         [[ $repo == */* && $rest == *pin:* ]] || continue
-        pin=${rest##*pin:}; pin=${pin%% *}
-        [[ -z ${seen[$repo@$pin]:-} ]] || continue
-        seen[$repo@$pin]=1
+        pin=${rest##*pin:}
+        pin=${pin%% *}
+        key="$repo@$pin"
+        [[ -z ${seen[$key]:-} ]] || continue
+        seen[$key]=1
         report "$repo" "$pin" "$(latest_head "$repo")"
     done < <(grep -v '^[[:space:]]*#' "$list")
 done
 
-if (( behind )); then
+if ((behind)); then
     printf '\nSome pins are behind. Bump the pin (and checksum), test, and commit.\n'
     [[ ${1:-} == --fail ]] && exit 1
 fi

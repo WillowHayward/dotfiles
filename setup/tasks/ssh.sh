@@ -11,17 +11,20 @@ task_ssh() {
     [[ -e $config ]] || install -m 600 /dev/null "$config"
     if ! grep -qF "$ssh_marker config.d" "$config"; then
         cp -- "$config" "$config.pre-dotfiles"
-        { printf 'Include ~/.ssh/config.d/* %s config.d\n\n' "$ssh_marker"; cat "$config.pre-dotfiles"; } > "$config"
+        {
+            printf 'Include ~/.ssh/config.d/* %s config.d\n\n' "$ssh_marker"
+            cat "$config.pre-dotfiles"
+        } >"$config"
     fi
     if ! grep -qF "$ssh_marker defaults" "$config"; then
-        printf '\nInclude %s %s defaults\n' "$defaults" "$ssh_marker" >> "$config"
+        printf '\nInclude %s %s defaults\n' "$defaults" "$ssh_marker" >>"$config"
     fi
     chmod 600 -- "$config"
 
     # Allowed signers let `git log --show-signature` verify the SSH-signed commits (home).
     local pub=$ssh_dir/id_ed25519.pub signers=$ssh_dir/allowed_signers
     if [[ $WHC_PROFILE == home && -r $pub && ! -e $signers ]]; then
-        printf 'willow@whc.fyi namespaces="git" %s\n' "$(cat "$pub")" > "$signers"
+        printf 'willow@whc.fyi namespaces="git" %s\n' "$(cat "$pub")" >"$signers"
         chmod 644 -- "$signers"
     fi
 }

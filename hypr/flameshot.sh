@@ -12,16 +12,19 @@ fi
 exec 9>"${XDG_RUNTIME_DIR:?}/flameshot-native.lock"
 flock -n 9 || exit 0
 monitor=$(hyprctl -j monitors | jq -er '.[] | select(.focused) | [.name, .scale] | @tsv')
-IFS=$'\t' read -r output scale <<< "$monitor"
+IFS=$'\t' read -r output scale <<<"$monitor"
 # QScreen indices need not match Hyprland IDs. The patch selects by output name.
 case "$mode" in
-    clipboard) destination=(--clipboard) ;;
-    file)
-        directory=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
-        mkdir -p -- "$directory"
-        destination=(--path "$directory")
-        ;;
-    *) printf 'Usage: %s [clipboard|file]\n' "$0" >&2; exit 2 ;;
+clipboard) destination=(--clipboard) ;;
+file)
+    directory=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
+    mkdir -p -- "$directory"
+    destination=(--path "$directory")
+    ;;
+*)
+    printf 'Usage: %s [clipboard|file]\n' "$0" >&2
+    exit 2
+    ;;
 esac
 exec env -u QT_AUTO_SCREEN_SCALE_FACTOR -u QT_SCREEN_SCALE_FACTORS -u QT_SCALE_FACTOR \
     QT_QPA_PLATFORM=wayland FLAMESHOT_NATIVE_OUTPUT="$output" FLAMESHOT_NATIVE_SCALE="$scale" \

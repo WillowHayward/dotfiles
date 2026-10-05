@@ -9,10 +9,19 @@ prompt_profile() {
         read -r -p 'Profile [1-3]: ' answer
         [[ -z $answer && -n $current ]] && answer=$current
         case "$answer" in
-            1|home) printf 'home\n'; return ;;
-            2|work) printf 'work\n'; return ;;
-            3|remote) printf 'remote\n'; return ;;
-            *) printf 'Choose home, work, or remote.\n' >&2 ;;
+        1 | home)
+            printf 'home\n'
+            return
+            ;;
+        2 | work)
+            printf 'work\n'
+            return
+            ;;
+        3 | remote)
+            printf 'remote\n'
+            return
+            ;;
+        *) printf 'Choose home, work, or remote.\n' >&2 ;;
         esac
     done
 }
@@ -30,7 +39,7 @@ device_presets() {
         line=${line%%#*}
         line=${line//[[:space:]]/}
         [[ -n $line ]] && valid_device "$line" && printf '%s\n' "$line"
-    done < "$file"
+    done <"$file"
 }
 
 prompt_device() {
@@ -47,7 +56,7 @@ prompt_device() {
         read -r -p "Device: " answer
         if [[ -z $answer ]]; then
             answer=${current:-$(hostname -s 2>/dev/null || true)}
-        elif [[ $answer =~ ^[0-9]+$ ]] && (( answer >= 1 && answer <= ${#presets[@]} )); then
+        elif [[ $answer =~ ^[0-9]+$ ]] && ((answer >= 1 && answer <= ${#presets[@]})); then
             answer=${presets[$((answer - 1))]}
         fi
         if valid_device "$answer"; then
@@ -63,9 +72,9 @@ write_system_identity() {
     temp=$(mktemp)
     trap 'rm -f -- "$temp"' RETURN
     if [[ -r $environment_file ]]; then
-        awk '!/^[[:space:]]*(WHC_PROFILE|WHC_DEVICE)[[:space:]]*=/' "$environment_file" > "$temp"
+        awk '!/^[[:space:]]*(WHC_PROFILE|WHC_DEVICE)[[:space:]]*=/' "$environment_file" >"$temp"
     fi
-    printf 'WHC_PROFILE="%s"\nWHC_DEVICE="%s"\n' "$profile" "$device" >> "$temp"
+    printf 'WHC_PROFILE="%s"\nWHC_DEVICE="%s"\n' "$profile" "$device" >>"$temp"
     if [[ $environment_file == /etc/environment ]]; then
         run_as_root install -m 0644 "$temp" "$environment_file"
     else
@@ -80,15 +89,18 @@ task_init_system() {
     local current_profile= current_device= profile device confirmation
     current_profile=$(read_environment_value WHC_PROFILE 2>/dev/null || true)
     current_device=$(read_environment_value WHC_DEVICE 2>/dev/null || true)
-    [[ $current_profile == home || $current_profile == work || $current_profile == remote ]] \
-        || current_profile=
+    [[ $current_profile == home || $current_profile == work || $current_profile == remote ]] ||
+        current_profile=
     valid_device "$current_device" || current_device=
 
     profile=$(prompt_profile "$current_profile")
     device=$(prompt_device "$current_device")
     printf '\nProfile: %s\nDevice:  %s\n' "$profile" "$device"
     read -r -p 'Write these values to /etc/environment? [y/N] ' confirmation
-    [[ $confirmation == y || $confirmation == Y ]] || { printf 'No changes made.\n'; return; }
+    [[ $confirmation == y || $confirmation == Y ]] || {
+        printf 'No changes made.\n'
+        return
+    }
 
     write_system_identity "$profile" "$device"
     printf '%s\n' 'System identity updated. New login sessions will inherit it automatically.'

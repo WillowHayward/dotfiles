@@ -10,7 +10,7 @@ curl -fL --retry 3 https://github.com/flameshot-org/flameshot/archive/refs/tags/
 printf '%s  %s\n' 810c399f3b9fbfd72e24e61417ede24243925f9c0d03040a8aba0d4866676d93 "$build_dir/source.tar.gz" | sha256sum -c -
 tar -xzf "$build_dir/source.tar.gz" -C "$build_dir"
 source_dir="$build_dir/flameshot-14.0.0"
-patch -d "$source_dir" -p1 < "$script_dir/flameshot-native-output.patch"
+patch -d "$source_dir" -p1 <"$script_dir/flameshot-native-output.patch"
 cmake -S "$source_dir" -B "$build_dir/build" -DCMAKE_BUILD_TYPE=Release \
     -DDISABLE_UPDATE_CHECKER=ON -DUSE_LAUNCHER_ABSOLUTE_PATH=OFF
 cmake --build "$build_dir/build" --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-4}"

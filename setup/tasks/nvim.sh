@@ -15,8 +15,8 @@ install_neovim_release() {
     detect_release_arch
     asset_arch=${release_arch,,}
     expected_var=NVIM_SHA256_$release_arch
-    [[ $version == "$NVIM_VERSION" ]] \
-        || die "WHC_NVIM_VERSION=$version has no pinned checksum; update setup/pins.env instead."
+    [[ $version == "$NVIM_VERSION" ]] ||
+        die "WHC_NVIM_VERSION=$version has no pinned checksum; update setup/pins.env instead."
     tmp=$(mktemp -d)
     trap 'rm -rf -- "$tmp"' RETURN
     download_verified \
