@@ -11,7 +11,15 @@ just setup init-system
 just setup all
 ```
 
-`init-system` prompts for the profile and device name, then writes them to `/etc/environment` using sudo. Log out and back in to expose the values to every process. Setup commands and zsh read the file directly, so `setup all` can be run immediately afterward. Use `just setup` to list the smaller setup recipes.
+`init-system` prompts for the profile and device name, then writes them to `/etc/environment` using sudo. Device-name presets come from an untracked `setup/devices.local` (one name per line); without it, type a name. Log out and back in to expose the values to every process. Setup commands and zsh read the file directly, so `setup all` can be run immediately afterward. `just --list` shows every recipe and `just setup` the setup tasks.
+
+## First run on a new machine
+
+1. **SSH key.** `ssh-keygen -t ed25519`, add the public key to GitHub, and `ssh-add`. Fetching and cloning use https (so bootstrap works without a key); *pushing* goes over SSH. On `home`, commits are signed with `~/.ssh/id_ed25519.pub` (`just setup ssh` creates `~/.ssh/allowed_signers` once the key exists), and on `home` and `work` `gh auth login` provides the credentials for private https clones.
+2. **Work email (work profile).** Put `WHC_WORK_EMAIL=you@company.example` in `.env`. The shell writes it to `~/.cache/whc/gitconfig.work`, which `git/profile/work.gitconfig` includes. **It applies to every repository on the work machine**, personal ones included; override a single repo with `git config --local user.email ...`.
+3. **Agents (work profile).** Copilot is the agentic tool there: `npm install -g @github/copilot`, then `copilot` once to sign in. On `home`, Codex comes with the ChatGPT app and Claude Code from its installer. (Copilot *completion* works on both after `:Copilot auth` in Neovim.)
+4. **Atuin (optional).** `atuin register` or `atuin login` to sync shell history between machines; nothing is synced until you do.
+5. `just setup doctor` reports anything still missing.
 
 ## Profiles
 
@@ -19,25 +27,40 @@ just setup all
 
 | Profile | Environment | What it gets |
 |---|---|---|
-| `remote` | Debian family, servers | The lightweight baseline: zsh with Antidote, the Dracula prompt and autosuggestions, fzf, tmux, Git config, and plain Vim. No Neovim, Node, Taskwarrior or desktop. |
-| `work` | Debian family, WSL | `remote` plus the developer tooling: Neovim 0.11+, fnm/Node, lazygit, build tools, Taskwarrior and tmux project layouts. |
-| `home` | Arch Linux | `work` plus the Hyprland desktop (`just setup desktop`): Hyprland, Walker/Elephant, Flameshot, swayimg, mime handlers. Login and lock-screen configuration stays opt-in (`just setup manual-lock`). |
+| `remote` | Debian family, servers | The lightweight baseline: zsh with Antidote, the Dracula prompt, autosuggestions and syntax highlighting, fzf, zoxide, atuin, delta, tmux, Git config, plain Vim (with Ctrl-hjkl pane navigation), a server comfort suite (htop, ncdu, rsync, jq, tree, fd, bat, eza), Docker (`just setup docker`), an SSH defaults include and a login banner. No Neovim, Node, Taskwarrior or desktop. |
+| `work` | Debian family, WSL | `remote` plus the developer tooling: Neovim 0.11+, fnm/Node, uv, direnv, lazygit, gh, shellcheck, Taskwarrior, build tools and tmux project layouts. WSL templates with `just setup wsl`. |
+| `home` | Arch Linux | `work` plus the Hyprland desktop (`just setup desktop`): Hyprland, Walker/Elephant, Flameshot, foot, mako, swayimg, mime handlers. Login and lock-screen configuration stays opt-in (`just setup manual-lock`). Godot tooling. |
 
-Code that needs a tier checks `WHC_DEV` (home and work) or `WHC_DESKTOP` (home) rather than comparing profile names. In zsh the layers are `shell/zsh/core/` (every profile), `shell/zsh/dev/` (home and work) and `shell/zsh/profile/<profile>.zsh`. Put private, machine-specific shell settings in `shell/zsh/profile/<profile>.local.zsh`, which is not tracked. Git has the same split: `git/profile/<profile>.gitconfig` is linked to `~/.gitconfig.profile`, and an untracked `~/.gitconfig.local` is the place for per-machine settings such as a work email address.
+Code that needs a tier checks `WHC_DEV` (home and work) or `WHC_DESKTOP` (home) rather than comparing profile names. In zsh the layers are `shell/zsh/core/` (every profile), `shell/zsh/dev/` (home and work) and `shell/zsh/profile/<profile>.zsh`. Put private, machine-specific shell settings in `shell/zsh/profile/<profile>.local.zsh`, which is not tracked. Git has the same split: `git/profile/<profile>.gitconfig` is linked to `~/.gitconfig.profile`, and an untracked `~/.gitconfig.local` is the place for per-machine settings.
 
 Connection context is separate from the machine role: SSH sessions set `WHC_REMOTE` even on a `home` or `work` machine, and non-SSH sessions set `WHC_LOCAL`.
 
-On a new server, `scripts/create-user.sh` (run as root) creates a login user with zsh, sudo and an SSH key.
+On a new server, `scripts/create-user.sh` (run as root) creates a login user with zsh, sudo and an SSH key; `just setup harden` then tightens sshd, automatic updates and the firewall (it asks before each change, and is a candidate to move into the infra repo).
+
+## Setup tasks
+
+| Task | Does |
+|---|---|
+| `init-system` | Write `WHC_PROFILE` and `WHC_DEVICE` to `/etc/environment` |
+| `packages [--list\|--diff]` | Install the profile's packages; `--list` prints the manifest, `--diff` shows packages installed outside it |
+| `links [--relink\|--adopt]` | Link the profile's dotfiles. Strict by default; `--relink` replaces wrong symlinks, `--adopt` also moves real files to `~/.local/state/whc/backups/` |
+| `shell`, `tmux`, `nvim`, `node`, `python` | Zsh and Antidote; tmux and TPM; Neovim; fnm and Node (plus the tree-sitter CLI); uv |
+| `ssh`, `bash` | Add an `Include` to `~/.ssh/config` (per-host files in `~/.ssh/config.d/`, shared defaults last) and a source line to `~/.bashrc`, without replacing either file |
+| `docker`, `harden` | Docker Engine from Docker's apt repository; sshd/updates/firewall hardening (remote) |
+| `wsl` | Install `work/wsl.conf` and the Windows-side `.wslconfig` template (work, WSL) |
+| `desktop`, `manual-lock` | Hyprland packages and links; greetd and logind (home) |
+| `doctor` | Missing tools, wrong links, lockfile drift, stale hand-built desktop binaries |
+| `all` | Everything the profile includes (`manual-lock`, `harden` and `wsl` stay explicit) |
+
+Every download is pinned and checksummed in `setup/pins.env` (Neovim, fnm, uv, tree-sitter CLI, Antidote, TPM) or by commit in `shell/plugins/*.txt`. `just updates` compares all pins with upstream and `just update` pulls, updates TPM plugins, moves fnm to the latest LTS and syncs Neovim.
 
 ## Testing
 
-`just check` validates `just`, shell, zsh and Python syntax, and `just test` adds the hermetic setup tests (fake `/etc/environment`, fake os-release, shimmed package managers) and the project-picker unit tests. `just test-container remote` or `just test-container work` runs that profile's real setup in a throw-away Debian container (needs docker and network) and checks that zsh, git and, for `work`, Neovim start cleanly on a first run; `just test-container home` checks that every Arch package name resolves.
+`just check` validates `just` (including that every recipe has a doc comment), shell, zsh and Python syntax, and runs shellcheck when installed. `just test` adds the hermetic setup tests (fake `/etc/environment`, fake os-release, shimmed package managers), the zsh loader tests, a stub-based load of the Hyprland config that fails on an undescribed bind, and the project-picker unit tests. `just test-container remote` or `just test-container work` runs that profile's real setup in a throw-away Debian container (needs docker and network) and checks that zsh, git and, for `work`, Neovim start cleanly on a first run; `just test-container home` checks that every Arch package name resolves. CI runs all of this, plus a history-wide secret scan, on every push. A pre-commit hook (enabled by `just setup links`) runs gitleaks on staged changes and `just check`.
 
 ## Environment variables
 
-Create a `.env` file in the root of this repo for non-identity variables, using `.env.example` as a reference. `WHC_PROFILE` and `WHC_DEVICE` are managed in `/etc/environment`, not `.env`.
-
-Set up automatically occurs in .zshrc
+Create a `.env` file in the root of this repo for non-identity variables, using `.env.example` as a reference. `WHC_PROFILE` and `WHC_DEVICE` are managed in `/etc/environment`, not `.env`. `.env` is sourced by `.zshrc` (see `shell/zsh/core/env.zsh`).
 
 ## Directory shortcuts
 
@@ -47,49 +70,66 @@ Set up automatically occurs in .zshrc
 | `cdp [name]` | the projects directory, or one of its immediate subdirectories | `WHC_PROJECTS_DIR` (`~/projects`) |
 | `cdi [name]` | the infra directory, or one of its immediate subdirectories | `WHC_INFRA_DIR` (`~/infra`) |
 
-Tab completion offers the immediate subdirectories (hidden ones once you type a dot), and nested paths such as `cdp app/src` are rejected. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` can be overridden in `.env`; `WHC_DOTFILES_DIR` has to be exported before the shell starts because `.env` lives inside it. The tmux project picker uses the same variables.
+Tab completion offers the immediate subdirectories (hidden ones once you type a dot), and nested paths such as `cdp app/src` are rejected. `WHC_PROJECTS_DIR` and `WHC_INFRA_DIR` can be overridden in `.env`; `WHC_DOTFILES_DIR` has to be exported before the shell starts because `.env` lives inside it. The tmux project picker uses the same variables. `z <partial>` (zoxide) jumps to any directory you have visited, `zi` picks with fzf.
+
+## Shell
+
+- **Loading:** `.zshrc` sources `core/`, then `dev/` where `WHC_DEV` is set, then the profile file. Local terminals hand over to tmux right after the environment and `PATH` are set, so the full init runs once, inside tmux.
+- **Plugins:** `shell/plugins/{early,core,dev,last}.txt`, every one pinned to a commit; bundles are cached under `~/.cache/whc/`. `just zsh-refresh` forgets the caches (and the completion dump, which is otherwise rebuilt daily).
+- **History:** Ctrl-R is Atuin when installed, otherwise fzf. fzf uses `fd` and the Dracula colours.
+- **direnv:** `use_fnm` in a project's `.envrc` puts its Node version on `PATH`; `direnv allow` approves a file.
+- **Remote logins:** SSH logins on a `remote` machine print a banner from `shell/motd.d/*.zsh` (device, uptime/load/memory/disk, containers). Add a numbered file there to add a segment; `WHC_MOTD=0` silences it.
+- **Not tracked:** `shell/zsh/profile/<profile>.local.zsh` (personal aliases, hosts), `~/.gitconfig.local`, `.env`.
+
+## Git
+
+`git/.gitconfig` is shared; `git/profile/<profile>.gitconfig` adds the profile's part. Pulls rebase (with auto-stash), fetches prune, conflicts use `zdiff3`, `rerere` remembers resolutions, and diffs go through [delta](https://github.com/dandavison/delta) when installed. On `home` and `work`, `https://github.com/` URLs are only rewritten for *pushes*; fetch and clone stay on https so a machine without a key can bootstrap. On `home`, commits are signed with the SSH key: GitHub shows "Verified", and `git log --show-signature` verifies locally through `~/.ssh/allowed_signers`. Signing is off on `work` until a key exists there (add `[commit] gpgsign = true` to `~/.gitconfig.local`).
 
 ## Terminal appearance
 
-Tmux uses Neovim's Dracula palette with a compact session/window bar. Zsh loads the official [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote, including its two-line layout, icons, Git status, and right-side status segments. The configuration uses explicit Dracula RGB colours so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration and the red remote-device segment live in `shell/zsh/prompt.zsh`. The theme has no trailing prompt arrow. Use a Nerd Font for its icons and Powerline separators.
+Tmux uses Neovim's Dracula palette with a compact session/window bar. Zsh loads the official [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote, including its two-line layout, icons and Git status. The configuration uses explicit Dracula RGB colours so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration lives in `shell/zsh/core/prompt.zsh`. Use a Nerd Font (the `home` desktop installs the symbols fallback) for its icons.
 
-The `remote` profile shows `WHC_DEVICE` in a red Powerline segment. SSH sessions also show this segment automatically. An empty device name falls back to the short hostname. Local sessions with other profiles omit the segment.
+The first prompt segment is the machine prefix: the OS logo and `WHC_DEVICE` (short hostname if unset). It is in the theme's muted blue everywhere except `remote` machines and SSH sessions, where it is **vibrant red** (and so is the tmux session pill). A very small bash fallback (`just setup bash`) shows a red `[device]` prefix in the same situations.
 
-Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh/core/prompt.zsh"` in an existing shell. Reload tmux with `tmux source-file ~/.tmux.conf`. The true-color terminal setting applies to new panes.
+Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh/core/prompt.zsh"` in an existing shell. Reload tmux with `tmux source-file ~/.tmux.conf`.
 
 ## Symlinks
 
-`just setup links` creates the links for the machine's profile. Existing correct links are accepted; conflicting files or links are reported and never replaced.
+`just setup links` creates the links for the machine's profile. Existing correct links are accepted; conflicting files or links are reported and never replaced (see `--relink` and `--adopt` above).
 
 | dotfile | System location | Profiles | Description |
 |---|---|---|---|
 | shell/.zshrc | ~/.zshrc | all | Loader for the layered zsh config in `shell/zsh/` |
-| git/.gitconfig | ~/.gitconfig | all | Global git settings: identity, aliases, pager with a fallback when diff-so-fancy is missing |
-| git/profile/\<profile\>.gitconfig | ~/.gitconfig.profile | all | Per-profile git settings (SSH URL rewriting is off on `remote`) |
-| git/.gitignore.global | ~/.gitignore.global | all | Global git ignore, set up in the .gitconfig |
+| git/.gitconfig | ~/.gitconfig | all | Global git settings |
+| git/profile/\<profile\>.gitconfig | ~/.gitconfig.profile | all | Per-profile git settings |
+| git/.gitignore.global | ~/.gitignore.global | all | Global git ignore |
 | shell/.tmux.conf | ~/.tmux.conf | all | Tmux settings, using [TPM](https://github.com/tmux-plugins/tpm) |
 | shell/.tmux.session.conf | ~/.tmux.session.conf | home, work | Project pane layout (`prefix M`) |
-| vim/.vimrc | ~/.vimrc | all | A basic Vim config |
-| nvim/ | ~/.config/nvim | home, work | Neovim config |
+| vim/.vimrc | ~/.vimrc | all | Vim config, with Ctrl-hjkl navigation across splits and tmux panes |
+| atuin/config.toml | ~/.config/atuin/config.toml | all | Shell history |
+| nvim/ | ~/.config/nvim | home, work | Neovim config (see below) |
 | node/.npmrc, node/.yarnrc.yml | ~/.npmrc, ~/.yarnrc.yml | home, work | NPM and Yarn settings |
 | taskwarrior/.taskrc | ~/.taskrc | home, work | Taskwarrior config |
-| hypr/, swayimg/, walker/, misc/ | ~/.config/... | home | The desktop: Hyprland, swayimg (adjacent images, h/l to navigate, scroll to zoom), Walker and Elephant menus, mime handlers and browser flags |
+| direnv/, lazygit/ | ~/.config/direnv, ~/.config/lazygit | home, work | direnv helpers; lazygit with delta |
+| hypr/, swayimg/, walker/, foot/, mako/, gtk-3.0/, gtk-4.0/, xdg-desktop-portal/, misc/, systemd/user/ | ~/.config/... | home | The desktop |
+
+## Neovim
+
+`nvim/lua/whc/` is the editor (options, keymaps, profile, project helpers, agent sessions); `nvim/lua/plugins/` holds one lazy.nvim spec file per topic, and each plugin's keymaps are in its spec so it loads on first use. `whc/profile.lua` gates features by profile: Godot on `home`; agent tools Codex and Claude on `home`, Copilot on `work`. Copilot suggestions feed `blink.cmp` on both. Formatting is `conform.nvim` (on save, falling back to the language server), linting `nvim-lint` plus Ruff, and parsers come from nvim-treesitter (needs the tree-sitter CLI, which setup provides). Telescope is the picker (Ctrl-n/p move, Ctrl-u/d scroll the preview), `\` opens Oil in a float, `<leader>R` renames the file, and `2<leader>h` goes two tabs left. Git is `<leader>g`: hunks (gitsigns), `gn` Neogit, `gd`/`gh`/`gH` Diffview, `gg` lazygit, `gb`/`gl` pickers. Tests are `<leader>n` (Jest and cargo). Spell checking uses `en_au` with a tracked word list (`nvim/spell/en.utf-8.add`); Neovim offers to download the dictionary the first time it is needed. `just nvim-update` syncs plugins and smoke-tests; `just keybinds nvim` lists the mappings.
 
 ## Hyprland login, locking, and sleep
 
-- `~/.config/hypr` links to `hypr/`, including `hyprlock.conf` and `hypridle.conf`.
-- `/etc/greetd/config.toml` links to `greetd/config.toml`; tuigreet launches `start-hyprland`.
-- `/etc/systemd/logind.conf.d/60-manual-power.conf` links to `systemd/logind.conf`.
-- Run `just setup manual-lock` to install the packages and link the power settings. This recipe requires the `home` profile, and `just setup desktop` is the user-level counterpart that links `~/.config/hypr`. Reboot to apply the logind sandbox change.
+- `~/.config/hypr` links to `hypr/`, including `hyprlock.conf` and `hypridle.conf`. Every bind carries a description: `just keybinds hypr` prints them. Per-device settings (the game monitor) live in `hypr/devices/<WHC_DEVICE>.lua`; personal rules go in the untracked `hypr/local.lua`; HyprMon's generated `hyprmon.lua` owns the monitor layout.
+- `just setup manual-lock` installs the packages and **copies** (not symlinks) the system files: greetd's config is rendered from `greetd/config.toml.in` with the installing user and the session launcher, and `systemd/logind.conf` is copied to `/etc/systemd/logind.conf.d/60-manual-power.conf`. Rerun it to apply edits. Root-owned files no longer point into `$HOME`, so logind's sandbox needs no workaround.
+- The greeter launches `uwsm start hyprland.desktop` when uwsm is installed (a systemd-managed session, so `graphical-session.target` is active), otherwise `start-hyprland`. If login fails, switch to a TTY and run `WHC_NO_UWSM=1 just setup manual-lock`.
+- This recipe requires the `home` profile, and `just setup desktop` is the user-level counterpart. Reboot to apply.
 - Hyprland starts hypridle. The hardware lock key (`XF86ScreenSaver`) sends `loginctl lock-session` to hypridle, which starts hyprlock.
-- The power button suspends, including while locked. Hypridle locks before suspend and waits for the compositor's lock notification.
-- No idle listeners are configured, and logind's idle action is disabled.
-- Customize the greeter in `greetd/config.toml` and lock-screen appearance in `hypr/hyprlock.conf`.
-- Greetd reads the new command on its next service start (normally reboot); do not restart it during an active desktop session.
+- The power button suspends, including while locked. Hypridle locks before suspend and waits for the compositor's lock notification. No idle listeners are configured, and logind's idle action is disabled.
+- `Super+M` and the Walker session menu both run `hypr-exit`. Print copies a screenshot to the clipboard; Shift+Print also saves it under `~/Pictures/Screenshots`.
+- Walker prefixes: `#` projects, `:` clipboard history, `@` Bluetooth, `&` audio devices. The connectivity menu has Wi-Fi and airplane mode.
+- Customize the greeter in `greetd/config.toml.in` and lock-screen appearance in `hypr/hyprlock.conf`. Greetd reads the new command on its next service start (normally reboot); do not restart it during an active desktop session.
 
 Reference: https://wiki.hypr.land/hypr-ecosystem/user/hypridle/
-
-Logind uses `systemd/logind-dotfiles.conf` (linked as a service drop-in) to expose only the dotfiles systemd directory read-only inside its otherwise hidden home directory. Update the absolute path there if relocating the repo.
 
 ## tmux project workspaces
 
@@ -111,13 +151,18 @@ Logind uses `systemd/logind-dotfiles.conf` (linked as a service drop-in) to expo
   ```
 
 - `<C-t>`, `<leader>/`, and `<leader>*` search the project root plus every configured workspace root. Explicit roots expose independently cloned, superproject-ignored repositories while retaining each repository's own ignore rules. `<leader>gf` remains scoped to the current Git repository.
+- Inside Neovim, `<leader>fP` picks a project from the same list and switches the tmux client to it.
 - `prefix s` opens SessionX for fuzzy switching, previews, renaming, and deleting live sessions. SessionX replaces tmux-resurrect; install or update TPM plugins with `prefix I` after setup or a plugin change.
-- Project Neovim starts Codex in a local Sidekick terminal, initially hidden, without an extra tmux session. Toggle/prompt shortcuts automatically reuse the running context for the current directory. `<leader>as` remains an explicit context picker. `Ctrl+G` or `Alt+Q` hides Sidekick while a command keeps running; `Ctrl+\`, then `Ctrl+N` enters terminal normal mode. Closing Neovim ends its local AI process.
+- Project Neovim starts the profile's default agent (Codex on home, Copilot on work) in a local Sidekick terminal, initially hidden, without an extra tmux session. Toggle/prompt shortcuts automatically reuse the running context for the current directory; `<leader>as` is an explicit context picker, `<leader>ac` toggles Claude on home and `<leader>aT` switches the default tool. `Ctrl+G` or `Alt+Q` hides Sidekick while a command keeps running; `Ctrl+\`, then `Ctrl+N` enters terminal normal mode. Closing Neovim ends its local AI process.
 - AI processes use `WHC_AI=true`, `SHELL=/bin/bash`, and per-project Bash history under `${XDG_STATE_HOME:-~/.local/state}/whc-ai/`. Both interactive Bash commands and noninteractive `bash -c` commands use this history; normal zsh history is separate.
 - New Neovim instances load the Sidekick changes. Existing tmux panes and sessions are preserved when reloading the config.
 
-## Node.js
+## Node.js and Python
 
-[fnm](https://github.com/Schniz/fnm) manages Node versions. Run `just setup node` (home and work) to install fnm when missing and select the latest LTS Node as the default. Zsh initializes fnm before attaching to tmux and automatically switches using `.node-version` or `.nvmrc`, including in parent directories. Launcher-started Neovim and AI Bash commands also load fnm.
+[fnm](https://github.com/Schniz/fnm) manages Node versions. Run `just setup node` (home and work) to install fnm when missing and select the latest LTS Node as the default. Zsh switches automatically using `.node-version` or `.nvmrc`, including in parent directories. Launcher-started Neovim and AI Bash commands also load fnm. Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually; in an existing zsh shell, run `source "$WHC_DOTFILES_DIR/shell/zsh/dev/fnm.zsh"`.
 
-Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually. New shells load the setup; in an existing zsh shell, run `source "$WHC_DOTFILES_DIR/shell/zsh/dev/fnm.zsh"`.
+[uv](https://docs.astral.sh/uv/) (`just setup python`) manages Python tools and virtual environments: `uv tool install <tool>`, `uv venv`.
+
+## What the dotfiles do not contain
+
+Back these up separately (restic, or your usual routine); none of it is, or should ever be, in this repository: `.env`, `~/.ssh/` (keys, host files), the age key used by SOPS, `~/.config/gh/hosts.yml`, the Bitwarden/rbw configuration, browser profiles, the Atuin key (`~/.local/share/atuin`), `~/.zsh_history`, and anything under `*.local.zsh`, `~/.gitconfig.local` or `hypr/local.lua`.
