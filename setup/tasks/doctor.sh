@@ -91,7 +91,7 @@ task_doctor() {
     if [[ $WHC_PROFILE == remote ]]; then doctor_commands "editor" vim; else doctor_optional vim; fi
     doctor_optional eza zoxide atuin
     if profile_has dev; then
-        doctor_commands "developer tools" nvim fnm node lazygit gh direnv uv task shfmt
+        doctor_commands "developer tools" nvim fnm node tree-sitter lazygit gh direnv uv task shfmt
         local current
         current=$(installed_nvim_version || true)
         if [[ -n $current ]] && version_at_least "$current" "$nvim_minimum_version"; then

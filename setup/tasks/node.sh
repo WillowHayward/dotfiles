@@ -29,6 +29,9 @@ task_node() {
     fnm default lts-latest
     fnm use default
 
+    # nvim-treesitter builds its parsers with the tree-sitter CLI (a package on Arch).
+    command -v tree-sitter >/dev/null 2>&1 || npm install -g "tree-sitter-cli@$TREE_SITTER_CLI_VERSION"
+
     link_groups node
     fnm --version
     node --version
