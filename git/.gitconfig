@@ -4,7 +4,7 @@
 	username = WillowHayward
 [core]
 	editor = nvim
-    excludesfile = ~/dotfiles/.gitignore.global
+    excludesfile = ~/.gitignore.global
     pager = diff-so-fancy | less --tabs=4 -RF
 [push]
     followTags = true
