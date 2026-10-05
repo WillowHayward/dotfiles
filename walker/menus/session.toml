@@ -28,4 +28,4 @@ value = "loginctl lock-session"
 text = "Log Out"
 icon = "system-log-out"
 keywords = ["logout", "sign out"]
-value = "hyprctl dispatch exit"
+value = "hypr-exit"
