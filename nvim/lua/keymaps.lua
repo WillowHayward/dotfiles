@@ -10,78 +10,82 @@ local function set_keymap(mode, key, action, desc, opts)
 	vim.keymap.set(mode, key, action, fullOpts)
 end
 
+local features = require("profile").features
+
 -- AI (Sidekick + Codex)
-require("which-key").add({ { "<leader>a", group = "AI (Codex)", mode = { "n", "x" } } })
+if features.ai then
+	require("which-key").add({ { "<leader>a", group = "AI (Codex)", mode = { "n", "x" } } })
 
-set_keymap("n", "<leader>aa", function()
-	require("ai-context").toggle()
-end, "Toggle Codex window")
-set_keymap("n", "<leader>aA", function()
-	require("ai-context").toggle()
-end, "Toggle Codex window")
-set_keymap("n", "<leader>ad", function()
-	require("sidekick.cli").close({ name = "codex" })
-end, "Detach Codex session")
-set_keymap("n", "<leader>as", function()
-	require("sidekick.cli").select({ filter = { name = "codex" } })
-end, "Select Codex session")
-set_keymap({ "n", "x" }, "<leader>ap", function()
-	require("sidekick.cli").prompt({
-		cb = function(_, text)
-			if text then
-				require("ai-context").send({ text = text })
-			end
-		end,
-	})
-end, "Choose Codex prompt")
+	set_keymap("n", "<leader>aa", function()
+		require("ai-context").toggle()
+	end, "Toggle Codex window")
+	set_keymap("n", "<leader>aA", function()
+		require("ai-context").toggle()
+	end, "Toggle Codex window")
+	set_keymap("n", "<leader>ad", function()
+		require("sidekick.cli").close({ name = "codex" })
+	end, "Detach Codex session")
+	set_keymap("n", "<leader>as", function()
+		require("sidekick.cli").select({ filter = { name = "codex" } })
+	end, "Select Codex session")
+	set_keymap({ "n", "x" }, "<leader>ap", function()
+		require("sidekick.cli").prompt({
+			cb = function(_, text)
+				if text then
+					require("ai-context").send({ text = text })
+				end
+			end,
+		})
+	end, "Choose Codex prompt")
 
-local function codex_send(msg)
-	return function()
-		require("ai-context").send({ msg = msg })
+	local function codex_send(msg)
+		return function()
+			require("ai-context").send({ msg = msg })
+		end
 	end
+	set_keymap({ "n", "x" }, "<leader>at", codex_send("{this}"), "Send this to Codex")
+	set_keymap("n", "<leader>af", codex_send("{file}"), "Send file to Codex")
+	set_keymap("x", "<leader>av", codex_send("{selection}"), "Send selection to Codex")
+	set_keymap({ "n", "x" }, "<leader>ae", codex_send("Explain {this}"), "Ask Codex to explain")
+	set_keymap("n", "<leader>ar", codex_send("Can you review {file} for issues?"), "Ask Codex to review")
+
+	-- Quick wins: q/Q for the current file, w/W for the whole workspace.
+	set_keymap(
+		"n",
+		"<leader>aq",
+		codex_send(
+			"Suggest one quick win in {file}: a small, concrete improvement with a clear benefit. Explain what to change and why."
+		),
+		"Codex: one quick win in file"
+	)
+	set_keymap(
+		"n",
+		"<leader>aQ",
+		codex_send(
+			"Suggest ten quick wins in {file}: small, concrete improvements with clear benefits. Rank them by impact versus effort and explain what to change and why."
+		),
+		"Codex: ten quick wins in file"
+	)
+	set_keymap(
+		"n",
+		"<leader>aw",
+		codex_send(
+			"Explore the entire project containing {file} and suggest one quick win across the project: a small, concrete improvement with a clear benefit. Look beyond the current file; identify the relevant files and explain what to change and why."
+		),
+		"Codex: one quick win in project"
+	)
+	set_keymap(
+		"n",
+		"<leader>aW",
+		codex_send(
+			"Explore the entire project containing {file} and suggest ten quick wins across the project: small, concrete improvements with clear benefits. Look beyond the current file; rank them by impact versus effort, identify the relevant files, and explain what to change and why."
+		),
+		"Codex: ten quick wins in project"
+	)
 end
-set_keymap({ "n", "x" }, "<leader>at", codex_send("{this}"), "Send this to Codex")
-set_keymap("n", "<leader>af", codex_send("{file}"), "Send file to Codex")
-set_keymap("x", "<leader>av", codex_send("{selection}"), "Send selection to Codex")
-set_keymap({ "n", "x" }, "<leader>ae", codex_send("Explain {this}"), "Ask Codex to explain")
-set_keymap("n", "<leader>ar", codex_send("Can you review {file} for issues?"), "Ask Codex to review")
 
--- Quick wins: q/Q for the current file, w/W for the whole workspace.
-set_keymap(
-	"n",
-	"<leader>aq",
-	codex_send(
-		"Suggest one quick win in {file}: a small, concrete improvement with a clear benefit. Explain what to change and why."
-	),
-	"Codex: one quick win in file"
-)
-set_keymap(
-	"n",
-	"<leader>aQ",
-	codex_send(
-		"Suggest ten quick wins in {file}: small, concrete improvements with clear benefits. Rank them by impact versus effort and explain what to change and why."
-	),
-	"Codex: ten quick wins in file"
-)
-set_keymap(
-	"n",
-	"<leader>aw",
-	codex_send(
-		"Explore the entire project containing {file} and suggest one quick win across the project: a small, concrete improvement with a clear benefit. Look beyond the current file; identify the relevant files and explain what to change and why."
-	),
-	"Codex: one quick win in project"
-)
-set_keymap(
-	"n",
-	"<leader>aW",
-	codex_send(
-		"Explore the entire project containing {file} and suggest ten quick wins across the project: small, concrete improvements with clear benefits. Look beyond the current file; rank them by impact versus effort, identify the relevant files, and explain what to change and why."
-	),
-	"Codex: ten quick wins in project"
-)
-
--- Clear notifications
-set_keymap("n", "<leader><leader>", "<cmd>Noice dismiss<CR>", "Clear noice notifications") -- TODO: Does double-space scan?
+-- Clear search highlighting
+set_keymap("n", "<leader><leader>", "<cmd>nohlsearch<CR>", "Clear search highlight")
 
 -- Refresh
 set_keymap("n", "<leader>e", "<cmd>e<CR>", "Reload buffer")
@@ -114,8 +118,7 @@ set_keymap("n", "<A-j>", "zzj")
 set_keymap("n", "<A-k>", "zzk")
 
 -- Add tabs
-set_keymap("n", "<leader>t", "<cmd>tabnew | Alpha<CR>", "Open new tab onto home screen")
---set_keymap("n", "<leader>T", "<cmd>-tabnew | Alpha<CR>", "Open new tab before current onto home screen") -- TODO: This is gonna be better served by taskwarrior - when have I ever used this keybinding?
+set_keymap("n", "<leader>t", "<cmd>tabnew<CR>", "Open new tab")
 
 -- Navigate tabs
 -- NOTE: I don't know if unsetting these entirely is a long-term thing, but it'll help me build the new habit
@@ -175,9 +178,6 @@ set_keymap(
 	"[Broken]Subsitute selection with contents of register and yank deleted text"
 )
 
--- cellular automation (silly)
-set_keymap("n", "<leader>!", "<cmd>CellularAutomaton make_it_rain<CR>", "Destroy it all")
-
 -- Mason
 set_keymap("n", "<leader>cm", "<cmd>Mason<cr>", "Mason")
 
@@ -223,10 +223,9 @@ set_keymap("n", "<leader>*", telescope.grep_string, "Search current string or se
 
 -- LSP
 local function diagnostic_goto(next, severity)
-	local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
 	severity = severity and vim.diagnostic.severity[severity] or nil
 	return function()
-		go({ severity = severity })
+		vim.diagnostic.jump({ count = next and 1 or -1, severity = severity })
 	end
 end
 
@@ -258,7 +257,9 @@ set_keymap("n", "<leader>r", vim.lsp.buf.rename, "Rename current symbol") -- TOD
 
 set_keymap("n", "<leader>cs", vim.lsp.buf.document_symbol, "View document symbols")
 -- TypeScript
-set_keymap("n", "<leader>ci", "<cmd>TypescriptOrganizeImports<CR>", "Organise TypeScript imports")
+set_keymap("n", "<leader>ci", function()
+	vim.lsp.buf.code_action({ context = { only = { "source.organizeImports" }, diagnostics = {} }, apply = true })
+end, "Organise imports")
 
 -- DAP
 local dap = require("dap")
@@ -273,7 +274,6 @@ set_keymap("n", "<leader>dS", dap.step_back, "Step back through code")
 set_keymap("n", "<leader>di", dap.repl.open, "Inspect debug state")
 require("which-key").add({
 	{ "<leader>d", group = "Debug", mode = { "n", "x" } },
-	{ "<leader>o", group = "Godot" },
 })
 set_keymap("n", "<leader>dn", dap.step_into, "Step into code")
 set_keymap("n", "<leader>do", dap.step_out, "Step out of code")
@@ -285,19 +285,25 @@ set_keymap("n", "<leader>db", function()
 	end)
 end, "Set conditional breakpoint")
 set_keymap("n", "<leader>dr", dap.run_last, "Run last debug configuration")
-set_keymap("n", "<leader>du", function() require("dapui").toggle() end, "Toggle debug UI")
-set_keymap({ "n", "x" }, "<leader>de", function() require("dapui").eval() end, "Evaluate debug expression")
+set_keymap("n", "<leader>du", function()
+	require("dapui").toggle()
+end, "Toggle debug UI")
+set_keymap({ "n", "x" }, "<leader>de", function()
+	require("dapui").eval()
+end, "Evaluate debug expression")
 
--- Godot actions; Git keeps <leader>g and language actions keep <leader>c.
-set_keymap("n", "<leader>or", "<cmd>GodotRunProject<CR>", "Run Godot project")
-set_keymap("n", "<leader>os", "<cmd>GodotRunCurrentScene<CR>", "Run current Godot scene")
-set_keymap("n", "<leader>of", "<cmd>GodotRunScenePicker<CR>", "Find and run Godot scene")
-set_keymap("n", "<leader>ot", "<cmd>GodotSceneTree<CR>", "View Godot scene tree")
-set_keymap("n", "<leader>ok", "<cmd>GodotDocsCursor<CR>", "Godot docs under cursor")
-set_keymap("n", "<leader>oc", "<cmd>GodotShowConsole<CR>", "Show Godot console")
-set_keymap("n", "<leader>ol", "<cmd>GodotReconnectLSP<CR>", "Reconnect Godot LSP")
-set_keymap("n", "<leader>oh", "<cmd>checkhealth godotdev<CR>", "Check Godot integration")
-
+if features.godot then
+	require("which-key").add({ { "<leader>o", group = "Godot" } })
+	-- Godot actions; Git keeps <leader>g and language actions keep <leader>c.
+	set_keymap("n", "<leader>or", "<cmd>GodotRunProject<CR>", "Run Godot project")
+	set_keymap("n", "<leader>os", "<cmd>GodotRunCurrentScene<CR>", "Run current Godot scene")
+	set_keymap("n", "<leader>of", "<cmd>GodotRunScenePicker<CR>", "Find and run Godot scene")
+	set_keymap("n", "<leader>ot", "<cmd>GodotSceneTree<CR>", "View Godot scene tree")
+	set_keymap("n", "<leader>ok", "<cmd>GodotDocsCursor<CR>", "Godot docs under cursor")
+	set_keymap("n", "<leader>oc", "<cmd>GodotShowConsole<CR>", "Show Godot console")
+	set_keymap("n", "<leader>ol", "<cmd>GodotReconnectLSP<CR>", "Reconnect Godot LSP")
+	set_keymap("n", "<leader>oh", "<cmd>checkhealth godotdev<CR>", "Check Godot integration")
+end
 
 -- local jester = require("jester")
 -- Jest

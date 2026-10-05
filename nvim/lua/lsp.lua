@@ -13,8 +13,11 @@ local language_servers = {
 	"prettier",
 	"docker-compose-language-service",
 	"dockerfile-language-server",
-	"gdtoolkit",
 }
+local features = require("profile").features
+if features.godot then
+	table.insert(language_servers, "gdtoolkit")
+end
 
 return {
 	-- Github Copilot
@@ -233,14 +236,15 @@ return {
 		dependencies = { "mason.nvim" },
 		opts = function()
 			local nls = require("null-ls")
-			return {
-				sources = {
-					-- nls.builtins.formatting.prettierd,
-					nls.builtins.formatting.stylua,
-					nls.builtins.formatting.gdformat,
-					nls.builtins.diagnostics.flake8,
-				},
+			local sources = {
+				-- nls.builtins.formatting.prettierd,
+				nls.builtins.formatting.stylua,
+				nls.builtins.diagnostics.flake8,
 			}
+			if features.godot then
+				table.insert(sources, nls.builtins.formatting.gdformat)
+			end
+			return { sources = sources }
 		end,
 	},
 	--- lsp-management

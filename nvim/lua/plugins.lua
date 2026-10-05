@@ -1,7 +1,7 @@
 -- Plugins
 -- lazy.nvim plugin manager
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not vim.uv.fs_stat(lazypath) then
 	vim.fn.system({
 		"git",
 		"clone",
@@ -14,6 +14,8 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
+local features = require("profile").features
+
 require("lazy").setup({
 	-- My Plugins
 	--{
@@ -27,7 +29,7 @@ require("lazy").setup({
 	require("lsp"),
 	require("debugging"),
 	-- AI CLI
-	require("ai"),
+	features.ai and require("ai") or {},
 	-- treesitter
 	require("treesitter"),
 	-- Fuzzy Finder
@@ -185,5 +187,5 @@ require("lazy").setup({
 		},
 	},
 	-- Godot
-	require("godot"),
+	features.godot and require("godot") or {},
 })
