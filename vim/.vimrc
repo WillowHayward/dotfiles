@@ -30,3 +30,17 @@ inoremap <A-l> <C-o>l
 nnoremap <A-j> zzj
 nnoremap <A-k> zzk
 
+" Ctrl-h/j/k/l move between splits and, past the edge, between tmux panes. The tmux side is the
+" vim-tmux-navigator plugin (shell/.tmux.conf); this is its Vim half without a plugin manager.
+function! s:TmuxNavigate(key, direction) abort
+  let l:window = winnr()
+  execute 'wincmd ' . a:key
+  if l:window == winnr() && !empty($TMUX)
+    silent call system('tmux select-pane -' . a:direction)
+  endif
+endfunction
+nnoremap <silent> <C-h> :call <SID>TmuxNavigate('h', 'L')<CR>
+nnoremap <silent> <C-j> :call <SID>TmuxNavigate('j', 'D')<CR>
+nnoremap <silent> <C-k> :call <SID>TmuxNavigate('k', 'U')<CR>
+nnoremap <silent> <C-l> :call <SID>TmuxNavigate('l', 'R')<CR>
+
