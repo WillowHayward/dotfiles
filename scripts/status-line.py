@@ -27,9 +27,9 @@ from pathlib import Path
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "whc" / "status"
 COLORS = {"dim": "#6272A4", "text": "#F8F8F2", "green": "#50FA7B", "yellow": "#F1FA8C", "orange": "#FFB86C", "red": "#FF5555", "purple": "#BD93F9"}
 ICONS = {
-    "codex": os.environ.get("WHC_ICON_CODEX", ""),  # terminal
-    "claude": os.environ.get("WHC_ICON_CLAUDE", "✻"),  # the Claude spark
-    "copilot": os.environ.get("WHC_ICON_COPILOT", ""),  # octicons copilot
+    "codex": os.environ.get("WHC_ICON_CODEX", "\uec81"),  # Codex
+    "claude": os.environ.get("WHC_ICON_CLAUDE", "\uec82"),  # Claude
+    "copilot": os.environ.get("WHC_ICON_COPILOT", "\uf4b8"),  # Octicons copilot
 }
 
 
