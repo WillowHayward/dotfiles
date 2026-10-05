@@ -23,10 +23,18 @@ local function key(lhs, rhs, desc, mode)
 end
 
 local keys = {
-    key("<leader>aa", function() ai().toggle() end, "Toggle the agent window"),
-    key("<leader>aT", function() ai().choose() end, "Choose the agent tool"),
-    key("<leader>ad", function() require("sidekick.cli").close({ name = ai().current }) end, "Detach agent session"),
-    key("<leader>as", function() require("sidekick.cli").select({ filter = { name = ai().current } }) end, "Select agent session"),
+    key("<leader>aa", function()
+        ai().toggle()
+    end, "Toggle the agent window"),
+    key("<leader>aT", function()
+        ai().choose()
+    end, "Choose the agent tool"),
+    key("<leader>ad", function()
+        require("sidekick.cli").close({ name = ai().current })
+    end, "Detach agent session"),
+    key("<leader>as", function()
+        require("sidekick.cli").select({ filter = { name = ai().current } })
+    end, "Select agent session"),
     key("<leader>ap", function()
         require("sidekick.cli").prompt({
             cb = function(_, text)
@@ -74,7 +82,12 @@ local keys = {
 -- A second tool gets its own toggle: <leader>ac opens Claude when the profile offers it.
 for _, tool in ipairs(features.ai_tools) do
     if tool == "claude" then
-        table.insert(keys, key("<leader>ac", function() ai().toggle("claude") end, "Toggle the Claude window"))
+        table.insert(
+            keys,
+            key("<leader>ac", function()
+                ai().toggle("claude")
+            end, "Toggle the Claude window")
+        )
     end
 end
 

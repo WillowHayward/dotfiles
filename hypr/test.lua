@@ -6,8 +6,12 @@ package.path = dir .. "/?.lua;" .. package.path
 local function stub()
     local node
     node = setmetatable({}, {
-        __index = function() return node end,
-        __call = function() return node end,
+        __index = function()
+            return node
+        end,
+        __call = function()
+            return node
+        end,
     })
     return node
 end
@@ -18,13 +22,27 @@ hl = setmetatable({
     bind = function(keys, _, options)
         binds[#binds + 1] = { keys = keys, description = options and options.description }
     end,
-    get_monitors = function() return {} end,
+    get_monitors = function()
+        return {}
+    end,
     on = function() end,
-    notification = { create = function(options) error("unexpected notification: " .. options.text) end },
+    notification = {
+        create = function(options)
+            error("unexpected notification: " .. options.text)
+        end,
+    },
     plugin = { load = function() end },
-    window_rule = function() return any end,
-    workspace_rule = function() return any end,
-}, { __index = function() return any end })
+    window_rule = function()
+        return any
+    end,
+    workspace_rule = function()
+        return any
+    end,
+}, {
+    __index = function()
+        return any
+    end,
+})
 
 local ok, err = pcall(dofile, dir .. "/hyprland.lua")
 if not ok then

@@ -7,7 +7,7 @@ local bindStandard = utils.bindStandard
 -- Generic keybinds. For workspace keybinds see workspaces.lua; media keys: multimedia.lua.
 
 bindSuper("Close window", hl.dsp.window.close(), "Q")
-bindSuper("Exit Hyprland", "sh \"$HOME/.config/hypr/exit.sh\"", "M")
+bindSuper("Exit Hyprland", 'sh "$HOME/.config/hypr/exit.sh"', "M")
 bindSuper("Toggle floating", hl.dsp.window.float({ action = "toggle" }), "V")
 bindSuper("Toggle pseudotiling", hl.dsp.window.pseudo(), "ALT", "P")
 bindSuper("Toggle split direction", hl.dsp.layout("togglesplit"), "ALT", "J") -- dwindle only
@@ -34,7 +34,12 @@ for _, bind in ipairs(navBinds) do
     end, "SHIFT", bind.key)
     if bind.key == "J" or bind.key == "K" then
         -- Target the monitor directly, bypassing windows in the same monitor.
-        bindSuper("Focus the monitor " .. bind.name, hl.dsp.focus({ monitor = bind.dir:sub(1, 1) }), "CONTROL", bind.key)
+        bindSuper(
+            "Focus the monitor " .. bind.name,
+            hl.dsp.focus({ monitor = bind.dir:sub(1, 1) }),
+            "CONTROL",
+            bind.key
+        )
     end
 end
 

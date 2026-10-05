@@ -19,10 +19,30 @@ local function brightnessCommand(direction, target)
     return "sh '" .. brightnessScript:gsub("'", "'\\''") .. "' " .. direction .. " " .. target
 end
 for _, bind in ipairs({
-    { description = "Internal panel brightness up", key = "XF86MonBrightnessUp", direction = "up", target = "internal" },
-    { description = "Internal panel brightness down", key = "XF86MonBrightnessDown", direction = "down", target = "internal" },
-    { description = "Focused monitor brightness up", key = super .. " + XF86AudioRaiseVolume", direction = "up", target = "active" },
-    { description = "Focused monitor brightness down", key = super .. " + XF86AudioLowerVolume", direction = "down", target = "active" },
+    {
+        description = "Internal panel brightness up",
+        key = "XF86MonBrightnessUp",
+        direction = "up",
+        target = "internal",
+    },
+    {
+        description = "Internal panel brightness down",
+        key = "XF86MonBrightnessDown",
+        direction = "down",
+        target = "internal",
+    },
+    {
+        description = "Focused monitor brightness up",
+        key = super .. " + XF86AudioRaiseVolume",
+        direction = "up",
+        target = "active",
+    },
+    {
+        description = "Focused monitor brightness down",
+        key = super .. " + XF86AudioLowerVolume",
+        direction = "down",
+        target = "active",
+    },
 }) do
     bindMedia(bind.description, bind.key, brightnessCommand(bind.direction, bind.target), { repeating = true })
 end

@@ -1,10 +1,10 @@
 local startupCommands = {
-	"systemctl --user start udiskie.service",
-	"hypridle",
-	"systemctl --user start hyprpolkitagent",
-	"systemctl --user start elephant.service",
-	"walker --gapplication-service",
-	"flameshot",
+    "systemctl --user start udiskie.service",
+    "hypridle",
+    "systemctl --user start hyprpolkitagent",
+    "systemctl --user start elephant.service",
+    "walker --gapplication-service",
+    "flameshot",
 }
 
 hl.on("hyprland.start", function()

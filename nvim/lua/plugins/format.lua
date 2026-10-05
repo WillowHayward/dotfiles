@@ -10,8 +10,17 @@ local formatters = {
     toml = { "taplo" },
 }
 for _, filetype in ipairs({
-    "javascript", "javascriptreact", "typescript", "typescriptreact", "svelte",
-    "json", "jsonc", "yaml", "markdown", "css", "html",
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "svelte",
+    "json",
+    "jsonc",
+    "yaml",
+    "markdown",
+    "css",
+    "html",
 }) do
     formatters[filetype] = { "prettier" }
 end

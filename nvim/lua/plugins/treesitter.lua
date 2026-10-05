@@ -3,9 +3,30 @@
 local features = require("whc.profile").features
 
 local languages = {
-    "bash", "c", "css", "diff", "dockerfile", "gitcommit", "gitignore", "html", "javascript", "json",
-    "lua", "markdown", "markdown_inline", "python", "query", "regex", "rust", "svelte", "toml",
-    "tsx", "typescript", "vim", "vimdoc", "yaml",
+    "bash",
+    "c",
+    "css",
+    "diff",
+    "dockerfile",
+    "gitcommit",
+    "gitignore",
+    "html",
+    "javascript",
+    "json",
+    "lua",
+    "markdown",
+    "markdown_inline",
+    "python",
+    "query",
+    "regex",
+    "rust",
+    "svelte",
+    "toml",
+    "tsx",
+    "typescript",
+    "vim",
+    "vimdoc",
+    "yaml",
 }
 if features.godot then
     vim.list_extend(languages, { "gdscript", "gdshader" })

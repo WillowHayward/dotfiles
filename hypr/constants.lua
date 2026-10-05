@@ -7,5 +7,5 @@ return {
     },
     keys = {
         super = "SUPER",
-    }
+    },
 }
