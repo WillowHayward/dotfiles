@@ -1,8 +1,8 @@
 [Default Applications]
 application/zip=wine-Programs-7-Zip-7-Zip File Manager.desktop
 x-scheme-handler/codex=chatgpt.desktop
-x-scheme-handler/openai=chatgpt-desktop.desktop
-x-scheme-handler/chatgpt=chatgpt-desktop.desktop
+x-scheme-handler/openai=chatgpt.desktop
+x-scheme-handler/chatgpt=chatgpt.desktop
 text/html=firefox.desktop
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop
