@@ -1,7 +1,15 @@
-# Work machine (WSL). Put the work email address in ~/.gitconfig.local.
+# Work machine (WSL). The work email address comes from WHC_WORK_EMAIL (see .env.example):
+# the shell writes it to ~/.cache/whc/gitconfig.work, included last so a repo can still
+# override it with `git config --local user.email`. Anything else per machine goes in
+# ~/.gitconfig.local. Commit signing is off here: enable it there once a key exists.
 [core]
 	editor = nvim
 [url "git@github.com:"]
-	insteadOf = https://github.com/
+	pushInsteadOf = https://github.com/
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
 [interactive]
-	diffFilter = diff-so-fancy --patch
+	diffFilter = delta --color-only
+[include]
+	path = ~/.cache/whc/gitconfig.work

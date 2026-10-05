@@ -4,10 +4,32 @@
 	username = WillowHayward
 [core]
 	excludesfile = ~/.gitignore.global
-	# Fall back to plain paging where diff-so-fancy is not installed.
-	pager = "( command -v diff-so-fancy >/dev/null 2>&1 && diff-so-fancy || cat ) | less --tabs=4 -RFX"
+	# delta where installed, plain paging otherwise (servers, fresh machines).
+	pager = "if command -v delta >/dev/null 2>&1; then delta; else less --tabs=4 -RFX; fi"
+[delta]
+	navigate = true
+	line-numbers = true
+	dark = true
 [push]
 	followTags = true
+	autoSetupRemote = true
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[fetch]
+	prune = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
+	colorMoved = default
+[rerere]
+	enabled = true
+[commit]
+	verbose = true
+[branch]
+	sort = -committerdate
 [alias]
 	s = status
 	c = commit
@@ -16,7 +38,7 @@
 [init]
 	defaultBranch = main
 # Per-profile settings (git/profile/*.gitconfig, linked by `just setup links`)
-# and per-machine overrides that are not committed, e.g. a work email address.
+# and per-machine overrides that are not committed.
 [include]
 	path = ~/.gitconfig.profile
 	path = ~/.gitconfig.local
