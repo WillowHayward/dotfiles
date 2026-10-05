@@ -14,12 +14,14 @@ whc_source() {
 }
 
 # env.zsh derives WHC_PROFILE; everything below branches on it. The prompt is
-# configured before plugins load, and compinit runs first because Oh My Zsh
-# plugins call compdef while loading.
+# configured before plugins load; core/plugins.zsh runs compinit between its stages.
 whc_source core/env.zsh
 whc_source core/path.zsh
+# Local terminals hand over to tmux now, before the slow parts load, so the full init runs
+# once (inside tmux) instead of twice. Each pane runs this file itself, so it still gets
+# fnm, plugins and the prompt; the tmux server only inherits the environment set above.
+[[ -v WHC_LOCAL ]] && whc_source context/local.zsh
 whc_source core/prompt.zsh
-autoload -Uz compinit && compinit
 whc_source core/plugins.zsh
 whc_source core/functions.zsh
 whc_source core/keys.zsh
@@ -28,6 +30,7 @@ whc_source core/aliases.zsh
 if [[ -v WHC_DEV ]]; then
     whc_source dev/fnm.zsh
     whc_source dev/aliases.zsh
+    whc_source dev/direnv.zsh
     for file in "$zsh_root"/dev/functions/*.zsh(N); do
         source "$file"
     done
@@ -36,10 +39,8 @@ fi
 
 whc_source core/history.zsh # Last, so nothing above overrides the history settings.
 
-# Profile and connection context. Profile (home/work/remote) is exclusive;
-# context (local/SSH) is independent of it. context/local.zsh may exec tmux,
-# so it must stay last.
+# Profile (home/work/remote) is exclusive; connection context (local/SSH) is independent
+# of it and handled above (context/local.zsh).
 whc_source profile/${WHC_PROFILE:-remote}.zsh
-[[ -v WHC_LOCAL ]] && whc_source context/local.zsh
 
 unset file

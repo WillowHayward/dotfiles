@@ -1,7 +1,7 @@
 # Added on top of core.txt for home and work.
-ohmyzsh/ohmyzsh path:plugins/taskwarrior
+ohmyzsh/ohmyzsh path:plugins/taskwarrior pin:9112b53fa8b5ab556c7c893aa8be8a247ac512a0
 
 # artisan aliases and completion; kept for the upcoming Laravel project.
-ohmyzsh/ohmyzsh path:plugins/laravel
+ohmyzsh/ohmyzsh path:plugins/laravel pin:9112b53fa8b5ab556c7c893aa8be8a247ac512a0
 
-jscutlery/nx-completion
+jscutlery/nx-completion pin:dad95d9c9ffaa8bf7278048d66671c7d387f7535

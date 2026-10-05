@@ -1,0 +1,2 @@
+# Loaded before compinit (they only add completion functions to fpath).
+zsh-users/zsh-completions path:src kind:fpath pin:b5e8e0a22deb05a807bb8655aef809a29f3cffed

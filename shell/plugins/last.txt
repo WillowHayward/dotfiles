@@ -1,0 +1,2 @@
+# Must load after everything else that binds widgets.
+zsh-users/zsh-syntax-highlighting pin:0bfcb582e71d3abe604ce67bc0fe5a21f377507e

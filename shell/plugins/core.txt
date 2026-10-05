@@ -1,10 +1,9 @@
-# Every profile, including remote servers.
-ohmyzsh/ohmyzsh path:lib
-ohmyzsh/ohmyzsh path:plugins/git
-ohmyzsh/ohmyzsh path:plugins/vi-mode
+# Every profile, including remote servers. Each plugin is pinned to a commit
+# (`just updates` reports newer ones); bump the pin to update.
+ohmyzsh/ohmyzsh path:lib pin:9112b53fa8b5ab556c7c893aa8be8a247ac512a0
+ohmyzsh/ohmyzsh path:plugins/git pin:9112b53fa8b5ab556c7c893aa8be8a247ac512a0
+ohmyzsh/ohmyzsh path:plugins/vi-mode pin:9112b53fa8b5ab556c7c893aa8be8a247ac512a0
 
-romkatv/powerlevel10k
+romkatv/powerlevel10k pin:d05a1b00f9a61f9578bf9dc19b8451942dde8734
 
-zsh-users/zsh-autosuggestions
-agkozak/zsh-z
-so-fancy/diff-so-fancy
+zsh-users/zsh-autosuggestions pin:85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5
