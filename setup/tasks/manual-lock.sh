@@ -2,11 +2,13 @@
 
 # Render greetd/config.toml.in: the installing user and the session launcher are filled in
 # at install time instead of being committed. uwsm (a systemd-managed session) is used when
-# installed; WHC_NO_UWSM=1 keeps the plain start-hyprland wrapper.
+# installed, with the same arguments as Hyprland's own hyprland-uwsm.desktop; WHC_NO_UWSM=1 keeps
+# the plain start-hyprland wrapper. The command is single-quoted so tuigreet receives it as one
+# --cmd value (unquoted, it would run just `uwsm` and fail after login).
 render_greetd_config() {
     local user=$1 uwsm_available=$2 command=start-hyprland
     if [[ $uwsm_available == yes && ${WHC_NO_UWSM:-} != 1 ]]; then
-        command="uwsm start hyprland.desktop"
+        command="uwsm start -e -D Hyprland hyprland.desktop"
     fi
     sed -e "s|@USER@|$user|g" -e "s|@SESSION_COMMAND@|$command|g" "$repo_root/greetd/config.toml.in"
 }
@@ -15,6 +17,9 @@ render_greetd_config() {
 # $HOME, and logind's sandbox cannot see $HOME anyway. Rerun this task to apply edits.
 task_manual_lock() {
     [[ $WHC_PROFILE == home ]] || die "manual-lock is only supported by the home profile."
+    # Run as your own user: the task calls sudo itself, and under sudo the greeter would be
+    # rendered for root and the links would land in root's home.
+    (( EUID != 0 )) || die "run manual-lock as your own user, not as root or with sudo."
 
     install_packages greetd-tuigreet hyprlock hypridle uwsm
     link_groups hypr

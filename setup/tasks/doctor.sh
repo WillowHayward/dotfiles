@@ -53,7 +53,7 @@ doctor_links() {
 
 # Plugins on disk should match lazy-lock.json (Neovim reports drift by name).
 doctor_nvim_lock() {
-    local lock=$repo_root/nvim/lazy-lock.json plugins=${XDG_DATA_HOME:-$setup_home/.local/share}/nvim/lazy
+    local lock=$repo_root/nvim/lazy-lock.json plugins=$setup_data_home/nvim/lazy
     [[ -r $lock && -d $plugins ]] || return 0
     command -v python3 >/dev/null 2>&1 || return 0
     local drift

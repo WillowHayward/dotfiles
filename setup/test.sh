@@ -22,6 +22,8 @@ run_setup() {
         WHC_OS_RELEASE_FILE=$os_release \
         WHC_SETUP_HOME=$setup_home \
         WHC_SETUP_CONFIG_HOME=$setup_home/.config \
+    WHC_SETUP_STATE_HOME=$setup_home/.local/state \
+    WHC_SETUP_DATA_HOME=$setup_home/.local/share \
         WHC_APT_FRESH_SECONDS=${WHC_APT_FRESH_SECONDS:-0} \
         "$setup_dir/setup.sh" $task # unquoted: a task may carry a flag
 }
@@ -257,10 +259,19 @@ grep -qx 'export KEEP=1' "$shell_case/user/.bashrc"
     with_uwsm=$(render_greetd_config tester yes)
     without_uwsm=$(render_greetd_config tester no)
     opted_out=$(WHC_NO_UWSM=1 render_greetd_config tester yes)
-    grep -q -- '--user tester --cmd uwsm start hyprland.desktop' <<<"$with_uwsm"
-    grep -q -- '--user tester --cmd start-hyprland' <<<"$without_uwsm"
-    grep -q -- '--cmd start-hyprland' <<<"$opted_out"
+    grep -q -- "--user tester --cmd 'uwsm start -e -D Hyprland hyprland.desktop'" <<<"$with_uwsm"
+    grep -q -- "--user tester --cmd 'start-hyprland'" <<<"$without_uwsm"
+    grep -q -- "--cmd 'start-hyprland'" <<<"$opted_out"
     ! grep -q '@' <<<"$with_uwsm"
+    # tuigreet must receive the session command as ONE --cmd value, and the file must stay valid TOML.
+    python3 - "$with_uwsm" <<'PY'
+import shlex, sys, tomllib
+config = tomllib.loads(sys.argv[1])
+arguments = shlex.split(config["default_session"]["command"])
+assert arguments[arguments.index("--cmd") + 1] == "uwsm start -e -D Hyprland hyprland.desktop", arguments
+assert arguments.count("--cmd") == 1 and arguments[-1] == arguments[arguments.index("--cmd") + 1], arguments
+assert arguments[arguments.index("--user") + 1] == "tester", arguments
+PY
 )
 
 # Device presets are read from an untracked file, ignoring comments and invalid names.

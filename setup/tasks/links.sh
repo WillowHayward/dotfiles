@@ -56,7 +56,7 @@ link_group() {
             "$repo_root/walker/menus/session.toml|$setup_config_home/elephant/menus/session.toml"
             "$repo_root/walker/menus/connectivity.toml|$setup_config_home/elephant/menus/connectivity.toml"
             "$repo_root/hypr/exit.sh|$setup_home/.local/bin/hypr-exit"
-            "$repo_root/walker/applications/whc-projects.desktop|${XDG_DATA_HOME:-$setup_home/.local/share}/applications/whc-projects.desktop"
+            "$repo_root/walker/applications/whc-projects.desktop|$setup_data_home/applications/whc-projects.desktop"
             "$repo_root/misc/mimeapps.list|$setup_config_home/mimeapps.list"
             "$repo_root/misc/chrome-flags.conf|$setup_config_home/chrome-flags.conf"
             "$repo_root/misc/chromium-flags.conf|$setup_config_home/chromium-flags.conf"

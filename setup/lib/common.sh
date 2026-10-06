@@ -7,6 +7,8 @@ environment_file=${WHC_ENVIRONMENT_FILE:-/etc/environment}
 os_release_file=${WHC_OS_RELEASE_FILE:-/etc/os-release}
 setup_home=${WHC_SETUP_HOME:-$HOME}
 setup_config_home=${WHC_SETUP_CONFIG_HOME:-${XDG_CONFIG_HOME:-$setup_home/.config}}
+setup_state_home=${WHC_SETUP_STATE_HOME:-${XDG_STATE_HOME:-$setup_home/.local/state}}
+setup_data_home=${WHC_SETUP_DATA_HOME:-${XDG_DATA_HOME:-$setup_home/.local/share}}
 declare -A requested_packages=()
 apt_updated=false
 # apt lists newer than this many seconds are not refreshed again.
@@ -197,7 +199,7 @@ link_backup_dir=
 backup_target() {
     local target=$1
     [[ -n $link_backup_dir ]] ||
-        link_backup_dir=${XDG_STATE_HOME:-$setup_home/.local/state}/whc/backups/$(date +%Y%m%d-%H%M%S)
+        link_backup_dir=$setup_state_home/whc/backups/$(date +%Y%m%d-%H%M%S)
     mkdir -p -- "$link_backup_dir/$(dirname -- "${target#/}")"
     mv -- "$target" "$link_backup_dir/${target#/}"
     printf 'Moved %s to %s\n' "$target" "$link_backup_dir/${target#/}"

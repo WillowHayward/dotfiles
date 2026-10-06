@@ -8,7 +8,7 @@ task_desktop() {
     mapfile -t packages < <(tier_packages desktop)
     install_packages "${packages[@]}"
     link_groups desktop
-    local applications=${XDG_DATA_HOME:-$setup_home/.local/share}/applications
+    local applications=$setup_data_home/applications
     if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database "$applications"
     fi
