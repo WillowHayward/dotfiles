@@ -9,8 +9,8 @@ window=${1:-$(tmux display-message -p '#{window_id}')}
 cleared=0
 while IFS=$'\t' read -r pane command alternate; do
     case "$command" in
-        zsh | bash | sh | dash | fish) ;;
-        *) continue ;;
+    zsh | bash | sh | dash | fish) ;;
+    *) continue ;;
     esac
     # A full-screen program inside a shell (alternate screen) is not "waiting".
     [[ $alternate == 0 ]] || continue

@@ -4,6 +4,10 @@ set -euo pipefail
 setup_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 test_root=$(mktemp -d)
 trap 'rm -rf -- "$test_root"' EXIT
+# Sandbox HOME and the XDG directories: a task that misses a WHC_SETUP_* override must not touch the real home.
+export HOME=$test_root/sandbox-home
+mkdir -p -- "$HOME"
+unset XDG_CONFIG_HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 
 write_environment() {
     local target=$1 profile=$2 device=$3
@@ -18,14 +22,16 @@ write_os_release() {
 
 run_setup() {
     local environment=$1 os_release=$2 setup_home=$3 task=$4
+    local -a arguments
+    read -ra arguments <<<"$task" # a task may carry a flag, e.g. "links --adopt"
     WHC_ENVIRONMENT_FILE=$environment \
         WHC_OS_RELEASE_FILE=$os_release \
         WHC_SETUP_HOME=$setup_home \
         WHC_SETUP_CONFIG_HOME=$setup_home/.config \
-    WHC_SETUP_STATE_HOME=$setup_home/.local/state \
-    WHC_SETUP_DATA_HOME=$setup_home/.local/share \
+        WHC_SETUP_STATE_HOME=$setup_home/.local/state \
+        WHC_SETUP_DATA_HOME=$setup_home/.local/share \
         WHC_APT_FRESH_SECONDS=${WHC_APT_FRESH_SECONDS:-0} \
-        "$setup_dir/setup.sh" $task # unquoted: a task may carry a flag
+        "$setup_dir/setup.sh" "${arguments[@]}"
 }
 
 home_case=$test_root/home
@@ -148,6 +154,7 @@ grep -qx 'WHC_DEVICE="test device"' "$identity_case"
 shim_dir=$test_root/shims
 mkdir -p -- "$shim_dir"
 for command_name in sudo pacman apt-get; do
+    # shellcheck disable=SC2016 # the single quotes keep $* and $@ for the generated shim
     printf '#!/usr/bin/env bash\nprintf "%%s\\n" "%s $*" >> "$WHC_TEST_LOG"\nif [[ "%s" == sudo ]]; then exec "$@"; fi\n' \
         "$command_name" "$command_name" >"$shim_dir/$command_name"
     chmod +x "$shim_dir/$command_name"
@@ -192,7 +199,7 @@ fi
 touch "$package_case/apt-stamp"
 WHC_APT_STAMP=$package_case/apt-stamp WHC_APT_FRESH_SECONDS=3600 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
     run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2>"$package_case/stderr"
-! grep -q '^apt-get update' "$package_case/commands"
+if grep -q '^apt-get update' "$package_case/commands"; then exit 1; fi
 grep -q '^apt-get install' "$package_case/commands"
 
 (
@@ -201,8 +208,8 @@ grep -q '^apt-get install' "$package_case/commands"
     version_at_least 0.12.5 0.11
     version_at_least 0.11 0.11
     version_at_least 0.12 0.9.5
-    ! version_at_least 0.10.4 0.11
-    ! version_at_least 0.9.5 0.11
+    if version_at_least 0.10.4 0.11; then exit 1; fi
+    if version_at_least 0.9.5 0.11; then exit 1; fi
 )
 
 # --relink replaces a wrong symlink; --adopt also backs up a real file. Plain links refuses both.
@@ -262,7 +269,7 @@ grep -qx 'export KEEP=1' "$shell_case/user/.bashrc"
     grep -q -- "--user tester --cmd 'uwsm start -e -D Hyprland hyprland.desktop'" <<<"$with_uwsm"
     grep -q -- "--user tester --cmd 'start-hyprland'" <<<"$without_uwsm"
     grep -q -- "--cmd 'start-hyprland'" <<<"$opted_out"
-    ! grep -q '@' <<<"$with_uwsm"
+    if grep -q '@' <<<"$with_uwsm"; then exit 1; fi
     # tuigreet must receive the session command as ONE --cmd value, and the file must stay valid TOML.
     python3 - "$with_uwsm" <<'PY'
 import shlex, sys, tomllib

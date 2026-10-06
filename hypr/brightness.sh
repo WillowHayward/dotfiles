@@ -73,6 +73,7 @@ for device_path in /sys/class/backlight/*; do
     target=$((current + direction * step))
     [ "$target" -ge "$minimum" ] || target=$minimum
     [ "$target" -le "$maximum" ] || target=$maximum
+    # shellcheck disable=SC2093 # the first backlight is the only one to set
     exec busctl --system call org.freedesktop.login1 \
         /org/freedesktop/login1/session/auto org.freedesktop.login1.Session \
         SetBrightness ssu backlight "${device_path##*/}" "$target"

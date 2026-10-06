@@ -19,7 +19,7 @@ task_manual_lock() {
     [[ $WHC_PROFILE == home ]] || die "manual-lock is only supported by the home profile."
     # Run as your own user: the task calls sudo itself, and under sudo the greeter would be
     # rendered for root and the links would land in root's home.
-    (( EUID != 0 )) || die "run manual-lock as your own user, not as root or with sudo."
+    ((EUID != 0)) || die "run manual-lock as your own user, not as root or with sudo."
 
     install_packages greetd-tuigreet hyprlock hypridle uwsm
     link_groups hypr

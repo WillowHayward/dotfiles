@@ -12,7 +12,9 @@ task_docker() {
     install_packages ca-certificates curl gnupg
 
     local id codename key
+    # shellcheck source=/dev/null
     id=$(. "$os_release_file" && printf '%s' "$ID")
+    # shellcheck source=/dev/null
     codename=$(. "$os_release_file" && printf '%s' "${VERSION_CODENAME:-}")
     [[ $id == debian || $id == ubuntu ]] || die "Docker publishes repositories for debian and ubuntu, not '$id'."
     [[ -n $codename ]] || die "cannot determine the release codename from $os_release_file."

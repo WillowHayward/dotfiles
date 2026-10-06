@@ -27,7 +27,11 @@ doctor_commands() {
 doctor_optional() {
     local command
     for command in "$@"; do
-        command -v "$command" >/dev/null 2>&1 && doctor_ok "$command (optional)" || doctor_warn "$command (optional) not installed"
+        if command -v "$command" >/dev/null 2>&1; then
+            doctor_ok "$command (optional)"
+        else
+            doctor_warn "$command (optional) not installed"
+        fi
     done
 }
 
@@ -70,22 +74,31 @@ for name, info in lock.items():
 print(" ".join(drift))
 PY
     )
-    [[ -z $drift ]] && doctor_ok "Neovim plugins match lazy-lock.json" ||
+    if [[ -z $drift ]]; then
+        doctor_ok "Neovim plugins match lazy-lock.json"
+    else
         doctor_warn "Neovim plugins differ from lazy-lock.json: $drift (:Lazy restore, or commit the lockfile)"
+    fi
 }
 
 # The hand-built desktop binaries must be rebuilt after Hyprland or Qt upgrades.
 doctor_stale_builds() {
     local plugin=$setup_home/.local/lib/hyprland/hyprbars.so flameshot=$setup_home/.local/lib/flameshot-hyprland/flameshot
     if [[ -e $plugin ]]; then
-        [[ $plugin -nt $(command -v Hyprland) ]] && doctor_ok "hyprbars is newer than Hyprland" ||
+        if [[ $plugin -nt $(command -v Hyprland) ]]; then
+            doctor_ok "hyprbars is newer than Hyprland"
+        else
             doctor_warn "hyprbars is older than Hyprland: run hypr/install-hyprbars.sh"
+        fi
     fi
     if [[ -e $flameshot ]]; then
         local qt
         qt=$(ls /usr/lib/libQt6Core.so.6 2>/dev/null || true)
-        [[ -z $qt || $flameshot -nt $qt ]] && doctor_ok "patched flameshot is newer than Qt" ||
+        if [[ -z $qt || $flameshot -nt $qt ]]; then
+            doctor_ok "patched flameshot is newer than Qt"
+        else
             doctor_warn "patched flameshot is older than Qt: run hypr/install-flameshot.sh"
+        fi
     fi
 }
 

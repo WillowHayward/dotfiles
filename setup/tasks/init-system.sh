@@ -86,7 +86,7 @@ write_system_identity() {
 
 task_init_system() {
     [[ -t 0 ]] || die "init-system requires an interactive terminal."
-    local current_profile= current_device= profile device confirmation
+    local current_profile='' current_device='' profile device confirmation
     current_profile=$(read_environment_value WHC_PROFILE 2>/dev/null || true)
     current_device=$(read_environment_value WHC_DEVICE 2>/dev/null || true)
     [[ $current_profile == home || $current_profile == work || $current_profile == remote ]] ||

@@ -28,7 +28,8 @@ install -m 600 -o "$user" -g "$user" -T /dev/null "$authorized_keys.tmp"
 [[ ! -f $authorized_keys ]] || cat "$authorized_keys" >"$authorized_keys.tmp"
 if [[ -n $key_file ]]; then
     # Append only the keys that are not already authorized.
-    grep -vxFf "$authorized_keys.tmp" "$key_file" >>"$authorized_keys.tmp" || true
+    new_keys=$(grep -vxFf "$authorized_keys.tmp" "$key_file" || true)
+    [[ -z $new_keys ]] || printf '%s\n' "$new_keys" >>"$authorized_keys.tmp"
 fi
 mv -- "$authorized_keys.tmp" "$authorized_keys"
 
