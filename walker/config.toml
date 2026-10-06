@@ -12,13 +12,11 @@ default = ["desktopapplications", "calc", "websearch", "menus:session", "menus:c
 prefix = "#"
 provider = "menus:projects"
 
-# Clipboard history, Bluetooth devices and audio outputs/inputs (Elephant providers).
+# Walker's own defaults (/etc/xdg/walker/config.toml) already claim ; > / . ! % = @ : $ and are
+# matched first, so only unused characters work here. @ is web search and : is the clipboard
+# history in the defaults; these two providers get their own prefixes.
 [[providers.prefixes]]
-prefix = ":"
-provider = "clipboard"
-
-[[providers.prefixes]]
-prefix = "@"
+prefix = "+"
 provider = "bluetooth"
 
 [[providers.prefixes]]
