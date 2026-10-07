@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Package names per tier. Core is installed on every profile and dev adds the
-# developer toolchain (home and work). The desktop tier (the Hyprland session,
+# developer toolchain (home, work and mobile). The desktop tier (the Hyprland session,
 # home only) is installed by task_desktop.
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
@@ -26,6 +26,20 @@ tier_packages() {
     debian:dev)
         printf '%s\n' build-essential gh python3 python3-pip python3-venv direnv shfmt \
             taskwarrior yamllint
+        ;;
+    termux:core)
+        # termux-api is the CLI half of the Termux:API app (clipboard, notifications);
+        # termux-services supervises sshd (runit); just runs this repo's recipes.
+        printf '%s\n' git curl zsh tmux ripgrep fzf bat vim less openssh git-delta fd \
+            htop ncdu rsync jq unzip tree mandoc eza zoxide atuin just \
+            termux-api termux-services mosh
+        ;;
+    termux:dev)
+        # Termux builds against Android's libc, so the glibc release binaries setup pins
+        # elsewhere (Neovim, fnm, uv) do not run here: everything comes from pkg, and the
+        # tree-sitter package includes the CLI that nvim-treesitter needs (with clang).
+        printf '%s\n' neovim lazygit gh python uv nodejs-lts tree-sitter clang make direnv \
+            shellcheck shfmt gitleaks taskwarrior stylua
         ;;
     *) return 0 ;; # Tiers without packages on this distribution (e.g. debian desktop).
     esac
@@ -58,7 +72,7 @@ packages_diff() {
     manifest=$(manifest_packages | cut -f1 | sort -u)
     case "$PACKAGE_FAMILY" in
     arch) installed=$(pacman -Qqe | sort -u) ;;
-    debian) installed=$(apt-mark showmanual | sort -u) ;;
+    debian | termux) installed=$(apt-mark showmanual | sort -u) ;;
     esac
     printf 'Installed explicitly but not in the manifest (add to tier_packages, or ignore):\n'
     comm -13 <(printf '%s\n' "$manifest") <(printf '%s\n' "$installed")

@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Run a profile's real setup in a throw-away Debian container and check the result.
 # Needs docker and network access (it installs packages and clones plugins).
-# Usage: setup/test-container.sh remote|work|home [image]
-# For home (Arch), only the package names are checked against the repositories:
-# installing the whole desktop in a container would be slow and prove little.
+# Usage: setup/test-container.sh remote|work|home|mobile [image]
+# For home (Arch) and mobile (Termux), only the package names are checked against the
+# repositories: installing the whole desktop, or emulating a phone, would prove little.
 set -euo pipefail
 
 profile=${1:-}
 case "$profile" in
 remote | work) image=${2:-debian:stable-slim} ;;
 home) image=${2:-archlinux:latest} ;;
+mobile) image=${2:-termux/termux-docker:x86_64} ;;
 *)
-    printf 'Usage: %s remote|work|home [image]\n' "$0" >&2
+    printf 'Usage: %s remote|work|home|mobile [image]\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -20,6 +21,24 @@ command -v docker >/dev/null 2>&1 || {
     exit 1
 }
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+
+if [[ $profile == mobile ]]; then
+    docker run --rm -i -v "$repo:/src:ro" "$image" bash -s <<'CONTAINER'
+set -euo pipefail
+apt-get update >/dev/null 2>&1
+export PACKAGE_FAMILY=termux
+source /src/setup/tasks/packages.sh
+status=0
+for tier in core dev; do
+    while read -r package; do
+        apt-cache show "$package" >/dev/null 2>&1 || { printf 'FAIL: %s/%s is not in the Termux repositories\n' "$tier" "$package" >&2; status=1; }
+    done < <(tier_packages "$tier")
+done
+(( status == 0 )) && printf 'ok: every mobile package resolves\n'
+exit "$status"
+CONTAINER
+    exit
+fi
 
 if [[ $profile == home ]]; then
     docker run --rm -i -v "$repo:/src:ro" "$image" bash -s <<'CONTAINER'

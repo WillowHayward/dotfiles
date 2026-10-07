@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [remote, work, home]
+        profile: [remote, work, home, mobile]
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2

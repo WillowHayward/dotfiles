@@ -1,0 +1,18 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Termux:Widget shortcut: pick a host from ~/.ssh/config.d and attach its `general` tmux
+# session, over mosh when the host has mosh-server (survives network changes and sleep).
+set -euo pipefail
+
+mapfile -t hosts < <(awk 'tolower($1) == "host" { for (i = 2; i <= NF; i++) if ($i !~ /[*?!]/) print $i }' \
+    ~/.ssh/config.d/* 2>/dev/null | sort -u)
+((${#hosts[@]} > 0)) || {
+    printf 'No hosts in ~/.ssh/config.d.\n' >&2
+    read -r -p 'Press Enter to close.'
+    exit 1
+}
+host=$(printf '%s\n' "${hosts[@]}" | fzf --prompt='ssh> ' --height=100%) || exit 0
+
+if command -v mosh >/dev/null 2>&1 && ssh "$host" 'command -v mosh-server' >/dev/null 2>&1; then
+    exec mosh "$host" -- tmux new-session -A -s general
+fi
+exec ssh -t "$host" tmux new-session -A -s general

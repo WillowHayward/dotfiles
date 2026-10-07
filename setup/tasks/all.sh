@@ -14,8 +14,11 @@ task_all() {
         task_node
         task_python
     fi
-    if [[ $WHC_PROFILE == remote ]]; then
+    if [[ $WHC_PROFILE == remote && $PACKAGE_FAMILY != termux ]]; then
         task_docker
+    fi
+    if [[ $PACKAGE_FAMILY == termux ]]; then
+        task_termux
     fi
     if profile_has desktop; then
         task_desktop

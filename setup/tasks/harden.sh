@@ -69,6 +69,7 @@ harden_ufw() {
 
 task_harden() {
     [[ $WHC_PROFILE == remote ]] || die "harden is only supported by the remote profile."
+    [[ $PACKAGE_FAMILY != termux ]] || die "harden does not apply to Termux; 'just setup termux' configures its sshd."
     harden_step ssh && harden_ssh
     harden_step upgrades && harden_upgrades
     harden_step ufw && harden_ufw

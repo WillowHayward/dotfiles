@@ -4,7 +4,7 @@ set shell := ["bash", "-cu"]
 default:
     @just --justfile ../justfile --working-directory .. --list setup
 
-# Set the machine profile and device name in /etc/environment.
+# Set the machine profile and device name in /etc/environment ($PREFIX/etc/environment in Termux).
 init-system:
     bash setup.sh init-system
 
@@ -28,11 +28,11 @@ nvim:
 tmux:
     bash setup.sh tmux
 
-# Install fnm and configure the latest LTS version of Node.js.
+# Install Node.js LTS (fnm, or pkg in Termux) and the tree-sitter CLI.
 node:
     bash setup.sh node
 
-# Install uv for Python tools and virtual environments (home and work).
+# Install uv for Python tools and virtual environments (home, work and mobile).
 python:
     bash setup.sh python
 
@@ -59,6 +59,10 @@ harden:
 # Report missing tools, wrong links and drift for this machine's profile.
 doctor:
     bash setup.sh doctor
+
+# Configure Termux: settings, font, widget shortcuts, boot script and sshd (Termux only).
+termux:
+    bash setup.sh termux
 
 # Install and link the Hyprland desktop (home profile only).
 desktop:

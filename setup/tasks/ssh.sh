@@ -21,9 +21,10 @@ task_ssh() {
     fi
     chmod 600 -- "$config"
 
-    # Allowed signers let `git log --show-signature` verify the SSH-signed commits (home).
+    # Allowed signers let `git log --show-signature` verify the SSH-signed commits (home and
+    # mobile; each machine signs with its own key, so add the others' keys to this file by hand).
     local pub=$ssh_dir/id_ed25519.pub signers=$ssh_dir/allowed_signers
-    if [[ $WHC_PROFILE == home && -r $pub && ! -e $signers ]]; then
+    if [[ ($WHC_PROFILE == home || $WHC_PROFILE == mobile) && -r $pub && ! -e $signers ]]; then
         printf 'willow@whc.fyi namespaces="git" %s\n' "$(cat "$pub")" >"$signers"
         chmod 644 -- "$signers"
     fi

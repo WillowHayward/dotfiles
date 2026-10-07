@@ -35,7 +35,8 @@ install_neovim_release() {
 task_nvim() {
     profile_has dev || warn "the remote profile uses vim; this Neovim config is built for home and work."
     install_packages ripgrep git curl
-    if [[ $PACKAGE_FAMILY == arch ]]; then
+    if [[ $PACKAGE_FAMILY == arch || $PACKAGE_FAMILY == termux ]]; then
+        # Termux packages a current Neovim, and the pinned glibc release cannot run there.
         install_packages neovim
     else
         local current

@@ -19,7 +19,15 @@ install_fnm() {
 }
 
 task_node() {
-    profile_has dev || die "node is only set up on the home and work profiles."
+    profile_has dev || die "node is only set up on the home, work and mobile profiles."
+    if [[ $PACKAGE_FAMILY == termux ]]; then
+        # fnm's Node builds are glibc binaries; Termux packages Node itself, and the
+        # tree-sitter package includes the CLI.
+        install_packages nodejs-lts tree-sitter
+        link_groups node
+        node --version
+        return
+    fi
     install_packages curl
     export FNM_DIR=${FNM_DIR:-$setup_home/.local/share/fnm}
     export PATH="$FNM_DIR:$PATH"

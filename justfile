@@ -95,6 +95,6 @@ test: check
     bash scripts/test-tmux-clear-idle.sh
     python3 -B -m unittest discover -s walker -p 'test_*.py'
 
-# Run a profile's real setup in a throw-away Debian container (needs docker and network).
+# Run a profile's setup in a throw-away container: real for remote/work, package names for home/mobile (needs docker and network).
 test-container profile:
     bash setup/test-container.sh {{ profile }}

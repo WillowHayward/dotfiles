@@ -47,6 +47,12 @@ link_group() {
     tasks)
         LINKS+=("$repo_root/taskwarrior/.taskrc|$setup_home/.taskrc")
         ;;
+    termux)
+        LINKS+=(
+            "$repo_root/termux/termux.properties|$setup_home/.termux/termux.properties"
+            "$repo_root/termux/colors.properties|$setup_home/.termux/colors.properties"
+        )
+        ;;
     desktop)
         LINKS+=(
             "$repo_root/hypr|$setup_config_home/hypr"
@@ -73,12 +79,15 @@ link_group() {
     esac
 }
 
-# The groups each profile receives: remote is the lightweight baseline,
-# work adds the developer tooling, and home adds the desktop.
+# The groups each profile receives: remote is the lightweight baseline, work and mobile
+# add the developer tooling, and home adds the desktop. Termux adds its terminal settings.
 profile_link_groups() {
     printf '%s\n' shell git tmux vim atuin
     if profile_has dev; then
         printf '%s\n' nvim node tasks dev
+    fi
+    if [[ $PACKAGE_FAMILY == termux ]]; then
+        printf '%s\n' termux
     fi
     if profile_has desktop; then
         printf '%s\n' desktop
@@ -108,6 +117,10 @@ task_links() {
     mapfile -t groups < <(profile_link_groups)
     remove_legacy_links
     link_groups "${groups[@]}"
+    # ~/.taskrc includes this untracked file (sync settings); Taskwarrior refuses a missing include.
+    if profile_has dev && [[ ! -e $setup_home/.taskrc.local ]]; then
+        : >"$setup_home/.taskrc.local"
+    fi
     # Commit hooks (secret scan, checks) apply when the repo is a checkout we manage.
     if [[ -d $repo_root/.githooks && $setup_home == "$HOME" ]]; then
         git -C "$repo_root" config core.hooksPath .githooks

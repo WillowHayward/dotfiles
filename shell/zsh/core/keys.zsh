@@ -5,5 +5,9 @@ bindkey -v # Turn on vim mappings
 # back to its own buffer.
 if [[ -n ${WAYLAND_DISPLAY:-} ]] && (( $+commands[wl-paste] )); then
     clippaste() { wl-paste --no-newline --type text 2>/dev/null; }
+elif [[ -v WHC_TERMUX ]] && (( $+commands[termux-clipboard-get] )); then
+    # The Android clipboard, through the Termux:API app.
+    clippaste() { termux-clipboard-get 2>/dev/null; }
+    clipcopy() { termux-clipboard-set; }
 fi
 

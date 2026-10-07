@@ -1,7 +1,8 @@
 # Developer tooling aliases (home and work).
 alias lg='lazygit'
 
-# Taskwarrior
+# Taskwarrior. ~/.taskrc includes ~/.taskrc.local (sync settings), which must exist.
+(( $+commands[task] )) && [[ ! -e ~/.taskrc.local ]] && : >> ~/.taskrc.local
 alias ta='task add'
 alias te='task edit'
 alias td='task done'

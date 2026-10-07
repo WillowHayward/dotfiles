@@ -46,5 +46,8 @@ context.work.write=project:work
 # Priority "L" should be lower than unset priority, and more than counterbalance blocking
 urgency.uda.priority.L.coefficient=-20
 
-# Personal contexts are not tracked here. Taskwarrior fails on a missing include, so define
-# them per machine with `task context define` (it rewrites this file; do not commit those).
+# Per-machine settings that must stay out of this public repo: personal contexts and sync
+# (sync.server.url, sync.server.client_id, sync.encryption_secret). Edit ~/.taskrc.local by
+# hand, since `task config` and `task context define` rewrite this file instead. Setup and
+# the shell create it empty, because Taskwarrior refuses a missing include.
+include ~/.taskrc.local

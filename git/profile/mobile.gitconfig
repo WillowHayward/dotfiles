@@ -1,0 +1,20 @@
+# Phones (Termux) are personal machines: fetch and clone use https (private repos use the
+# gh credential helper), push uses SSH, and commits are signed with this phone's own key.
+[core]
+	editor = nvim
+[url "git@github.com:"]
+	pushInsteadOf = https://github.com/
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[interactive]
+	diffFilter = delta --color-only
+# Sign commits with the SSH key. Verify locally with gpg.ssh.allowedSignersFile if wanted.
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	allowedSignersFile = ~/.ssh/allowed_signers
+[user]
+	signingkey = ~/.ssh/id_ed25519.pub
+[commit]
+	gpgsign = true

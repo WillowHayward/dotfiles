@@ -1,11 +1,12 @@
 # Loader only: the configuration lives in zsh/ and is layered by profile.
 #
 #   core/     every profile (including remote): prompt, plugins, history, aliases
-#   dev/      home and work: language toolchains and developer tooling
-#   profile/  one file per WHC_PROFILE (home, work, remote)
+#   dev/      home, work and mobile: language toolchains and developer tooling
+#   profile/  one file per WHC_PROFILE (home, work, remote, mobile)
 #   context/  how the shell was reached (local terminal vs. SSH)
 #
-# WHC_PROFILE comes from /etc/environment (see `just setup init-system`).
+# WHC_PROFILE comes from /etc/environment, or $PREFIX/etc/environment in Termux
+# (see `just setup init-system`).
 
 zsh_root=${${(%):-%x}:A:h}/zsh # Resolve the .zshrc symlink so the repo can live anywhere.
 
@@ -39,7 +40,7 @@ fi
 
 whc_source core/history.zsh # Last, so nothing above overrides the history settings.
 
-# Profile (home/work/remote) is exclusive; connection context (local/SSH) is independent
+# Profile (home/work/remote/mobile) is exclusive; connection context (local/SSH) is independent
 # of it and handled above (context/local.zsh).
 whc_source profile/${WHC_PROFILE:-remote}.zsh
 

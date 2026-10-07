@@ -4,9 +4,9 @@ prompt_profile() {
     local current=$1 answer
     while true; do
         printf '\nWHC_PROFILE determines the operating-system setup path:\n' >&2
-        printf '  1) home   (Arch)\n  2) work   (Debian family)\n  3) remote (Debian family)\n' >&2
+        printf '  1) home   (Arch)\n  2) work   (Debian family)\n  3) remote (Debian family, or Termux on a test phone)\n  4) mobile (Termux on a daily phone)\n' >&2
         [[ -n $current ]] && printf 'Press Enter to keep: %s\n' "$current" >&2
-        read -r -p 'Profile [1-3]: ' answer
+        read -r -p 'Profile [1-4]: ' answer
         [[ -z $answer && -n $current ]] && answer=$current
         case "$answer" in
         1 | home)
@@ -21,7 +21,11 @@ prompt_profile() {
             printf 'remote\n'
             return
             ;;
-        *) printf 'Choose home, work, or remote.\n' >&2 ;;
+        4 | mobile)
+            printf 'mobile\n'
+            return
+            ;;
+        *) printf 'Choose home, work, remote, or mobile.\n' >&2 ;;
         esac
     done
 }
@@ -89,14 +93,16 @@ task_init_system() {
     local current_profile='' current_device='' profile device confirmation
     current_profile=$(read_environment_value WHC_PROFILE 2>/dev/null || true)
     current_device=$(read_environment_value WHC_DEVICE 2>/dev/null || true)
-    [[ $current_profile == home || $current_profile == work || $current_profile == remote ]] ||
-        current_profile=
+    case "$current_profile" in
+    home | work | remote | mobile) ;;
+    *) current_profile= ;;
+    esac
     valid_device "$current_device" || current_device=
 
     profile=$(prompt_profile "$current_profile")
     device=$(prompt_device "$current_device")
     printf '\nProfile: %s\nDevice:  %s\n' "$profile" "$device"
-    read -r -p 'Write these values to /etc/environment? [y/N] ' confirmation
+    read -r -p "Write these values to $environment_file? [y/N] " confirmation
     [[ $confirmation == y || $confirmation == Y ]] || {
         printf 'No changes made.\n'
         return

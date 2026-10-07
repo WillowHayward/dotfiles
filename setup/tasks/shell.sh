@@ -16,6 +16,13 @@ task_shell() {
 
     local zsh_path login_shell current_user
     zsh_path=$(command -v zsh) || die "zsh was not found after installation."
+    if [[ $PACKAGE_FAMILY == termux ]]; then
+        # Termux has no passwd database: its chsh points ~/.termux/shell at the shell.
+        [[ $setup_home == "$HOME" ]] || return 0
+        [[ $(readlink -f -- "$setup_home/.termux/shell" 2>/dev/null) == "$(readlink -f -- "$zsh_path")" ]] ||
+            chsh -s zsh
+        return 0
+    fi
     current_user=$(id -un)
     login_shell=$(getent passwd "$current_user" | cut -d: -f7)
     if [[ $login_shell != "$zsh_path" ]]; then

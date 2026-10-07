@@ -14,7 +14,9 @@ typeset -g ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#6272a4'
 # Nerd Font glyphs by os-release ID; unknown systems get the generic Linux logo.
 typeset -gA _whc_os_icons=(arch $'\uf303' debian $'\uf306' ubuntu $'\uf31b' fedora $'\uf30a' alpine $'\uf300')
 _whc_os_icon=$'\uf17c'
-if [[ -r /etc/os-release ]]; then
+if [[ -v WHC_TERMUX ]]; then
+    _whc_os_icon=$'\ue70e' # Android
+elif [[ -r /etc/os-release ]]; then
     _whc_os_id=$(sed -n 's/^ID="\{0,1\}\([a-z0-9._-]*\)"\{0,1\}$/\1/p' /etc/os-release | head -n1)
     _whc_os_icon=${_whc_os_icons[$_whc_os_id]:-$_whc_os_icon}
     unset _whc_os_id

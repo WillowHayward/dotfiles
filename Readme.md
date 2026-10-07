@@ -11,7 +11,7 @@ just setup init-system
 just setup all
 ```
 
-`init-system` prompts for the profile and device name, then writes them to `/etc/environment` using sudo. Device-name presets come from an untracked `setup/devices.local` (one name per line); without it, type a name. Log out and back in to expose the values to every process. Setup commands and zsh read the file directly, so `setup all` can be run immediately afterward. `just --list` shows every recipe and `just setup` the setup tasks.
+`init-system` prompts for the profile and device name, then writes them to `/etc/environment` using sudo (in Termux, which has no root, to `$PREFIX/etc/environment`). Device-name presets come from an untracked `setup/devices.local` (one name per line); without it, type a name. Log out and back in to expose the values to every process. Setup commands and zsh read the file directly, so `setup all` can be run immediately afterward. `just --list` shows every recipe and `just setup` the setup tasks.
 
 ## First run on a new machine
 
@@ -21,17 +21,34 @@ just setup all
 4. **Atuin (optional).** `atuin register` or `atuin login` to sync shell history between machines; nothing is synced until you do.
 5. `just setup doctor` reports anything still missing.
 
+## First run on a phone (Termux)
+
+Install [Termux](https://termux.dev) from F-Droid or its GitHub releases, together with **Termux:API**, **Termux:Boot** and **Termux:Widget** from the same source (builds from different sources cannot share permissions; the Play Store build is a separate, limited one). Exempt Termux from battery optimisation so sshd survives Doze, and open Termux:Boot once so Android lets it run at start-up.
+
+```sh
+pkg install git just
+git clone https://github.com/WillowHayward/dotfiles ~/dotfiles && cd ~/dotfiles
+just setup init-system   # mobile for a daily phone, remote for a test device
+just setup all           # includes `just setup termux`
+termux-setup-storage     # optional: shared storage (Downloads, the Obsidian vault) at ~/storage
+```
+
+Then restart Termux. `just setup termux` links the Dracula colours and `termux.properties` (two rows of extra keys: `PFX` sends the tmux prefix, the back button is Escape), installs a pinned JetBrains Mono Nerd Font, installs the **ssh** widget shortcut (pick a host from `~/.ssh/config.d`, attach its `general` tmux session over mosh when possible) and a Termux:Boot script that starts termux-services. Once `~/.ssh/authorized_keys` exists, rerunning it turns password logins off and enables sshd on port 8022. A `remote` phone also holds a wake lock at boot so it stays reachable; a `mobile` one does not, to save battery.
+
+Each phone signs commits with its own key: add that key to GitHub as a signing key, and to `~/.ssh/allowed_signers` on the other machines.
+
 ## Profiles
 
 `WHC_PROFILE` is the machine's role. Each profile adds to the one below it:
 
 | Profile | Environment | What it gets |
 |---|---|---|
-| `remote` | Debian family, servers | The lightweight baseline: zsh with Antidote, the Dracula prompt, autosuggestions and syntax highlighting, fzf, zoxide, atuin, delta, tmux, Git config, plain Vim (with Ctrl-hjkl pane navigation), a server comfort suite (htop, ncdu, rsync, jq, tree, fd, bat, eza), Docker (`just setup docker`), an SSH defaults include and a login banner. No Neovim, Node, Taskwarrior or desktop. |
+| `remote` | Debian family, servers; Termux on a test phone | The lightweight baseline: zsh with Antidote, the Dracula prompt, autosuggestions and syntax highlighting, fzf, zoxide, atuin, delta, tmux, Git config, plain Vim (with Ctrl-hjkl pane navigation), a server comfort suite (htop, ncdu, rsync, jq, tree, fd, bat, eza), Docker (`just setup docker`), an SSH defaults include and a login banner. No Neovim, Node, Taskwarrior or desktop. |
 | `work` | Debian family, WSL | `remote` plus the developer tooling: Neovim 0.11+, fnm/Node, uv, direnv, lazygit, gh, shellcheck, Taskwarrior, build tools and tmux project layouts. WSL templates with `just setup wsl`. |
+| `mobile` | Termux (Android), a daily phone | `remote`'s baseline (without Docker) plus the developer tooling, all from `pkg`: Neovim, Node LTS, uv, tree-sitter with clang, direnv, lazygit, gh, shellcheck, Taskwarrior. No AI tools (drive the workstation's agents instead) and no Godot. |
 | `home` | Arch Linux | `work` plus the Hyprland desktop (`just setup desktop`): Hyprland, Walker/Elephant, Flameshot, foot, mako, swayimg, mime handlers. Login and lock-screen configuration stays opt-in (`just setup manual-lock`). Godot tooling. |
 
-Code that needs a tier checks `WHC_DEV` (home and work) or `WHC_DESKTOP` (home) rather than comparing profile names. In zsh the layers are `shell/zsh/core/` (every profile), `shell/zsh/dev/` (home and work) and `shell/zsh/profile/<profile>.zsh`. Put private, machine-specific shell settings in `shell/zsh/profile/<profile>.local.zsh`, which is not tracked. Git has the same split: `git/profile/<profile>.gitconfig` is linked to `~/.gitconfig.profile`, and an untracked `~/.gitconfig.local` is the place for per-machine settings.
+Code that needs a tier checks `WHC_DEV` (home, work and mobile) or `WHC_DESKTOP` (home) rather than comparing profile names. The platform is separate from the profile: Termux sets `WHC_TERMUX` in zsh and `PACKAGE_FAMILY=termux` in setup, and gets the Termux settings whatever its profile. In zsh the layers are `shell/zsh/core/` (every profile), `shell/zsh/dev/` (home, work and mobile) and `shell/zsh/profile/<profile>.zsh`. Put private, machine-specific shell settings in `shell/zsh/profile/<profile>.local.zsh`, which is not tracked. Git has the same split: `git/profile/<profile>.gitconfig` is linked to `~/.gitconfig.profile`, and an untracked `~/.gitconfig.local` is the place for per-machine settings.
 
 Connection context is separate from the machine role: SSH sessions set `WHC_REMOTE` even on a `home` or `work` machine, and non-SSH sessions set `WHC_LOCAL`.
 
@@ -41,13 +58,14 @@ On a new server, `scripts/create-user.sh` (run as root) creates a login user wit
 
 | Task | Does |
 |---|---|
-| `init-system` | Write `WHC_PROFILE` and `WHC_DEVICE` to `/etc/environment` |
+| `init-system` | Write `WHC_PROFILE` and `WHC_DEVICE` to `/etc/environment` (`$PREFIX/etc/environment` in Termux) |
 | `packages [--list\|--diff]` | Install the profile's packages; `--list` prints the manifest, `--diff` shows packages installed outside it |
 | `links [--relink\|--adopt]` | Link the profile's dotfiles. Strict by default; `--relink` replaces wrong symlinks, `--adopt` also moves real files to `~/.local/state/whc/backups/` |
 | `shell`, `tmux`, `nvim`, `node`, `python` | Zsh and Antidote; tmux and TPM; Neovim; fnm and Node (plus the tree-sitter CLI); uv |
 | `ssh`, `bash` | Add an `Include` to `~/.ssh/config` (per-host files in `~/.ssh/config.d/`, shared defaults last) and a source line to `~/.bashrc`, without replacing either file |
 | `docker`, `harden` | Docker Engine from Docker's apt repository; sshd/updates/firewall hardening (remote) |
 | `wsl` | Install `work/wsl.conf` and the Windows-side `.wslconfig` template (work, WSL) |
+| `termux` | Termux colours, keys and font, the widget shortcut, the boot script and key-only sshd (Termux) |
 | `desktop`, `manual-lock` | Hyprland packages and links; greetd and logind (home) |
 | `doctor` | Missing tools, wrong links, lockfile drift, stale hand-built desktop binaries |
 | `all` | Everything the profile includes (`manual-lock`, `harden` and `wsl` stay explicit) |
@@ -104,13 +122,14 @@ Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh
 | git/profile/\<profile\>.gitconfig | ~/.gitconfig.profile | all | Per-profile git settings |
 | git/.gitignore.global | ~/.gitignore.global | all | Global git ignore |
 | shell/.tmux.conf | ~/.tmux.conf | all | Tmux settings, using [TPM](https://github.com/tmux-plugins/tpm) |
-| shell/.tmux.session.conf | ~/.tmux.session.conf | home, work | Project pane layout (`prefix M`) |
+| shell/.tmux.session.conf | ~/.tmux.session.conf | home, work, mobile | Project pane layout (`prefix M`) |
 | vim/.vimrc | ~/.vimrc | all | Vim config, with Ctrl-hjkl navigation across splits and tmux panes |
 | atuin/config.toml | ~/.config/atuin/config.toml | all | Shell history |
-| nvim/ | ~/.config/nvim | home, work | Neovim config (see below) |
-| node/.npmrc, node/.yarnrc.yml | ~/.npmrc, ~/.yarnrc.yml | home, work | NPM and Yarn settings |
-| taskwarrior/.taskrc | ~/.taskrc | home, work | Taskwarrior config |
-| direnv/, lazygit/ | ~/.config/direnv, ~/.config/lazygit | home, work | direnv helpers; lazygit with delta |
+| nvim/ | ~/.config/nvim | home, work, mobile | Neovim config (see below) |
+| node/.npmrc, node/.yarnrc.yml | ~/.npmrc, ~/.yarnrc.yml | home, work, mobile | NPM and Yarn settings |
+| taskwarrior/.taskrc | ~/.taskrc | home, work, mobile | Taskwarrior config |
+| direnv/, lazygit/ | ~/.config/direnv, ~/.config/lazygit | home, work, mobile |
+| termux/termux.properties, termux/colors.properties | ~/.termux/ | Termux | Extra keys and settings; Dracula colours. The shortcut and boot script are installed as copies (see the Termux section) | direnv helpers; lazygit with delta |
 | hypr/, swayimg/, walker/, foot/, mako/, gtk-3.0/, gtk-4.0/, xdg-desktop-portal/, misc/, systemd/user/ | ~/.config/... | home | The desktop |
 
 ## Neovim
@@ -161,7 +180,7 @@ Reference: https://wiki.hypr.land/hypr-ecosystem/user/hypridle/
 
 ## Node.js and Python
 
-[fnm](https://github.com/Schniz/fnm) manages Node versions. Run `just setup node` (home and work) to install fnm when missing and select the latest LTS Node as the default. Zsh switches automatically using `.node-version` or `.nvmrc`, including in parent directories. Launcher-started Neovim and AI Bash commands also load fnm. Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually; in an existing zsh shell, run `source "$WHC_DOTFILES_DIR/shell/zsh/dev/fnm.zsh"`.
+[fnm](https://github.com/Schniz/fnm) manages Node versions. In Termux, Node LTS and uv come from `pkg` instead (fnm's builds do not run on Android). Elsewhere, run `just setup node` (home and work) to install fnm when missing and select the latest LTS Node as the default. Zsh switches automatically using `.node-version` or `.nvmrc`, including in parent directories. Launcher-started Neovim and AI Bash commands also load fnm. Use `fnm install <version>` to install a project version and `fnm use <version>` to switch manually; in an existing zsh shell, run `source "$WHC_DOTFILES_DIR/shell/zsh/dev/fnm.zsh"`.
 
 [uv](https://docs.astral.sh/uv/) (`just setup python`) manages Python tools and virtual environments: `uv tool install <tool>`, `uv venv`.
 

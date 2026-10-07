@@ -9,10 +9,21 @@ if [[ -f "$WHC_DOTFILES_DIR/.env" ]]; then # Global environment variables not fo
     set +o allexport
 fi
 
+# Termux (Android) is a platform, not a profile: it has no /etc, so its $PREFIX/etc holds
+# the machine identity. Profiles check WHC_TERMUX for platform differences.
+unset WHC_TERMUX
+if [[ -n ${TERMUX_VERSION:-} || ${PREFIX:-} == */com.termux/* ]]; then
+    export WHC_TERMUX=true
+fi
+
 # Machine identity is managed by `just setup init-system`. Read it again after
 # .env so a stale local file cannot override the system-wide values.
 unset WHC_PROFILE WHC_DEVICE
-whc_environment_file=${WHC_ENVIRONMENT_FILE:-/etc/environment}
+if [[ -v WHC_TERMUX ]]; then
+    whc_environment_file=${WHC_ENVIRONMENT_FILE:-$PREFIX/etc/environment}
+else
+    whc_environment_file=${WHC_ENVIRONMENT_FILE:-/etc/environment}
+fi
 if [[ -r $whc_environment_file ]]; then
     whc_system_profile=$(awk -F= '$1 == "WHC_PROFILE" { value=$0; sub(/^[^=]*=/, "", value) } END { print value }' "$whc_environment_file")
     whc_system_device=$(awk -F= '$1 == "WHC_DEVICE" { value=$0; sub(/^[^=]*=/, "", value) } END { print value }' "$whc_environment_file")
@@ -28,22 +39,23 @@ if [[ -r $whc_environment_file ]]; then
     fi
     unset whc_system_profile whc_system_device
 fi
-unset whc_environment_file
 
 # An unknown or missing profile gets the lightest configuration.
 case ${WHC_PROFILE:-} in
-    home|work|remote) ;;
+    home|work|remote|mobile) ;;
     *)
-        [[ -o interactive ]] && print -u2 "WHC_PROFILE is not set in /etc/environment; using 'remote'. Run 'just setup init-system'."
+        [[ -o interactive ]] && print -u2 "WHC_PROFILE is not set in $whc_environment_file; using 'remote'. Run 'just setup init-system'."
         export WHC_PROFILE=remote
         ;;
 esac
+unset whc_environment_file
 
 # Profile flags (exclusive) and capability flags (what the profile includes).
-unset WHC_HOME WHC_WORK WHC_LOCAL WHC_REMOTE WHC_DEV WHC_DESKTOP
+unset WHC_HOME WHC_WORK WHC_MOBILE WHC_LOCAL WHC_REMOTE WHC_DEV WHC_DESKTOP
 case $WHC_PROFILE in
     home) export WHC_HOME=true WHC_DEV=true WHC_DESKTOP=true ;;
     work) export WHC_WORK=true WHC_DEV=true ;;
+    mobile) export WHC_MOBILE=true WHC_DEV=true ;;
     remote) export WHC_REMOTE=true ;;
 esac
 

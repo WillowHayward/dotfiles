@@ -98,6 +98,52 @@ if run_setup "$work_case/environment" "$work_case/os-release" "$work_case/user" 
     exit 1
 fi
 
+# Termux (TERMUX_VERSION simulates it): mobile gets the developer tooling, a remote test
+# phone the baseline, and both the Termux settings. Neither profile fits the other platform.
+mobile_case=$test_root/mobile
+mkdir -p -- "$mobile_case/user"
+write_environment "$mobile_case/environment" mobile phone
+write_os_release "$mobile_case/os-release" arch # ignored in Termux
+TERMUX_VERSION=0.118 run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" links
+for link in .zshrc .tmux.session.conf .taskrc .config/nvim .config/lazygit/config.yml \
+    .termux/termux.properties .termux/colors.properties; do
+    [[ -L $mobile_case/user/$link ]] || {
+        printf 'Expected mobile link: %s\n' "$link" >&2
+        exit 1
+    }
+done
+for link in .config/hypr .config/foot; do
+    [[ ! -e $mobile_case/user/$link ]] || {
+        printf 'Mobile must not link: %s\n' "$link" >&2
+        exit 1
+    }
+done
+[[ $(readlink "$mobile_case/user/.gitconfig.profile") == */git/profile/mobile.gitconfig ]]
+[[ -f $mobile_case/user/.taskrc.local && ! -L $mobile_case/user/.taskrc.local ]]
+if run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" links 2>/dev/null; then
+    printf '%s\n' 'Expected mobile to require Termux.' >&2
+    exit 1
+fi
+for task in desktop docker harden; do
+    if TERMUX_VERSION=0.118 run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" "$task" 2>/dev/null; then
+        printf 'Expected %s to reject Termux.\n' "$task" >&2
+        exit 1
+    fi
+done
+
+sailor_case=$test_root/termux-remote
+mkdir -p -- "$sailor_case/user"
+write_environment "$sailor_case/environment" remote testphone
+write_os_release "$sailor_case/os-release" debian debian
+TERMUX_VERSION=0.118 run_setup "$sailor_case/environment" "$sailor_case/os-release" "$sailor_case/user" links
+[[ -L $sailor_case/user/.termux/termux.properties && -L $sailor_case/user/.vimrc ]]
+[[ ! -e $sailor_case/user/.config/nvim && ! -e $sailor_case/user/.taskrc && ! -e $sailor_case/user/.taskrc.local ]]
+write_environment "$sailor_case/environment" work testphone
+if TERMUX_VERSION=0.118 run_setup "$sailor_case/environment" "$sailor_case/os-release" "$sailor_case/user" links 2>/dev/null; then
+    printf '%s\n' 'Expected work to reject Termux.' >&2
+    exit 1
+fi
+
 legacy_case=$test_root/legacy
 mkdir -p -- "$legacy_case/user"
 write_environment "$legacy_case/environment" remote testbox
@@ -153,7 +199,7 @@ grep -qx 'WHC_DEVICE="test device"' "$identity_case"
 
 shim_dir=$test_root/shims
 mkdir -p -- "$shim_dir"
-for command_name in sudo pacman apt-get; do
+for command_name in sudo pacman apt-get pkg; do
     # shellcheck disable=SC2016 # the single quotes keep $* and $@ for the generated shim
     printf '#!/usr/bin/env bash\nprintf "%%s\\n" "%s $*" >> "$WHC_TEST_LOG"\nif [[ "%s" == sudo ]]; then exec "$@"; fi\n' \
         "$command_name" "$command_name" >"$shim_dir/$command_name"
@@ -201,6 +247,53 @@ WHC_APT_STAMP=$package_case/apt-stamp WHC_APT_FRESH_SECONDS=3600 WHC_TEST_LOG=$p
     run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages 2>"$package_case/stderr"
 if grep -q '^apt-get update' "$package_case/commands"; then exit 1; fi
 grep -q '^apt-get install' "$package_case/commands"
+
+# Termux installs with pkg (no sudo), and only mobile gets the developer tier.
+write_environment "$package_case/environment" mobile phone
+: >"$package_case/commands"
+TERMUX_VERSION=0.118 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
+    run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages
+grep -q '^pkg install -y .*termux-api' "$package_case/commands"
+grep -q '^pkg install -y .*neovim' "$package_case/commands"
+if grep -qE '^(sudo|apt-get)' "$package_case/commands"; then
+    printf '%s\n' 'Termux must not use sudo or apt-get.' >&2
+    exit 1
+fi
+write_environment "$package_case/environment" remote testphone
+: >"$package_case/commands"
+TERMUX_VERSION=0.118 WHC_TEST_LOG=$package_case/commands PATH="$shim_dir:$PATH" \
+    run_setup "$package_case/environment" "$package_case/os-release" "$package_case/user" packages
+grep -q '^pkg install -y .*mosh' "$package_case/commands"
+if grep -q 'neovim' "$package_case/commands"; then
+    printf '%s\n' 'A remote Termux phone must not install developer packages.' >&2
+    exit 1
+fi
+
+# The termux task: script copies (a changed one is backed up), and key-only sshd once a key exists.
+termux_case=$test_root/termux
+mkdir -p -- "$termux_case/user/.termux" "$termux_case/user/.shortcuts" "$termux_case/user/.ssh"
+write_environment "$termux_case/environment" mobile phone
+printf 'not the pinned font\n' >"$termux_case/user/.termux/font.ttf"
+printf 'edited\n' >"$termux_case/user/.shortcuts/ssh"
+for _ in 1 2; do
+    TERMUX_VERSION=0.118 WHC_TEST_LOG=$termux_case/commands PATH="$shim_dir:$PATH" WHC_SSHD_DROPIN=$termux_case/sshd.conf \
+        run_setup "$termux_case/environment" "$termux_case/os-release" "$termux_case/user" termux >/dev/null 2>"$termux_case/stderr"
+done
+grep -q 'not the pinned font' "$termux_case/stderr"
+grep -q 'no ~/.ssh/authorized_keys' "$termux_case/stderr"
+[[ ! -e $termux_case/sshd.conf ]]
+cmp -s "$setup_dir/../termux/shortcuts/ssh" "$termux_case/user/.shortcuts/ssh"
+[[ -x $termux_case/user/.termux/boot/00-services && ! -L $termux_case/user/.termux/boot/00-services ]]
+grep -rqx edited "$termux_case/user/.local/state/whc/backups"
+[[ -L $termux_case/user/.termux/colors.properties ]]
+printf 'ssh-ed25519 AAAA test\n' >"$termux_case/user/.ssh/authorized_keys"
+TERMUX_VERSION=0.118 WHC_TEST_LOG=$termux_case/commands PATH="$shim_dir:$PATH" WHC_SSHD_DROPIN=$termux_case/sshd.conf \
+    run_setup "$termux_case/environment" "$termux_case/os-release" "$termux_case/user" termux >/dev/null 2>&1
+grep -qx 'PasswordAuthentication no' "$termux_case/sshd.conf"
+if TERMUX_VERSION="" PREFIX=/usr run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" termux 2>/dev/null; then
+    printf '%s\n' 'Expected termux to reject a non-Termux machine.' >&2
+    exit 1
+fi
 
 (
     # shellcheck source=lib/common.sh

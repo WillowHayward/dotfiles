@@ -15,7 +15,7 @@ usage() {
 Usage: setup/setup.sh TASK
 
 Tasks:
-  init-system  Set WHC_PROFILE and WHC_DEVICE in /etc/environment
+  init-system  Set WHC_PROFILE and WHC_DEVICE in /etc/environment ($PREFIX/etc/environment in Termux)
   packages [--list|--diff]  Install the profile's package baseline (--list prints it;
                --diff shows what is installed but not in the manifest)
   links [--relink|--adopt]  Link profile-appropriate dotfiles (--relink: replace wrong symlinks;
@@ -23,14 +23,15 @@ Tasks:
   shell        Configure zsh and Antidote
   nvim         Install Neovim 0.11+ and link its configuration
   tmux         Install and configure tmux and TPM
-  node         Install fnm and the latest LTS Node.js (home and work)
-  python       Install uv (home and work)
+  node         Install fnm and the latest LTS Node.js (home, work and mobile)
+  python       Install uv (home, work and mobile)
   ssh          Add the shared ssh defaults and config.d to ~/.ssh/config
   bash         Source the tiny bashrc from ~/.bashrc
   docker       Install Docker Engine from Docker's apt repository (remote)
   wsl          Install the WSL config templates (work, WSL only)
   harden       Harden sshd, updates and the firewall (remote only; asks first)
   doctor       Report missing tools, wrong links and drift for this profile
+  termux       Termux settings, font, widget shortcuts, boot script and sshd (Termux only)
   desktop      Install and link the Hyprland desktop (home only)
   manual-lock  Configure greetd, hyprlock, hypridle, and logind (home only)
   all          Run every task the profile includes
@@ -55,7 +56,7 @@ case "$task" in
 init-system)
     task_init_system
     ;;
-packages | links | shell | nvim | tmux | node | python | ssh | bash | docker | wsl | harden | doctor | desktop | manual-lock | all)
+packages | links | shell | nvim | tmux | node | python | ssh | bash | docker | wsl | harden | doctor | termux | desktop | manual-lock | all)
     load_system_identity
     validate_profile_os
     "task_${task//-/_}"

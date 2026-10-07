@@ -55,4 +55,23 @@ pp --refresh
 pp --refresh app
 [[ ${pp_args[-2,-1]} == (refresh app) ]] || { print -u2 "pp did not refresh app"; exit 1; }
 if pp one two 2>/dev/null; then print -u2 "pp accepted too many arguments"; exit 1; fi
+# env.zsh: Termux reads the identity from $PREFIX/etc/environment and sets the mobile flags.
+mkdir -p "$home/prefix/etc"
+print 'WHC_PROFILE="mobile"\nWHC_DEVICE="phone"' > "$home/prefix/etc/environment"
+(
+    setopt unset
+    unset WHC_ENVIRONMENT_FILE SSH_CONNECTION
+    TERMUX_VERSION=test PREFIX=$home/prefix
+    source "$root/zsh/core/env.zsh"
+    [[ $WHC_PROFILE == mobile && $WHC_DEVICE == phone ]] || { print -u2 "env.zsh did not read \$PREFIX/etc/environment"; exit 1 }
+    [[ -v WHC_TERMUX && -v WHC_MOBILE && -v WHC_DEV && ! -v WHC_DESKTOP ]] || { print -u2 "env.zsh set the wrong mobile flags"; exit 1 }
+)
+(
+    setopt unset
+    unset TERMUX_VERSION SSH_CONNECTION
+    PREFIX=/usr WHC_ENVIRONMENT_FILE=$home/prefix/etc/environment
+    print 'WHC_PROFILE="work"' > "$WHC_ENVIRONMENT_FILE"
+    source "$root/zsh/core/env.zsh"
+    [[ ! -v WHC_TERMUX && $WHC_PROFILE == work ]] || { print -u2 "env.zsh treated a non-Termux shell as Termux"; exit 1 }
+)
 print "zsh loader tests passed."

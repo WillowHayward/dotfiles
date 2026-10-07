@@ -1,0 +1,10 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Termux:Boot runs this when the phone starts: it starts termux-services (sshd and any
+# other enabled service) by sourcing the login profile, as the Termux wiki describes.
+# Test devices (the remote profile) also hold a wake lock so sshd stays reachable; a daily
+# phone skips it to save battery. Installed by `just setup termux`.
+prefix=${PREFIX:-/data/data/com.termux/files/usr}
+if grep -qE '^WHC_PROFILE="?remote"?$' "$prefix/etc/environment" 2>/dev/null; then
+    termux-wake-lock
+fi
+. "$prefix/etc/profile"

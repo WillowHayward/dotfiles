@@ -20,8 +20,8 @@ install_uv_release() {
 }
 
 task_python() {
-    profile_has dev || die "uv is only set up on the home and work profiles."
-    if [[ $PACKAGE_FAMILY == arch ]]; then
+    profile_has dev || die "uv is only set up on the home, work and mobile profiles."
+    if [[ $PACKAGE_FAMILY == arch || $PACKAGE_FAMILY == termux ]]; then
         install_packages uv
     else
         install_packages curl

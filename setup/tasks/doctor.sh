@@ -102,6 +102,20 @@ doctor_stale_builds() {
     fi
 }
 
+# Termux: the API and services commands, plus what `just setup termux` installs as copies.
+doctor_termux() {
+    doctor_commands "termux" termux-clipboard-get termux-notification sv-enable sshd mosh
+    local file
+    for file in .termux/font.ttf .termux/boot/00-services .shortcuts/ssh; do
+        if [[ -e $setup_home/$file ]]; then doctor_ok "$setup_home/$file"; else doctor_miss "$setup_home/$file (just setup termux)"; fi
+    done
+    if [[ -s $setup_home/.ssh/authorized_keys ]]; then
+        doctor_ok "$setup_home/.ssh/authorized_keys"
+    else
+        doctor_warn "no ~/.ssh/authorized_keys: sshd stays disabled"
+    fi
+}
+
 task_doctor() {
     # Node tools live under fnm; load it like an interactive shell would.
     local fnm_dir=${FNM_DIR:-$setup_home/.local/share/fnm}
@@ -116,7 +130,11 @@ task_doctor() {
     if [[ $WHC_PROFILE == remote ]]; then doctor_commands "editor" vim; else doctor_optional vim; fi
     doctor_optional eza zoxide atuin
     if profile_has dev; then
-        doctor_commands "developer tools" nvim fnm node tree-sitter lazygit gh direnv uv task shfmt
+        if [[ $PACKAGE_FAMILY == termux ]]; then
+            doctor_commands "developer tools" nvim node tree-sitter cc lazygit gh direnv uv task shfmt
+        else
+            doctor_commands "developer tools" nvim fnm node tree-sitter lazygit gh direnv uv task shfmt
+        fi
         local current
         current=$(installed_nvim_version || true)
         if [[ -n $current ]] && version_at_least "$current" "$nvim_minimum_version"; then
@@ -130,8 +148,11 @@ task_doctor() {
         doctor_commands "desktop" hyprctl Hyprland walker elephant foot flameshot grim wpctl playerctl brightnessctl notify-send
         doctor_stale_builds
     fi
-    if [[ $WHC_PROFILE == remote ]]; then
+    if [[ $WHC_PROFILE == remote && $PACKAGE_FAMILY != termux ]]; then
         doctor_commands "server" docker
+    fi
+    if [[ $PACKAGE_FAMILY == termux ]]; then
+        doctor_termux
     fi
     doctor_links
     [[ $doctor_failed == false ]] || die "doctor found problems."
