@@ -4,8 +4,8 @@ source "${${(%):-%x}:A:h:h:h}/themes/dracula-powerlevel10k/p10k.zsh"
 # Local integration settings; keep integration separate from theme colours.
 typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=off
-# The first segment names the machine: OS logo and device name, in the theme's os_icon
-# colours everywhere except remote machines and SSH sessions, which are vibrant red.
+# The first segment names the machine: OS logo and device name (just the logo locally on
+# home), in the theme's os_icon colours except on remote machines and SSH sessions, which are vibrant red.
 typeset -ga POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(whc_host "${(@)POWERLEVEL9K_LEFT_PROMPT_ELEMENTS:#os_icon}")
 # Keep hex lowercase: ZLE normalizes region_highlight, and autosuggestions
 # must match that exact value to remove the hint colour after accepting/history.
@@ -27,6 +27,9 @@ prompt_whc_host() {
     device=${device//[[:cntrl:]]/}
     if [[ ${WHC_PROFILE:-} == remote || -n ${SSH_CONNECTION:-} || -n ${SSH_TTY:-} ]]; then
         background=#FF1F1F foreground=#FFFFFF
+    elif [[ ${WHC_PROFILE:-} == home ]]; then
+        p10k segment -b $background -f $foreground -t "$_whc_os_icon"
+        return
     fi
     # Device names are literal text, including any prompt escape characters.
     p10k segment -b $background -f $foreground -t "$_whc_os_icon %B${device//\%/%%}%b"

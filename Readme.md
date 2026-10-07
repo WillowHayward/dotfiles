@@ -107,7 +107,7 @@ Tab completion offers the immediate subdirectories (hidden ones once you type a 
 
 Tmux uses Neovim's Dracula palette with a compact session/window bar. Zsh loads the official [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote, including its two-line layout, icons and Git status. The configuration uses explicit Dracula RGB colours so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration lives in `shell/zsh/core/prompt.zsh`. Use a Nerd Font (the `home` desktop installs the symbols fallback) for its icons.
 
-The first prompt segment is the machine prefix: the OS logo and `WHC_DEVICE` (short hostname if unset). It is in the theme's muted blue everywhere except `remote` machines and SSH sessions, where it is **vibrant red** (and so is the tmux session pill). A very small bash fallback (`just setup bash`) shows a red `[device]` prefix in the same situations.
+The first prompt segment is the machine prefix: the OS logo and `WHC_DEVICE` (short hostname if unset); a local shell on `home` shows just the logo. It is in the theme's muted blue everywhere except `remote` machines and SSH sessions, where it is **vibrant red** (and so is the tmux session pill). A very small bash fallback (`just setup bash`) shows a red `[device]` prefix in the same situations.
 
 Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh/core/prompt.zsh"` in an existing shell. Reload tmux with `tmux source-file ~/.tmux.conf`.
 
