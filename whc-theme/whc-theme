@@ -1,0 +1,1488 @@
+#!/usr/bin/env python3
+"""whc-theme: render Willow Hayward Code (WHC) colour themes into terminal, editor and desktop configs.
+
+Usage:
+  whc-theme list [--devices]                    themes (and machines with a variant)
+  whc-theme current                             the theme the dotfiles are rendered with, and this machine's state
+  whc-theme apply <theme> [--variant V] [--targets a,b] [--dry-run] [--root DIR]
+  whc-theme export <target> [--theme T] [--variant V]   print one target's file(s) to stdout
+  whc-theme preview [<theme>] [--variant V]     ANSI colour preview in this terminal
+  whc-theme targets                             (alias: --list-targets) every target, where it writes, how it is wired
+  whc-theme data-sync [--from BRAND_REPO]       refresh the vendored data/ from the brand repo
+
+Variants: `auto` (default), `base`, or a machine name (cowgirl, bessie, ranch, ...).
+  auto  runtime targets (tmux, zsh/p10k/fzf, nvim, lazygit, hyprland) embed every machine and pick
+        $WHC_DEVICE (else the short hostname) when they load; shared files in the dotfiles that cannot
+        branch (foot, mako, termux) get the device-neutral base; everything else (kitty, Konsole,
+        exports...) gets this machine's variant.
+  base  device-neutral everywhere.
+  NAME  that machine's variant everywhere (runtime targets are pinned to it).
+
+Environment: WHC_DEVICE (machine), WHC_DOTFILES_DIR (dotfiles root), WHC_THEME_DATA (data dir),
+WHC_THEME_STATE (state file; default ${XDG_STATE_HOME:-~/.local/state}/whc/theme.toml).
+Python 3.9+ standard library only.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import os
+import re
+import shutil
+import socket
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable
+
+TOOL = Path(__file__).resolve()
+TOOL_DIR = TOOL.parent
+VERSION = "1.0.0"
+DEVICES = ["bessie", "ranch", "ship", "cowgirl", "deborah", "felicia", "dowager", "mermaid", "sailor"]
+ORDER8 = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+BESPOKE = ["meadow-night", "meadow-day", "dracula-meadow"]
+MARK_BEGIN = ">>> whc-theme >>>"
+MARK_END = "<<< whc-theme <<<"
+REMOTE_RED = ("#FF1F1F", "#FFFFFF")  # remote/SSH identity colour (dotfiles convention), not a theme colour
+
+
+# --- colour helpers -------------------------------------------------------------------------------
+def rgb(h: str) -> tuple[int, int, int]:
+    h = h.lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+def hexc(c) -> str:
+    return "#" + "".join(f"{max(0, min(255, round(x))):02X}" for x in c)
+
+
+def mix(a: str, b: str, t: float) -> str:
+    ra, rb = rgb(a), rgb(b)
+    return hexc(x + (y - x) * t for x, y in zip(ra, rb))
+
+
+def nohash(h: str) -> str:
+    return h.lstrip("#").upper()
+
+
+def lower(h: str) -> str:
+    return h.lower()
+
+
+def rgba(h: str, alpha: str = "ff") -> str:
+    return f"rgba({nohash(h).lower()}{alpha})"
+
+
+def luminance(h: str) -> float:
+    def lin(c):
+        c /= 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(x) for x in rgb(h))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast(a: str, b: str) -> float:
+    la, lb = sorted((luminance(a), luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+# --- data -------------------------------------------------------------------------------------------
+def brand_root() -> Path | None:
+    """The brand repo when this script runs from <brand>/tools/whc-theme/."""
+    root = TOOL_DIR.parents[1] if len(TOOL_DIR.parents) > 1 else None
+    if root and (root / "dist/terminal").is_dir():
+        return root
+    return None
+
+
+def data_source() -> tuple[str, Path]:
+    env = os.environ.get("WHC_THEME_DATA")
+    if env:
+        return "flat", Path(env).expanduser()
+    if (TOOL_DIR / "data").is_dir():
+        return "flat", TOOL_DIR / "data"
+    b = brand_root()
+    if b:
+        return "brand", b
+    sys.exit("whc-theme: no theme data (set WHC_THEME_DATA, or run `whc-theme data-sync --from <brand repo>`)")
+
+
+def read_brand(root: Path) -> list[dict]:
+    themes = []
+    for tid in BESPOKE:
+        p = root / f"dist/terminal/{tid}/palette.json"
+        if p.exists():
+            t = json.loads(p.read_text())
+            t.pop("validation", None)
+            themes.append(t)
+    p = root / "dist/whc-theme/dracula.json"
+    if p.exists():
+        themes += json.loads(p.read_text())["themes"]
+    return themes
+
+
+def load_themes() -> dict[str, dict]:
+    kind, path = data_source()
+    if kind == "brand":
+        themes = read_brand(path)
+    else:
+        order = json.loads((path / "index.json").read_text())["themes"] if (path / "index.json").exists() else None
+        files = [path / f"{t}.json" for t in order] if order else sorted(path.glob("*.json"))
+        themes = [json.loads(f.read_text()) for f in files if f.name != "index.json"]
+    return {t["id"]: t for t in themes}
+
+
+# --- resolution ---------------------------------------------------------------------------------------
+@dataclass
+class Pal:
+    """One theme resolved for one machine (or for none: device == None)."""
+    theme: dict
+    device: str | None
+    bg: str = ""
+    fg: str = ""
+    comment: str = ""
+    selection: str = ""
+    cursor: str = ""
+    cursor_text: str = ""
+    a: dict = field(default_factory=dict)
+    orange: str = ""
+    purple: str = ""
+    status_bg: str = ""
+    status_fg: str = ""
+    status2_bg: str = ""
+    status2_fg: str = ""
+    ui: dict = field(default_factory=dict)
+    syntax: dict = field(default_factory=dict)
+
+    @property
+    def id(self):
+        return self.theme["id"]
+
+    @property
+    def name(self):
+        return self.theme["name"] + (f" · {self.device}" if self.device else "")
+
+    @property
+    def dark(self):
+        return self.theme["mode"] == "dark"
+
+    @property
+    def tinted(self):
+        """True when this theme re-tints the background per machine (the bespoke WHC palettes)."""
+        return bool(self.device) and "background" in self.theme["devices"].get(self.device, {})
+
+    def seq16(self):
+        return [self.a[k] for k in ORDER8] + [self.a["bright_" + k] for k in ORDER8]
+
+    @property
+    def on_mid(self):
+        """Text on a mid-tone segment (comment-coloured): light text on dark themes, the page colour on light."""
+        return self.fg if self.dark else self.bg
+
+
+def resolve(t: dict, device: str | None) -> Pal:
+    p = Pal(theme=t, device=device)
+    p.bg, p.fg, p.comment, p.selection = t["background"], t["foreground"], t["comment"], t["selection"]
+    p.cursor, p.cursor_text = t["cursor"], t.get("cursor_text", t["background"])
+    p.a = dict(t["ansi"])
+    p.orange, p.purple = t["orange"], t["purple"]
+    p.ui, p.syntax = dict(t["ui"]), dict(t["syntax"])
+    p.status_bg, p.status_fg = p.ui["accent"], p.bg
+    p.status2_bg, p.status2_fg = p.selection, p.fg
+    if device:
+        d = t.get("devices", {}).get(device)
+        if d is None:
+            raise SystemExit(f"whc-theme: {t['id']} has no variant for {device!r}")
+        for k in ("background", "comment", "selection", "cursor"):
+            if k in d:
+                setattr(p, "bg" if k == "background" else k, d[k])
+        if "background" in d:
+            p.cursor_text = d["background"]
+        for k in ("black", "bright_black", "dim_black"):
+            if k in d:
+                p.a[k] = d[k]
+        p.status_bg, p.status_fg = d["status_bg"], d["status_fg"]
+        p.status2_bg, p.status2_fg = d.get("status2_bg", p.selection), d.get("status2_fg", p.fg)
+    return p
+
+
+def detect_device() -> str | None:
+    d = os.environ.get("WHC_DEVICE") or socket.gethostname().split(".")[0]
+    return d.lower() if d else None
+
+
+# --- targets ----------------------------------------------------------------------------------------
+@dataclass
+class Ctx:
+    theme: dict
+    variant: str            # auto | base | <device>
+    root: Path              # dotfiles root
+    home: Path
+
+    def pinned(self) -> str | None:
+        return None if self.variant in ("auto", "base") else self.variant
+
+    def runtime_devices(self) -> list[str]:
+        """Machines a runtime-selecting target embeds."""
+        if self.variant == "base":
+            return []
+        if self.variant == "auto":
+            return [d for d in DEVICES if d in self.theme.get("devices", {})]
+        return [self.variant]
+
+    def static_device(self, shared: bool) -> str | None:
+        if self.variant == "base":
+            return None
+        if self.variant == "auto":
+            if shared:
+                return None
+            d = detect_device()
+            return d if d in self.theme.get("devices", {}) else None
+        return self.variant
+
+    def label(self) -> str:
+        return f"{self.theme['id']} ({self.variant})"
+
+
+@dataclass
+class Out:
+    path: Path | None        # None: stdout only
+    content: str
+    block: bool = False      # replace the managed block inside an existing file instead of the whole file
+    note: str = ""
+
+
+@dataclass
+class Target:
+    name: str
+    desc: str
+    kind: str                # runtime | shared | local | print
+    committed: bool          # wired into the dotfiles (the default `apply` set)
+    render: Callable[[Ctx], list[Out]]
+    wiring: str = ""
+
+
+TARGETS: dict[str, Target] = {}
+
+
+def target(name, desc, kind, committed=False, wiring=""):
+    def deco(fn):
+        TARGETS[name] = Target(name, desc, kind, committed, fn, wiring)
+        return fn
+    return deco
+
+
+def header(ctx: Ctx, prefix="#", extra="") -> str:
+    lines = [f"{prefix} Generated by whc-theme {VERSION}: {ctx.theme['name']} ({ctx.theme['id']}), variant {ctx.variant}.",
+             f"{prefix} Do not edit; change the theme with `whc-theme apply <theme>`. {extra}".rstrip()]
+    return "\n".join(lines) + "\n"
+
+
+def pal_static(ctx: Ctx, shared: bool) -> Pal:
+    return resolve(ctx.theme, ctx.static_device(shared))
+
+
+# ---- foot (managed block in foot/foot.ini) ----
+def foot_lines(p: Pal) -> list[str]:
+    a = p.a
+    sect = "colors-dark" if p.dark else "colors-light"
+    lines = ["[main]", f"initial-color-theme={'dark' if p.dark else 'light'}", f"[{sect}]",
+             f"cursor={nohash(p.cursor_text)} {nohash(p.cursor)}",
+             f"foreground={nohash(p.fg)}", f"background={nohash(p.bg)}",
+             f"selection-foreground={nohash(p.fg)}", f"selection-background={nohash(p.selection)}",
+             f"urls={nohash(a['cyan'])}"]
+    lines += [f"regular{i}={nohash(a[k])}" for i, k in enumerate(ORDER8)]
+    lines += [f"bright{i}={nohash(a['bright_' + k])}" for i, k in enumerate(ORDER8)]
+    lines += [f"dim{i}={nohash(a['dim_' + k])}" for i, k in enumerate(ORDER8) if "dim_" + k in a]
+    return lines
+
+
+@target("foot", "foot terminal colours", "shared", committed=True,
+        wiring="managed block at the end of foot/foot.ini (foot -C validates it)")
+def t_foot(ctx):
+    p = pal_static(ctx, shared=True)
+    return [Out(ctx.root / "foot/foot.ini", "\n".join(foot_lines(p)) + "\n", block=True)]
+
+
+# ---- mako (managed block in mako/config) ----
+@target("mako", "mako notification colours", "shared", committed=True,
+        wiring="managed block in mako/config, after the global options and before the [urgency] sections")
+def t_mako(ctx):
+    p = pal_static(ctx, shared=True)
+    body = [f"background-color={p.ui['surface']}", f"text-color={p.fg}", f"border-color={p.status_bg if p.device else p.purple}",
+            f"progress-color=over {p.selection}", "", "[urgency=low]", f"border-color={p.comment}", "",
+            "[urgency=critical]", f"border-color={p.a['red']}"]
+    return [Out(ctx.root / "mako/config", "\n".join(body) + "\n", block=True)]
+
+
+# ---- termux (whole file) ----
+@target("termux", "Termux colors.properties", "shared", committed=True,
+        wiring="termux/colors.properties (linked to ~/.termux/ by `just setup termux`; run termux-reload-settings)")
+def t_termux(ctx):
+    p = pal_static(ctx, shared=True)
+    lines = [f"background={p.bg}", f"foreground={p.fg}", f"cursor={p.cursor}"]
+    lines += [f"color{i}={c}" for i, c in enumerate(p.seq16())]
+    return [Out(ctx.root / "termux/colors.properties", header(ctx) + "\n".join(lines) + "\n")]
+
+
+# ---- tmux (whole file, picks the machine at load time) ----
+def tmux_block(p: Pal, device_label: str, ind: str) -> list[str]:
+    a = p.a
+    opts = {
+        "@whc_device": device_label, "@whc_status_bg": p.status_bg, "@whc_status_fg": p.status_fg,
+        "@whc_session_bg": p.status2_bg if p.device else p.selection,
+        "@whc_session_fg": p.status2_fg if p.device else p.fg,
+        "@whc_bg": p.bg, "@whc_fg": p.fg, "@whc_comment": p.comment, "@whc_selection": p.selection,
+        "@whc_accent": p.ui["accent"], "@whc_cyan": a["cyan"], "@whc_green": a["green"], "@whc_yellow": a["yellow"],
+        "@whc_red": a["red"], "@whc_purple": p.purple, "@whc_orange": p.orange,
+    }
+    lines = [f'{ind}set -g {k} "{v}"' for k, v in opts.items()]
+    border = p.status_bg if p.device else p.purple
+    lines += [
+        f'{ind}set -g status-style "bg={p.bg},fg={p.fg}"',
+        f'{ind}setw -g window-status-style "fg={p.comment}"',
+        f'{ind}setw -g window-status-activity-style "fg={a["yellow"]}"',
+        f'{ind}setw -g window-status-bell-style "fg={a["red"]},bold"',
+        f'{ind}set -g pane-border-style "fg={p.selection}"',
+        f'{ind}set -g pane-active-border-style "fg={border}"',
+        f'{ind}set -g message-style "bg={p.selection},fg={p.fg}"',
+        f'{ind}set -g message-command-style "bg={p.selection},fg={a["cyan"]}"',
+        f'{ind}setw -g mode-style "bg={p.selection},fg={p.fg}"',
+        f'{ind}setw -g clock-mode-colour "{border}"',
+        f'{ind}set -g popup-border-style "fg={border}"',
+        f'{ind}set -g window-style "bg={p.bg}"',
+        f'{ind}set -g window-active-style "bg={p.bg}"',
+        f'{ind}set-environment -g WHC_THEME_STATUS "dim={p.comment};text={p.fg};green={a["green"]};yellow={a["yellow"]};'
+        f'orange={p.orange};red={a["red"]};purple={p.purple}"',
+    ]
+    return lines
+
+
+def lazygit_path(ctx: Ctx, device: str | None) -> str:
+    return f"lazygit/whc-theme/{device or 'base'}.yml"
+
+
+@target("tmux", "tmux status bar, device segment, pane tint", "runtime", committed=True,
+        wiring="shell/.tmux.theme.conf, sourced by shell/.tmux.conf; layout stays in .tmux.conf and reads @whc_* options")
+def t_tmux(ctx):
+    devs = ctx.runtime_devices()
+    out = [header(ctx), "# Colours only: ~/.tmux.conf owns the layout and refers to the @whc_* options set here.",
+           "# The machine is $WHC_DEVICE, else the short hostname. Needs tmux >= 3.0 and truecolor (RGB).",
+           f'set -g @whc_theme "{ctx.theme["id"]}"', 'set-environment -g WHC_THEME "' + ctx.theme["id"] + '"']
+    # The lazygit file is found relative to this file (#{d:current_file} is .../shell while it is sourced).
+    def lg(device):
+        return ('set-environment -gF LG_CONFIG_FILE "$HOME/.config/lazygit/config.yml,#{d:current_file}/../'
+                + lazygit_path(ctx, device) + '"')
+
+    if ctx.pinned():
+        d = ctx.pinned()
+        out += tmux_block(resolve(ctx.theme, d), d, "")
+        out.append(lg(d))
+    elif devs:
+        first = True
+        for d in devs:
+            cond = f'#{{||:#{{==:$WHC_DEVICE,{d}}},#{{&&:#{{==:$WHC_DEVICE,}},#{{==:#{{host_short}},{d}}}}}}}'
+            out.append(f'{"%if" if first else "%elif"} "{cond}"')
+            first = False
+            out += tmux_block(resolve(ctx.theme, d), d, "  ")
+            out.append("  " + lg(d))
+        out.append("%else")
+        out += tmux_block(resolve(ctx.theme, None), "#{host_short}", "  ")
+        out.append("  " + lg(None))
+        out.append("%endif")
+    else:
+        out += tmux_block(resolve(ctx.theme, None), "#{host_short}", "")
+        out.append(lg(None))
+    return [Out(ctx.root / "shell/.tmux.theme.conf", "\n".join(out) + "\n")]
+
+
+# ---- zsh: p10k, prompt host segment, autosuggestions, fzf, lazygit (whole file) ----
+ZSH_KEYS = ["bg", "fg", "comment", "selection", "bright_black", "status_bg", "status_fg", "status2_bg", "status2_fg"]
+
+
+def zsh_values(p: Pal) -> dict:
+    a = p.a
+    return {"bg": p.bg, "fg": p.fg, "comment": p.comment, "selection": p.selection, "bright_black": a["bright_black"],
+            "black": a["black"], "red": a["red"], "green": a["green"], "yellow": a["yellow"], "blue": a["blue"],
+            "pink": a["magenta"], "cyan": a["cyan"], "purple": p.purple, "orange": p.orange,
+            "status_bg": p.status_bg, "status_fg": p.status_fg, "status2_bg": p.status2_bg, "status2_fg": p.status2_fg,
+            "on_mid": p.on_mid, "accent": p.ui["accent"]}
+
+
+def zsh_assoc(d: dict, keys=None) -> str:
+    keys = keys or list(d)
+    return " ".join(f"{k} '{d[k]}'" for k in keys)
+
+
+ZSH_BODY = r'''
+export WHC_THEME=$whc_theme[id]
+
+# Powerlevel10k: shell/themes/dracula-powerlevel10k/p10k.zsh spells Dracula's colours literally. Re-colour
+# every POWERLEVEL9K_* parameter (and the Git formatter) by role, so the upstream file stays untouched.
+() {
+    emulate -L zsh -o extended_glob
+    local -A plain=(
+        282A36 $whc_theme[bg] F8F8F2 $whc_theme[fg] 6272A4 $whc_theme[comment] 44475A $whc_theme[selection]
+        BD93F9 $whc_theme[purple] 50FA7B $whc_theme[green] F1FA8C $whc_theme[yellow] FF5555 $whc_theme[red]
+        8BE9FD $whc_theme[cyan] FFB86C $whc_theme[orange] FF79C6 $whc_theme[pink]
+    )
+    # Text on a coloured segment: Dracula's white becomes the theme's "on mid-tone" colour (differs on light themes).
+    local -A seg=("${(@kv)plain}")
+    seg[F8F8F2]=$whc_theme[on_mid]
+    local p v k b
+    for p in ${(k)parameters[(I)POWERLEVEL9K_*]}; do
+        [[ ${parameters[$p]} == scalar* ]] || continue
+        v=${(P)p}
+        [[ $v == *\#[[:xdigit:]](#c6)* ]] || continue
+        local -A map=("${(@kv)plain}")
+        if [[ $p == *_FOREGROUND ]]; then
+            b=${p%_FOREGROUND}_BACKGROUND
+            b=${(U)${(P)b:-}}
+            [[ -n $b && $b != '#282A36' && $b != ${(U)whc_theme[bg]} ]] && map=("${(@kv)seg}")
+        fi
+        for k in ${(k)map}; do v=${v//(#i)\#$k/$map[$k]}; done
+        typeset -g $p=$v
+    done
+    if (( $+functions[my_git_formatter] )); then
+        v=$functions[my_git_formatter]
+        for k in ${(k)seg}; do v=${v//(#i)\#$k/$seg[$k]}; done
+        functions[my_git_formatter]=$v
+    fi
+}
+
+# prompt.zsh uses whc_theme[status_bg]/[status_fg] for the machine segment and [bright_black]
+# (the theme's readable-hint colour) for zsh-autosuggestions.
+
+# fzf: history.zsh appends these to FZF_DEFAULT_OPTS.
+export WHC_FZF_COLORS="${(L):-fg:$whc_theme[fg],bg:$whc_theme[bg],hl:$whc_theme[purple],fg+:$whc_theme[fg],bg+:$whc_theme[selection],hl+:$whc_theme[purple],info:$whc_theme[orange],prompt:$whc_theme[green],pointer:$whc_theme[pink],marker:$whc_theme[pink],spinner:$whc_theme[orange],header:$whc_theme[comment],border:$whc_theme[selection]}"
+
+# lazygit: the hand-written config, then this machine's colours (later files win). tmux sets the same for popups.
+if (( $+commands[lazygit] )); then
+    () {
+        local cfg=${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml
+        local dir=${${(%):-%x}:A:h:h:h}/lazygit/whc-theme  # this file is shell/themes/whc-theme.zsh
+        local th=$dir/$whc_theme[device].yml
+        [[ -r $th ]] || th=$dir/base.yml
+        [[ -r $cfg && -r $th ]] && export LG_CONFIG_FILE="$cfg,$th"
+    }
+fi
+'''
+
+
+@target("zsh", "p10k prompt colours, prompt host segment, autosuggestions, fzf, lazygit selection", "runtime",
+        committed=True, wiring="shell/themes/whc-theme.zsh, sourced by shell/zsh/core/prompt.zsh after the p10k theme")
+def t_zsh(ctx):
+    base = zsh_values(resolve(ctx.theme, None))
+    lines = [header(ctx).rstrip(), "# Sourced by shell/zsh/core/prompt.zsh after the Dracula p10k theme file.",
+             f"typeset -gA whc_theme=(id {ctx.theme['id']} mode {ctx.theme['mode']} device base {zsh_assoc(base)})"]
+    devs = ctx.runtime_devices()
+    if ctx.pinned():
+        d = ctx.pinned()
+        lines.append(f"whc_theme+=(device {d} {zsh_assoc(zsh_values(resolve(ctx.theme, d)), ZSH_KEYS)})")
+    elif devs:
+        lines.append("case ${WHC_DEVICE:-${HOST%%.*}} in")
+        for d in devs:
+            lines.append(f"    {d}) whc_theme+=(device {d} {zsh_assoc(zsh_values(resolve(ctx.theme, d)), ZSH_KEYS)}) ;;")
+        lines.append("esac")
+    return [Out(ctx.root / "shell/themes/whc-theme.zsh", "\n".join(lines) + "\n" + ZSH_BODY)]
+
+
+# ---- lazygit (one file per machine; zsh/tmux pick it via LG_CONFIG_FILE) ----
+def lazygit_yaml(ctx: Ctx, p: Pal) -> str:
+    a = p.a
+    border = p.status_bg if p.device else p.purple
+    return header(ctx, extra=f"Machine: {p.device or 'base'}.") + f"""gui:
+  theme:
+    activeBorderColor: ['{lower(border)}', bold]
+    inactiveBorderColor: ['{lower(p.comment)}']
+    searchingActiveBorderColor: ['{lower(a['yellow'])}', bold]
+    optionsTextColor: ['{lower(a['cyan'])}']
+    selectedLineBgColor: ['{lower(p.selection)}']
+    inactiveViewSelectedLineBgColor: ['{lower(p.ui['surface_raised'])}']
+    cherryPickedCommitFgColor: ['{lower(a['cyan'])}']
+    cherryPickedCommitBgColor: ['{lower(p.selection)}']
+    markedBaseCommitFgColor: ['{lower(a['yellow'])}']
+    markedBaseCommitBgColor: ['{lower(p.selection)}']
+    unstagedChangesColor: ['{lower(a['red'])}']
+    defaultFgColor: ['{lower(p.fg)}']
+"""
+
+
+@target("lazygit", "lazygit borders and selection", "runtime", committed=True,
+        wiring="lazygit/whc-theme/<machine>.yml, appended to LG_CONFIG_FILE by the zsh and tmux files")
+def t_lazygit(ctx):
+    devs = ctx.runtime_devices()
+    outs = [Out(ctx.root / lazygit_path(ctx, None), lazygit_yaml(ctx, resolve(ctx.theme, ctx.pinned())))]
+    for d in devs:
+        outs.append(Out(ctx.root / lazygit_path(ctx, d), lazygit_yaml(ctx, resolve(ctx.theme, d))))
+    return outs
+
+
+# ---- Neovim (palette module; plugins/theme.lua feeds it to dracula.nvim; a lualine theme) ----
+LUA_KEYWORDS = {"and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto", "if", "in",
+                "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while"}
+
+
+def lua_table(d: dict, ind="    ") -> str:
+    parts = []
+    for k, v in d.items():
+        key = k if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", k) and k not in LUA_KEYWORDS else f'["{k}"]'
+        if isinstance(v, dict):
+            parts.append(f"{ind}{key} = {{\n{lua_table(v, ind + '    ')}\n{ind}}},")
+        elif v is None:
+            continue
+        else:
+            parts.append(f'{ind}{key} = "{v}",')
+    return "\n".join(parts)
+
+
+def nvim_values(p: Pal) -> dict:
+    return {"bg": p.bg, "fg": p.fg, "comment": p.comment, "selection": p.selection, "cursor": p.cursor,
+            "status_bg": p.status_bg, "status_fg": p.status_fg, "status2_bg": p.status2_bg, "status2_fg": p.status2_fg,
+            "black": p.a["black"], "bright_black": p.a["bright_black"], "dim_black": p.a.get("dim_black", p.a["black"])}
+
+
+NVIM_BODY = r'''
+local function device()
+    if M.pinned then
+        return M.pinned
+    end
+    local d = vim.env.WHC_DEVICE
+    if not d or d == "" then
+        d = (vim.uv or vim.loop).os_gethostname():match("^[^.]+")
+    end
+    return d and d:lower() or nil
+end
+
+--- The palette for this machine: the theme's base colours with the machine's overrides on top.
+function M.palette()
+    local p = vim.deepcopy(M.base)
+    local d = device()
+    if d and M.devices[d] then
+        p = vim.tbl_extend("force", p, M.devices[d])
+        p.device = d
+    end
+    return p
+end
+
+--- dracula.nvim's palette keys (plugins/theme.lua passes this as `colors`).
+function M.dracula_colors()
+    local p = M.palette()
+    local a = p.ansi
+    local extra = M.nvim or {}
+    return {
+        bg = p.bg,
+        fg = p.fg,
+        selection = p.selection,
+        comment = p.comment,
+        red = a.red,
+        orange = p.orange,
+        yellow = a.yellow,
+        green = a.green,
+        purple = p.purple,
+        cyan = a.cyan,
+        pink = a.magenta,
+        bright_red = a.bright_red,
+        bright_green = a.bright_green,
+        bright_yellow = a.bright_yellow,
+        bright_blue = a.bright_blue,
+        bright_magenta = a.bright_magenta,
+        bright_cyan = a.bright_cyan,
+        bright_white = a.bright_white,
+        menu = extra.menu or (M.mode == "dark" and p.dim_black or p.ui.surface_raised),
+        visual = extra.visual or p.selection,
+        gutter_fg = extra.gutter_fg or p.ui.line_number,
+        nontext = extra.nontext or p.ui.border,
+        white = extra.white or a.white,
+        black = extra.black or (M.mode == "dark" and p.dim_black or p.ui.surface),
+    }
+end
+
+--- Extra highlights layered over dracula.nvim's groups (cursor, diff rows, float borders, the light-mode fix).
+function M.overrides()
+    local p = M.palette()
+    return {
+        Cursor = { fg = p.bg, bg = p.cursor },
+        CursorLine = { bg = p.ui.line_highlight },
+        DiffAdd = { bg = p.ui.diff_add_bg },
+        DiffDelete = { fg = p.ansi.red, bg = p.ui.diff_del_bg },
+        FloatBorder = { fg = p.status_bg },
+        WinSeparator = { fg = p.ui.border },
+    }
+end
+
+--- A lualine theme: Normal mode in the machine's colour, the other modes in their usual accents.
+function M.lualine()
+    local p = M.palette()
+    local a = p.ansi
+    local bar = M.mode == "dark" and p.dim_black or p.ui.surface
+    local function mode(bg, fg)
+        return {
+            a = { fg = fg or p.bg, bg = bg, gui = "bold" },
+            b = { fg = bg, bg = p.ui.surface_raised },
+            c = { fg = p.fg, bg = bar },
+        }
+    end
+    return {
+        normal = mode(p.status_bg, p.status_fg),
+        insert = mode(a.green),
+        visual = mode(a.magenta),
+        replace = mode(a.yellow),
+        command = mode(a.cyan),
+        terminal = mode(p.purple),
+        inactive = {
+            a = { fg = p.comment, bg = bar },
+            b = { fg = p.comment, bg = bar },
+            c = { fg = p.comment, bg = bar },
+        },
+    }
+end
+
+return M
+'''
+
+
+@target("nvim", "Neovim palette for dracula.nvim, extra highlights, lualine theme", "runtime", committed=True,
+        wiring="nvim/lua/whc/theme.lua; nvim/lua/plugins/theme.lua passes it to dracula.nvim, "
+               "nvim/lua/lualine/themes/dracula.lua points lualine at it")
+def t_nvim(ctx):
+    t = ctx.theme
+    base = resolve(t, None)
+    b = {"bg": base.bg, "fg": base.fg, "comment": base.comment, "selection": base.selection, "cursor": base.cursor,
+         "orange": base.orange, "purple": base.purple, "status_bg": base.status_bg, "status_fg": base.status_fg,
+         "status2_bg": base.status2_bg, "status2_fg": base.status2_fg, "dim_black": base.a.get("dim_black", base.a["black"]),
+         "ansi": base.a, "ui": base.ui, "syntax": base.syntax}
+    devs = {}
+    for d in ctx.runtime_devices():
+        p = resolve(t, d)
+        v = nvim_values(p)
+        devs[d] = {k: v[k] for k in v if k not in ("black", "bright_black")}
+        devs[d]["ansi"] = None
+    lines = [header(ctx, prefix="--").rstrip(), "local M = {}", f'M.id = "{t["id"]}"', f'M.name = "{t["name"]}"',
+             f'M.mode = "{t["mode"]}"', f'M.pinned = {json.dumps(ctx.pinned()) if ctx.pinned() else "nil"}',
+             "M.base = {", lua_table(b), "}", "M.devices = {"]
+    for d, v in devs.items():
+        lines.append(f"    {d} = {{\n{lua_table(v, '        ')}\n    }},")
+    lines.append("}")
+    if t.get("nvim"):
+        lines += ["M.nvim = {", lua_table(t["nvim"]), "}"]
+    return [Out(ctx.root / "nvim/lua/whc/theme.lua", "\n".join(lines) + "\n" + NVIM_BODY)]
+
+
+# ---- Hyprland (Lua module; not wired by default) ----
+@target("hyprland", "Hyprland borders, groups and hyprbars in the machine colour", "runtime",
+        wiring="hypr/whc_theme.lua; add `require(\"whc_theme\")` after `require(\"styling\")` in hypr/hyprland.lua")
+def t_hyprland(ctx):
+    t = ctx.theme
+    rows = []
+    for d in [None] + ctx.runtime_devices():
+        p = resolve(t, d)
+        rows.append((d or "base", p))
+    lines = [header(ctx, prefix="--").rstrip(),
+             "-- Window borders and group bars in this machine's colour ($WHC_DEVICE, else the hostname).",
+             "-- Wire it in hypr/hyprland.lua after require(\"styling\"): require(\"whc_theme\").",
+             "-- Borders only show with general.border_size > 0 (styling.lua has 0); this sets 2.", "local themes = {"]
+    for name, p in rows:
+        vals = {"active": p.status_bg if p.device else p.purple, "inactive": p.selection, "bar": p.ui["surface"],
+                "text": p.fg, "locked": p.a["red"], "bg": p.bg}
+        lines.append(f"    {name} = {{")
+        lines += [f'        {k} = "{nohash(v).lower()}",' for k, v in vals.items()]
+        lines.append("    },")
+    lines.append("}")
+    pinned = ctx.pinned()
+    lines.append(f'local device = {json.dumps(pinned) if pinned else "os.getenv(\"WHC_DEVICE\")"}')
+    lines.append('''if not device or device == "" then
+    local f = io.open("/etc/hostname", "r")
+    device = f and f:read("*l") or ""
+    if f then
+        f:close()
+    end
+end
+local c = themes[device:match("^[^.]*"):lower()] or themes.base
+local function rgba(hex, alpha)
+    return "rgba(" .. hex .. (alpha or "ff") .. ")"
+end
+
+hl.config({
+    general = {
+        border_size = 2,
+        col = {
+            active_border = rgba(c.active),
+            inactive_border = rgba(c.inactive, "aa"),
+        },
+    },
+    group = {
+        col = {
+            border_active = rgba(c.active),
+            border_inactive = rgba(c.inactive, "aa"),
+            border_locked_active = rgba(c.locked),
+        },
+        groupbar = {
+            text_color = rgba(c.text),
+            col = {
+                active = rgba(c.active),
+                inactive = rgba(c.inactive),
+            },
+        },
+    },
+    misc = {
+        background_color = rgba(c.bg),
+    },
+})
+
+if hl.plugin and hl.plugin.hyprbars then
+    hl.config({
+        plugin = { hyprbars = { bar_color = tonumber("0xff" .. c.bar), ["col.text"] = tonumber("0xff" .. c.text) } },
+    })
+end
+
+return c''')
+    return [Out(ctx.root / "hypr/whc_theme.lua", "\n".join(lines) + "\n")]
+
+
+# ---- other terminal emulators (local files, not in the dotfiles) ----
+@target("kitty", "kitty colours", "local", wiring="~/.config/kitty/whc-theme.conf; kitty.conf: include whc-theme.conf")
+def t_kitty(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+    lines = [header(ctx).rstrip(), f"foreground {p.fg}", f"background {p.bg}", "selection_foreground none",
+             f"selection_background {p.selection}", f"cursor {p.cursor}", f"cursor_text_color {p.cursor_text}",
+             f"url_color {a['cyan']}", f"active_border_color {p.status_bg}", f"inactive_border_color {a['bright_black']}",
+             f"active_tab_background {p.status_bg}", f"active_tab_foreground {p.status_fg}",
+             f"inactive_tab_background {a['black']}", f"inactive_tab_foreground {p.comment}", f"tab_bar_background {p.bg}",
+             f"mark1_background {a['yellow']}", f"mark1_foreground {p.bg}"]
+    lines += [f"color{i} {c}" for i, c in enumerate(p.seq16())]
+    return [Out(ctx.home / ".config/kitty/whc-theme.conf", "\n".join(lines) + "\n")]
+
+
+@target("alacritty", "Alacritty colours", "local",
+        wiring='~/.config/alacritty/whc-theme.toml; alacritty.toml: [general] import = ["~/.config/alacritty/whc-theme.toml"]')
+def t_alacritty(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+
+    def block(prefix):
+        return "\n".join(f'{k} = "{a[prefix + k]}"' for k in ORDER8 if prefix + k in a)
+    s = header(ctx) + f"""[colors.primary]
+background = "{p.bg}"
+foreground = "{p.fg}"
+
+[colors.cursor]
+text = "{p.cursor_text}"
+cursor = "{p.cursor}"
+
+[colors.selection]
+text = "CellForeground"
+background = "{p.selection}"
+
+[colors.search.matches]
+foreground = "{p.bg}"
+background = "{a['yellow']}"
+
+[colors.footer_bar]
+foreground = "{p.bg}"
+background = "{p.comment}"
+
+[colors.normal]
+{block('')}
+
+[colors.bright]
+{block('bright_')}
+
+[colors.dim]
+{block('dim_')}
+"""
+    return [Out(ctx.home / ".config/alacritty/whc-theme.toml", s)]
+
+
+@target("ghostty", "Ghostty theme", "local", wiring="~/.config/ghostty/themes/whc-theme; ghostty config: theme = whc-theme")
+def t_ghostty(ctx):
+    p = pal_static(ctx, False)
+    lines = [header(ctx).rstrip()] + [f"palette = {i}={c}" for i, c in enumerate(p.seq16())]
+    lines += [f"background = {p.bg}", f"foreground = {p.fg}", f"cursor-color = {p.cursor}", f"cursor-text = {p.cursor_text}",
+              f"selection-background = {p.selection}", f"selection-foreground = {p.fg}"]
+    return [Out(ctx.home / ".config/ghostty/themes/whc-theme", "\n".join(lines) + "\n")]
+
+
+@target("wezterm", "WezTerm colour scheme", "local",
+        wiring='~/.config/wezterm/colors/whc-theme.toml; wezterm.lua: config.color_scheme = "WHC"')
+def t_wezterm(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+    q = lambda xs: "[" + ", ".join(f'"{x}"' for x in xs) + "]"  # noqa: E731
+    s = header(ctx) + f"""[colors]
+foreground = "{p.fg}"
+background = "{p.bg}"
+cursor_bg = "{p.cursor}"
+cursor_fg = "{p.cursor_text}"
+cursor_border = "{p.cursor}"
+selection_fg = "{p.fg}"
+selection_bg = "{p.selection}"
+scrollbar_thumb = "{a['bright_black']}"
+split = "{a['bright_black']}"
+ansi = {q([a[k] for k in ORDER8])}
+brights = {q([a['bright_' + k] for k in ORDER8])}
+
+[colors.tab_bar]
+background = "{p.bg}"
+
+[colors.tab_bar.active_tab]
+bg_color = "{p.status_bg}"
+fg_color = "{p.status_fg}"
+
+[colors.tab_bar.inactive_tab]
+bg_color = "{a['black']}"
+fg_color = "{p.comment}"
+
+[metadata]
+name = "WHC"
+author = "Willow Hayward"
+"""
+    return [Out(ctx.home / ".config/wezterm/colors/whc-theme.toml", s)]
+
+
+def konsole_scheme(p: Pal, description: str) -> str:
+    """KDE Konsole .colorscheme (INI). Intense = bright, Faint = dim."""
+    def c(h):
+        return ",".join(str(x) for x in rgb(h))
+    a = p.a
+    out = []
+
+    def sect(name, normal, intense, faint):
+        out.extend([f"[{name}]", f"Color={c(normal)}", "", f"[{name}Intense]", f"Color={c(intense)}", "",
+                    f"[{name}Faint]", f"Color={c(faint)}", ""])
+    sect("Background", p.bg, p.bg, p.bg)
+    for i, k in enumerate(ORDER8):
+        sect(f"Color{i}", a[k], a["bright_" + k], a.get("dim_" + k, mix(a[k], p.bg, 0.3)))
+    sect("Foreground", p.fg, a["bright_white"], a.get("dim_white", mix(p.fg, p.bg, 0.3)))
+    out += ["[General]", "Anchor=0.5,0.5", "Blur=false", "ColorRandomization=false", f"Description={description}",
+            "FillStyle=Tile", "Opacity=1", "Wallpaper=", "WallpaperFlipType=NoFlip", "WallpaperOpacity=1", ""]
+    return "\n".join(out)
+
+
+@target("konsole", "KDE Konsole colour scheme", "local",
+        wiring="~/.local/share/konsole/WHC.colorscheme; Konsole > Settings > Edit Current Profile > Appearance > WHC")
+def t_konsole(ctx):
+    p = pal_static(ctx, False)
+    s = header(ctx) + konsole_scheme(p, f"WHC {p.name}")
+    return [Out(ctx.home / ".local/share/konsole/WHC.colorscheme", s)]
+
+
+@target("windows-terminal", "Windows Terminal schemes (every machine variant)", "print",
+        wiring='merge "schemes" into settings.json; profile "colorScheme": "WHC Meadow Night · <machine>"')
+def t_windows_terminal(ctx):
+    wt = {"black": "black", "red": "red", "green": "green", "yellow": "yellow", "blue": "blue",
+          "magenta": "purple", "cyan": "cyan", "white": "white"}
+    schemes = []
+    for d in [None] + [x for x in DEVICES if x in ctx.theme.get("devices", {})]:
+        p = resolve(ctx.theme, d)
+        s = {"name": f"WHC {p.name}", "background": p.bg, "foreground": p.fg, "cursorColor": p.cursor,
+             "selectionBackground": p.selection}
+        for k, w in wt.items():
+            s[w] = p.a[k]
+            s["bright" + w.capitalize()] = p.a["bright_" + k]
+        schemes.append(s)
+    return [Out(None, json.dumps({"schemes": schemes}, indent=2, ensure_ascii=False) + "\n")]
+
+
+# ---- CLI tools ----
+@target("fzf", "fzf --color string (the zsh target already exports it as WHC_FZF_COLORS)", "print",
+        wiring="printed; shell/themes/whc-theme.zsh exports it and history.zsh uses it")
+def t_fzf(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+    s = (f"--color=fg:{p.fg},bg:{p.bg},hl:{p.purple},fg+:{p.fg},bg+:{p.selection},hl+:{p.purple},info:{p.orange},"
+         f"prompt:{a['green']},pointer:{a['magenta']},marker:{a['magenta']},spinner:{p.orange},header:{p.comment},"
+         f"border:{p.selection}").lower()
+    return [Out(None, s + "\n")]
+
+
+def tm_scope(name, scope, fg=None, style=None, bg=None):
+    s = "".join(f"<key>{k}</key><string>{v}</string>" for k, v in
+                (("foreground", fg), ("background", bg), ("fontStyle", style)) if v)
+    return (f"<dict><key>name</key><string>{name}</string><key>scope</key><string>{scope}</string>"
+            f"<key>settings</key><dict>{s}</dict></dict>")
+
+
+@target("bat", "bat / delta syntax theme (tmTheme)", "local",
+        wiring="~/.config/bat/themes/whc.tmTheme, then `bat cache --build`; BAT_THEME=whc, delta: syntax-theme = whc")
+def t_bat(ctx):
+    p = pal_static(ctx, False)
+    s, a = p.syntax, p.a
+    scopes = [
+        tm_scope("Comment", "comment, punctuation.definition.comment", s["comment"], "italic"),
+        tm_scope("String", "string", s["string"]),
+        tm_scope("Number", "constant.numeric", s["number"]),
+        tm_scope("Constant", "constant.language, constant.character, constant.other, support.constant", s["constant"]),
+        tm_scope("Escape", "constant.character.escape, string.regexp", s["regexp"]),
+        tm_scope("Keyword", "keyword, storage.modifier, keyword.operator.word", s["keyword"]),
+        tm_scope("Operator", "keyword.operator", s["operator"]),
+        tm_scope("Storage type", "storage.type", s["type"], "italic"),
+        tm_scope("Function", "entity.name.function, support.function, meta.function-call", s["function"]),
+        tm_scope("Type", "entity.name.type, entity.name.class, support.type, support.class, entity.other.inherited-class",
+                 s["type"], "italic"),
+        tm_scope("Parameter", "variable.parameter", s["parameter"], "italic"),
+        tm_scope("Macro, decorator", "meta.decorator, entity.name.function.macro, entity.name.function.preprocessor", s["macro"]),
+        tm_scope("Variable", "variable, variable.other", s["variable"]),
+        tm_scope("Property", "variable.other.property, variable.other.member, support.type.property-name, meta.object-literal.key",
+                 s["property"]),
+        tm_scope("Tag", "entity.name.tag", s["tag"]),
+        tm_scope("Attribute", "entity.other.attribute-name", s["attribute"], "italic"),
+        tm_scope("Punctuation", "punctuation", s["punctuation"]),
+        tm_scope("Heading", "markup.heading, entity.name.section", p.purple, "bold"),
+        tm_scope("Bold", "markup.bold", p.orange, "bold"),
+        tm_scope("Italic", "markup.italic", a["yellow"], "italic"),
+        tm_scope("Link", "markup.underline.link, string.other.link", a["cyan"]),
+        tm_scope("Inserted", "markup.inserted", a["green"]),
+        tm_scope("Deleted", "markup.deleted", a["red"]),
+        tm_scope("Changed", "markup.changed", a["yellow"]),
+        tm_scope("Invalid", "invalid", a["red"], "underline"),
+    ]
+    settings = {"background": p.bg, "foreground": p.fg, "caret": p.cursor, "selection": p.selection,
+                "lineHighlight": p.ui["line_highlight"], "gutterForeground": p.ui["line_number"],
+                "invisibles": p.ui["border"], "findHighlight": a["yellow"]}
+    general = "".join(f"<key>{k}</key><string>{v}</string>" for k, v in settings.items())
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!-- {header(ctx, prefix='').strip().replace(chr(10), ' ')} -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>name</key><string>WHC {p.name}</string>
+<key>settings</key>
+<array>
+<dict><key>settings</key><dict>{general}</dict></dict>
+{chr(10).join(scopes)}
+</array>
+<key>semanticClass</key><string>theme.{'dark' if p.dark else 'light'}.whc</string>
+</dict>
+</plist>
+"""
+    return [Out(ctx.home / ".config/bat/themes/whc.tmTheme", xml, note="run `bat cache --build`")]
+
+
+@target("delta", "delta feature block (diff rows, line numbers)", "print",
+        wiring="printed: paste into ~/.gitconfig.local (or git/.gitconfig) and set [delta] features = whc")
+def t_delta(ctx):
+    p = pal_static(ctx, False)
+    a, ui = p.a, p.ui
+    s = f"""# {header(ctx, prefix='').strip().splitlines()[0]}
+[delta "whc"]
+    {'dark' if p.dark else 'light'} = true
+    syntax-theme = whc
+    plus-style = syntax "{ui['diff_add_bg']}"
+    plus-emph-style = syntax "{mix(ui['diff_add_bg'], a['green'], 0.25)}"
+    minus-style = syntax "{ui['diff_del_bg']}"
+    minus-emph-style = syntax "{mix(ui['diff_del_bg'], a['red'], 0.25)}"
+    line-numbers-zero-style = "{ui['line_number']}"
+    line-numbers-plus-style = "{a['green']}"
+    line-numbers-minus-style = "{a['red']}"
+    file-style = "{p.purple}" bold
+    hunk-header-style = file line-number syntax
+    hunk-header-decoration-style = "{p.comment}" box
+"""
+    return [Out(None, s)]
+
+
+@target("btop", "btop theme", "local", wiring='~/.config/btop/themes/whc.theme; btop.conf: color_theme = "whc"')
+def t_btop(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+    vals = {"main_bg": p.bg, "main_fg": p.fg, "title": p.fg, "hi_fg": p.status_bg, "selected_bg": p.selection,
+            "selected_fg": p.fg, "inactive_fg": p.comment, "graph_text": p.comment, "meter_bg": p.selection,
+            "proc_misc": a["cyan"], "cpu_box": p.purple, "mem_box": a["green"], "net_box": p.orange,
+            "proc_box": a["magenta"], "div_line": p.selection,
+            "temp_start": a["green"], "temp_mid": a["yellow"], "temp_end": a["red"],
+            "cpu_start": a["cyan"], "cpu_mid": p.purple, "cpu_end": a["magenta"],
+            "free_start": a["green"], "free_mid": a["green"], "free_end": a["bright_green"],
+            "cached_start": a["blue"], "cached_mid": a["blue"], "cached_end": a["bright_blue"],
+            "available_start": a["yellow"], "available_mid": a["yellow"], "available_end": a["bright_yellow"],
+            "used_start": a["red"], "used_mid": a["red"], "used_end": a["bright_red"],
+            "download_start": a["cyan"], "download_mid": a["blue"], "download_end": p.purple,
+            "upload_start": a["yellow"], "upload_mid": p.orange, "upload_end": a["red"],
+            "process_start": a["cyan"], "process_mid": p.purple, "process_end": a["magenta"]}
+    s = header(ctx) + "".join(f'theme[{k}]="{v}"\n' for k, v in vals.items())
+    return [Out(ctx.home / ".config/btop/themes/whc.theme", s)]
+
+
+@target("atuin", "Atuin history UI theme", "local",
+        wiring='~/.config/atuin/themes/whc.toml; atuin/config.toml: [theme] name = "whc" (atuin >= 18.4)')
+def t_atuin(ctx):
+    p = pal_static(ctx, False)
+    a = p.a
+    s = header(ctx) + f"""[theme]
+name = "whc"
+
+[colors]
+AlertInfo = "{a['green']}"
+AlertWarn = "{p.orange}"
+AlertError = "{a['red']}"
+Annotation = "{p.comment}"
+Base = "{p.fg}"
+Guidance = "{a['cyan']}"
+Important = "{a['magenta']}"
+Title = "{p.purple}"
+Muted = "{a['bright_black']}"
+"""
+    return [Out(ctx.home / ".config/atuin/themes/whc.toml", s)]
+
+
+# ---- desktop ----
+WALKER_CSS = """@define-color window_bg_color {bg};
+@define-color surface_color {surface};
+@define-color accent_bg_color {accent};
+@define-color accent_fg_color {on_accent};
+@define-color theme_fg_color {fg};
+@define-color muted_fg_color {comment};
+@define-color border_color {border};
+@define-color selection_color {selection};
+@define-color error_bg_color {red};
+@define-color error_fg_color {bg};
+
+* {{ all: unset; }}
+
+popover {{ background: @surface_color; border: 1px solid @border_color; border-radius: 14px; padding: 10px; }}
+.normal-icons {{ -gtk-icon-size: 16px; }}
+.large-icons {{ -gtk-icon-size: 32px; }}
+scrollbar {{ opacity: 0; }}
+
+.box-wrapper {{
+  box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+  background: @window_bg_color;
+  padding: 20px;
+  border-radius: 16px;
+  border: 2px solid @accent_bg_color;
+}}
+
+.preview-box, .elephant-hint, .placeholder {{ color: @muted_fg_color; }}
+.search-container {{ border-radius: 10px; }}
+.input placeholder {{ opacity: 0.6; }}
+.input selection {{ background: @selection_color; }}
+.input {{ caret-color: @accent_bg_color; background: @surface_color; padding: 10px; color: @theme_fg_color; border-radius: 10px; }}
+.list {{ color: @theme_fg_color; }}
+.item-box {{ border-radius: 10px; padding: 10px; }}
+.item-quick-activation {{ background: alpha(@accent_bg_color, 0.25); border-radius: 5px; padding: 10px; }}
+child:selected .item-box, row:selected .item-box {{ background: @selection_color; }}
+child:selected .item-quick-activation, row:selected .item-quick-activation {{ background: @accent_bg_color; color: @accent_fg_color; }}
+.item-subtext {{ font-size: 12px; color: @muted_fg_color; }}
+.providerlist .item-subtext {{ font-size: unset; opacity: 0.9; }}
+.item-image-text {{ font-size: 28px; }}
+.preview {{ border: 1px solid @border_color; border-radius: 10px; color: @theme_fg_color; }}
+.calc .item-text {{ font-size: 24px; }}
+.symbols .item-image {{ font-size: 24px; }}
+.todo.done .item-text-box {{ opacity: 0.25; }}
+.todo.urgent {{ font-size: 24px; }}
+.todo.active {{ font-weight: bold; }}
+.bluetooth.disconnected {{ opacity: 0.5; }}
+.preview .large-icons {{ -gtk-icon-size: 64px; }}
+.keybinds {{ padding-top: 10px; border-top: 1px solid @border_color; font-size: 12px; color: @muted_fg_color; }}
+.keybind-button {{ opacity: 0.6; }}
+.keybind-button:hover {{ opacity: 0.85; }}
+.keybind-bind {{ text-transform: lowercase; opacity: 0.5; }}
+.keybind-label {{ padding: 2px 4px; border-radius: 4px; border: 1px solid @muted_fg_color; }}
+.error {{ padding: 10px; background: @error_bg_color; color: @error_fg_color; }}
+:not(.calc).current {{ font-style: italic; }}
+.preview-content.archlinuxpkgs, .preview-content.dnfpackages, .preview-content.aptpackages {{ font-family: monospace; }}
+"""
+
+
+@target("walker", "Walker launcher CSS theme", "local",
+        wiring='~/.config/walker/themes/whc/style.css; walker/config.toml: theme = "whc" (layouts fall back to the default theme)')
+def t_walker(ctx):
+    p = pal_static(ctx, False)
+    accent = p.status_bg if p.device else p.purple
+    css = WALKER_CSS.format(bg=p.bg, surface=p.ui["surface_raised"], accent=accent,
+                            on_accent=p.status_fg if p.device else p.bg, fg=p.fg, comment=p.comment,
+                            border=p.ui["border"], selection=p.selection, red=p.a["red"])
+    return [Out(ctx.home / ".config/walker/themes/whc/style.css", "/* " + header(ctx, prefix="").strip().replace("\n", " ") + " */\n" + css)]
+
+
+@target("gtk", "GTK 3/4 + libadwaita colour overrides (gtk.css)", "local",
+        wiring="~/.config/gtk-4.0/gtk.css and ~/.config/gtk-3.0/gtk.css (named colours; libadwaita apps follow)")
+def t_gtk(ctx):
+    p = pal_static(ctx, False)
+    accent = p.status_bg if p.device else p.ui["accent"]
+    on = p.status_fg if p.device else p.bg
+    named = {"accent_color": accent if p.dark else mix(accent, "#000000", 0.15), "accent_bg_color": accent,
+             "accent_fg_color": on, "window_bg_color": p.bg, "window_fg_color": p.fg, "view_bg_color": p.ui["surface"],
+             "view_fg_color": p.fg, "headerbar_bg_color": p.ui["surface_raised"], "headerbar_fg_color": p.fg,
+             "headerbar_border_color": p.ui["border"], "sidebar_bg_color": p.ui["surface"], "sidebar_fg_color": p.fg,
+             "card_bg_color": p.ui["surface_raised"], "card_fg_color": p.fg, "dialog_bg_color": p.ui["surface_raised"],
+             "dialog_fg_color": p.fg, "popover_bg_color": p.ui["surface_raised"], "popover_fg_color": p.fg,
+             "destructive_bg_color": p.a["red"], "destructive_fg_color": p.bg, "success_bg_color": p.a["green"],
+             "warning_bg_color": p.a["yellow"], "error_bg_color": p.a["red"],
+             # GTK 3 (Adwaita) names
+             "theme_bg_color": p.bg, "theme_fg_color": p.fg, "theme_base_color": p.ui["surface"],
+             "theme_text_color": p.fg, "theme_selected_bg_color": accent, "theme_selected_fg_color": on,
+             "borders": p.ui["border"]}
+    css = "/* " + header(ctx, prefix="").strip().replace("\n", " ") + " */\n"
+    css += "".join(f"@define-color {k} {v};\n" for k, v in named.items())
+    note = "pair with gtk-application-prefer-dark-theme=" + ("true" if p.dark else "false")
+    return [Out(ctx.home / ".config/gtk-4.0/gtk.css", css, note=note), Out(ctx.home / ".config/gtk-3.0/gtk.css", css)]
+
+
+@target("slack", "Slack sidebar theme string", "print",
+        wiring="printed: paste into Slack > Preferences > Themes > Custom theme (or send it to yourself and click the theme button)")
+def t_slack(ctx):
+    p = pal_static(ctx, False)
+    active = p.status_bg if p.device else p.ui["accent"]
+    vals = [p.ui["surface"], p.selection, active, p.status_fg if p.device else p.bg, p.selection, p.fg,
+            p.a["green"], p.a["red"], p.bg, p.fg]
+    return [Out(None, ",".join(v.upper() for v in vals) + "\n")]
+
+
+@target("firefox", "Firefox static theme manifest.json", "print",
+        wiring="printed: save as manifest.json, zip as whc.xpi; load via about:debugging or sign unlisted with web-ext")
+def t_firefox(ctx):
+    p = pal_static(ctx, False)
+    ui, a = p.ui, p.a
+    accent = p.status_bg if p.device else ui["accent"]
+    colors = {"frame": p.bg, "frame_inactive": p.bg, "tab_background_text": p.comment, "tab_selected": ui["surface_raised"],
+              "tab_text": p.fg, "tab_line": accent, "tab_loading": accent, "toolbar": ui["surface_raised"],
+              "toolbar_text": p.fg, "toolbar_field": p.bg, "toolbar_field_text": p.fg, "toolbar_field_border": ui["border"],
+              "toolbar_field_focus": p.bg, "toolbar_field_text_focus": p.fg, "toolbar_field_border_focus": accent,
+              "toolbar_field_highlight": p.selection, "toolbar_top_separator": p.bg, "toolbar_bottom_separator": ui["border"],
+              "popup": ui["surface_raised"], "popup_text": p.fg, "popup_border": ui["border"],
+              "popup_highlight": p.selection, "popup_highlight_text": p.fg, "sidebar": ui["surface"], "sidebar_text": p.fg,
+              "sidebar_border": ui["border"], "sidebar_highlight": p.selection, "sidebar_highlight_text": p.fg,
+              "ntp_background": p.bg, "ntp_text": p.fg, "icons": p.comment, "icons_attention": accent,
+              "button_background_hover": p.selection, "button_background_active": ui["border"]}
+    m = {"manifest_version": 2, "name": f"WHC {p.name}", "version": VERSION,
+         "description": "Willow Hayward Code theme, generated by whc-theme",
+         "browser_specific_settings": {"gecko": {"id": f"{ctx.theme['id']}{('-' + p.device) if p.device else ''}@whc-theme"}},
+         "theme": {"colors": colors, "properties": {"color_scheme": "dark" if p.dark else "light",
+                                                     "content_color_scheme": "system"}}}
+    return [Out(None, json.dumps(m, indent=2) + "\n")]
+
+
+# --- managed-block files --------------------------------------------------------------------------------
+def splice_block(existing: str, body: str, comment="#", before_first_section=False) -> str:
+    begin = f"{comment} {MARK_BEGIN}"
+    end = f"{comment} {MARK_END}"
+    block = f"{begin}\n{comment} Generated by whc-theme; edit the theme, not these lines (`whc-theme apply <theme>`).\n{body}{end}\n"
+    pat = re.compile(re.escape(begin) + r".*?" + re.escape(end) + r"\n?", re.S)
+    if pat.search(existing):
+        return pat.sub(lambda _m: block, existing, count=1)
+    if before_first_section:
+        lines = existing.splitlines(keepends=True)
+        for i, line in enumerate(lines):
+            if line.startswith("["):
+                return "".join(lines[:i]) + block + "\n" + "".join(lines[i:])
+    sep = "" if existing.endswith("\n\n") or not existing else ("\n" if existing.endswith("\n") else "\n\n")
+    return existing + sep + block
+
+
+def final_content(o: Out, tname: str) -> str:
+    if not o.block:
+        return o.content
+    existing = o.path.read_text() if o.path and o.path.exists() else ""
+    return splice_block(existing, o.content, before_first_section=(tname == "mako"))
+
+
+# --- state ------------------------------------------------------------------------------------------------
+def state_path() -> Path:
+    env = os.environ.get("WHC_THEME_STATE")
+    if env:
+        return Path(env).expanduser()
+    base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local/state")
+    return Path(base) / "whc/theme.toml"
+
+
+def read_toml_simple(path: Path) -> dict:
+    """Flat key = "value" / [list] TOML (all whc-theme writes); tomllib when available."""
+    if not path.exists():
+        return {}
+    try:
+        import tomllib  # Python 3.11+
+        return tomllib.loads(path.read_text())
+    except ModuleNotFoundError:
+        out = {}
+        for line in path.read_text().splitlines():
+            m = re.match(r'^\s*([A-Za-z_][\w-]*)\s*=\s*(.+?)\s*$', line)
+            if m:
+                v = m.group(2)
+                out[m.group(1)] = json.loads(v) if v[:1] in '"[' else v
+        return out
+
+
+def write_toml_simple(path: Path, data: dict, comment: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [f"# {c}" for c in comment.splitlines()]
+    for k, v in data.items():
+        lines.append(f"{k} = {json.dumps(v)}")
+    path.write_text("\n".join(lines) + "\n")
+
+
+def repo_state_path(root: Path) -> Path:
+    return root / "whc-theme/theme.toml"
+
+
+# --- commands ----------------------------------------------------------------------------------------------
+def default_root() -> Path:
+    if (TOOL_DIR.parent / "shell/.tmux.conf").exists():  # vendored in a dotfiles checkout: render into it
+        return TOOL_DIR.parent
+    return Path(os.environ.get("WHC_DOTFILES_DIR") or Path.home() / "dotfiles").expanduser()
+
+
+def pick_theme(themes, tid):
+    if tid not in themes:
+        sys.exit(f"whc-theme: unknown theme {tid!r}; `whc-theme list` shows them")
+    return themes[tid]
+
+
+def check_variant(t, variant):
+    if variant in ("auto", "base"):
+        return variant
+    if variant not in t.get("devices", {}):
+        sys.exit(f"whc-theme: {t['id']} has no variant {variant!r} (machines: {', '.join(t.get('devices', {}))})")
+    return variant
+
+
+def current_theme_id(root: Path, themes) -> str:
+    for p in (state_path(), repo_state_path(root)):
+        tid = read_toml_simple(p).get("theme")
+        if tid in themes:
+            return tid
+    return "meadow-night"
+
+
+def selected_targets(spec: str | None) -> list[Target]:
+    if not spec:
+        return [t for t in TARGETS.values() if t.committed]
+    if spec == "all":
+        return [t for t in TARGETS.values() if t.kind != "print"]
+    names = [s.strip() for s in spec.split(",") if s.strip()]
+    bad = [n for n in names if n not in TARGETS]
+    if bad:
+        sys.exit(f"whc-theme: unknown target(s) {', '.join(bad)}; see `whc-theme targets`")
+    return [TARGETS[n] for n in names]
+
+
+def cmd_list(args, themes):
+    for t in themes.values():
+        devs = list(t.get("devices", {}))
+        tint = "tinted" if devs and "background" in t["devices"][devs[0]] else "segment only"
+        print(f"{t['id']:<26} {t['mode']:<6} {t['name']:<24} {len(devs)} machines ({tint})")
+        if args.devices:
+            for d in devs:
+                v = t["devices"][d]
+                print(f"    {d:<9} status {v['status_bg']}  bg {v.get('background', t['background'])}")
+
+
+def cmd_targets(args):
+    for t in TARGETS.values():
+        mark = "*" if t.committed else " "
+        print(f"{mark} {t.name:<17} {t.kind:<8} {t.desc}")
+        print(f"  {'':<17} {'':<8} -> {t.wiring}")
+    print("\n* = wired into the dotfiles and applied by default; others need --targets (or `export`).")
+    print("kinds: runtime = picks the machine when it loads; shared = one file in the dotfiles (auto -> base);")
+    print("       local = a file outside the dotfiles (auto -> this machine); print = stdout only (use export).")
+
+
+def cmd_current(args, themes):
+    root = Path(args.root).expanduser() if args.root else default_root()
+    repo = read_toml_simple(repo_state_path(root))
+    local = read_toml_simple(state_path())
+    dev = detect_device()
+    print(f"dotfiles   {root}")
+    print(f"rendered   {repo.get('theme', '?')} (variant {repo.get('variant', '?')}) per {repo_state_path(root)}")
+    if local:
+        print(f"this host  {local.get('theme')} (variant {local.get('variant')}), applied {local.get('applied')}"
+              f" -> {', '.join(local.get('targets', []))}  [{state_path()}]")
+    else:
+        print(f"this host  never applied here ({state_path()} missing)")
+    tid = repo.get("theme") or local.get("theme")
+    known = tid in themes and dev in themes[tid].get("devices", {})
+    print(f"machine    {dev or '?'} (WHC_DEVICE={os.environ.get('WHC_DEVICE', '')!s}) "
+          f"{'has a variant' if known else 'uses the base variant'}")
+    print(f"env        WHC_THEME={os.environ.get('WHC_THEME', '')}")
+
+
+def render(ctx: Ctx, tlist: list[Target]) -> list[tuple[Target, Out]]:
+    out = []
+    for t in tlist:
+        for o in t.render(ctx):
+            out.append((t, o))
+    return out
+
+
+def cmd_apply(args, themes):
+    t = pick_theme(themes, args.theme)
+    variant = check_variant(t, args.variant)
+    root = Path(args.root).expanduser() if args.root else default_root()
+    ctx = Ctx(t, variant, root, Path.home())
+    tlist = selected_targets(args.targets)
+    if not args.targets and not (root / "shell/.tmux.conf").exists():
+        sys.exit(f"whc-theme: {root} does not look like the dotfiles repo (use --root or WHC_DOTFILES_DIR)")
+    changed, same, written = [], [], []
+    for tg, o in render(ctx, tlist):
+        if o.path is None:
+            print(f"# {tg.name}: stdout only; use `whc-theme export {tg.name}`", file=sys.stderr)
+            continue
+        if o.block and not o.path.exists():
+            print(f"skip {o.path}: managed block needs the file to exist", file=sys.stderr)
+            continue
+        new = final_content(o, tg.name)
+        old = o.path.read_text() if o.path.exists() else None
+        rel = o.path.relative_to(root) if o.path.is_relative_to(root) else o.path
+        if old == new:
+            same.append(str(rel))
+            continue
+        changed.append(f"{'new ' if old is None else 'edit'} {rel}{'  (' + o.note + ')' if o.note else ''}")
+        if not args.dry_run:
+            o.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = o.path.with_name(o.path.name + ".whc-tmp")
+            tmp.write_text(new)
+            os.replace(tmp, o.path)
+            written.append(str(o.path))
+    verb = "would change" if args.dry_run else "changed"
+    print(f"whc-theme {ctx.label()} -> {root}: {verb} {len(changed)}, unchanged {len(same)}")
+    for c in changed:
+        print("  " + c)
+    if args.dry_run:
+        return
+    names = [tg.name for tg in tlist]
+    if any(tg.committed for tg in tlist):
+        write_toml_simple(repo_state_path(root), {"theme": t["id"], "variant": variant},
+                          "whc-theme: the theme the files in this repo are rendered with. Written by `whc-theme apply`.")
+    write_toml_simple(state_path(), {"theme": t["id"], "variant": variant, "device": detect_device() or "",
+                                     "root": str(root), "targets": names,
+                                     "applied": _dt.datetime.now().isoformat(timespec="seconds")},
+                      "whc-theme: what was last applied on this machine. Written by `whc-theme apply`.")
+    print("Reload: new shells and tmux (prefix r) pick it up; foot reads its config per window; "
+          "`makoctl reload`; Neovim on restart.")
+
+
+def cmd_export(args, themes):
+    root = Path(args.root).expanduser() if args.root else default_root()
+    t = pick_theme(themes, args.theme or current_theme_id(root, themes))
+    ctx = Ctx(t, check_variant(t, args.variant), root, Path.home())
+    if args.target not in TARGETS:
+        sys.exit(f"whc-theme: unknown target {args.target!r}; see `whc-theme targets`")
+    outs = TARGETS[args.target].render(ctx)
+    for o in outs:
+        if len(outs) > 1:
+            print(f"# ==> {o.path} <==")
+        print(o.content, end="")
+
+
+def cmd_preview(args, themes):
+    root = Path(args.root).expanduser() if args.root else default_root()
+    ids = [args.theme] if args.theme else [current_theme_id(root, themes)]
+    if args.theme == "all":
+        ids = list(themes)
+    for tid in ids:
+        t = pick_theme(themes, tid)
+        v = check_variant(t, args.variant)
+        dev = detect_device() if v == "auto" else (None if v == "base" else v)
+        p = resolve(t, dev if dev in t.get("devices", {}) else None)
+        print(preview_text(p))
+
+
+def fgc(h):
+    r, g, b = rgb(h)
+    return f"\x1b[38;2;{r};{g};{b}m"
+
+
+def bgc(h):
+    r, g, b = rgb(h)
+    return f"\x1b[48;2;{r};{g};{b}m"
+
+
+def preview_text(p: Pal) -> str:
+    R = "\x1b[0m"
+    B = bgc(p.bg)
+    a, s = p.a, p.syntax
+    w = 64
+
+    def line(txt="", visible=0):
+        return B + fgc(p.fg) + " " + txt + B + " " * max(0, w - visible - 1) + R
+
+    rows = [bgc(p.status_bg) + fgc(p.status_fg) + f" {p.device or 'base'} " + bgc(p.status2_bg) + fgc(p.status2_fg)
+            + f" {p.name} " + B + " " * max(0, w - len(p.device or 'base') - len(p.name) - 4) + R]
+    sw = "".join(bgc(a[k]) + "    " for k in ORDER8)
+    sw2 = "".join(bgc(a["bright_" + k]) + "    " for k in ORDER8)
+    rows += [line(), line(sw + B, 32), line(sw2 + B, 32), line()]
+    code = (fgc(s["keyword"]) + "def " + fgc(s["function"]) + "greet" + fgc(s["punctuation"]) + "("
+            + fgc(s["parameter"]) + "name" + fgc(s["punctuation"]) + ": " + fgc(s["type"]) + "str" + fgc(s["punctuation"])
+            + ") -> " + fgc(s["type"]) + "str" + fgc(s["punctuation"]) + ":")
+    rows.append(line(code, 32))
+    code2 = ("    " + fgc(s["keyword"]) + "return " + fgc(s["string"]) + 'f"hi {name}" ' + fgc(s["operator"]) + "* "
+             + fgc(s["number"]) + "3  " + "\x1b[3m" + fgc(s["comment"]) + "# a comment" + "\x1b[23m")
+    rows.append(line(code2, 38))
+    rows.append(line(bgc(p.ui["diff_add_bg"]) + fgc(a["green"]) + "+ added line   " + B + " "
+                     + bgc(p.ui["diff_del_bg"]) + fgc(a["red"]) + "- removed line " + B, 31))
+    rows.append(line(bgc(p.selection) + fgc(p.fg) + " selected text " + B + " " + fgc(a["bright_black"])
+                     + "autosuggestion" + fgc(p.comment) + "  comment", 46))
+    rows.append(line())
+    return "\n".join(rows)
+
+
+def cmd_data_sync(args):
+    src = Path(args.src).expanduser() if args.src else (brand_root() or Path.home() / "projects/brand-identity")
+    if not (src / "dist/terminal").is_dir():
+        sys.exit(f"whc-theme: {src} is not the brand repo (no dist/terminal)")
+    dest = Path(args.dest).expanduser() if args.dest else TOOL_DIR / "data"
+    if brand_root() and dest == TOOL_DIR / "data":
+        sys.exit("whc-theme: in the brand repo the tool reads dist/ directly; pass --dest to vendor elsewhere")
+    themes = read_brand(src)
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.mkdir(parents=True)
+    for t in themes:
+        (dest / f"{t['id']}.json").write_text(json.dumps(t, indent=1, ensure_ascii=False) + "\n")
+    (dest / "index.json").write_text(json.dumps({"source": str(src), "themes": [t["id"] for t in themes]}, indent=1) + "\n")
+    print(f"synced {len(themes)} themes from {src} into {dest}")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="whc-theme", description="Render WHC colour themes into configs.")
+    ap.add_argument("--list-targets", action="store_true", help="same as `whc-theme targets`")
+    ap.add_argument("--version", action="version", version=VERSION)
+    sub = ap.add_subparsers(dest="cmd")
+    s = sub.add_parser("list", help="list themes")
+    s.add_argument("--devices", action="store_true")
+    sub.add_parser("targets", help="list targets")
+    s = sub.add_parser("current", help="show the applied theme")
+    s.add_argument("--root")
+    s = sub.add_parser("apply", help="render and write the targets")
+    s.add_argument("theme")
+    s.add_argument("--variant", default="auto")
+    s.add_argument("--targets", help="comma-separated names, or `all` for every file target")
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--root", help="dotfiles root (default: the repo this tool is in, else $WHC_DOTFILES_DIR or ~/dotfiles)")
+    s = sub.add_parser("export", help="print one target")
+    s.add_argument("target")
+    s.add_argument("--theme")
+    s.add_argument("--variant", default="auto")
+    s.add_argument("--root")
+    s = sub.add_parser("preview", help="ANSI preview")
+    s.add_argument("theme", nargs="?", help="a theme id, or `all`")
+    s.add_argument("--variant", default="auto")
+    s.add_argument("--root")
+    s = sub.add_parser("data-sync", help="copy theme data from the brand repo")
+    s.add_argument("--from", dest="src")
+    s.add_argument("--dest")
+    args = ap.parse_args(argv)
+    if args.list_targets or args.cmd == "targets":
+        return cmd_targets(args)
+    if args.cmd == "data-sync":
+        return cmd_data_sync(args)
+    themes = load_themes()
+    if args.cmd == "list":
+        return cmd_list(args, themes)
+    if args.cmd == "current":
+        return cmd_current(args, themes)
+    if args.cmd == "apply":
+        return cmd_apply(args, themes)
+    if args.cmd == "export":
+        return cmd_export(args, themes)
+    if args.cmd == "preview":
+        if args.theme and args.theme != "all":
+            pick_theme(themes, args.theme)
+        return cmd_preview(args, themes)
+    ap.print_help()
+
+
+if __name__ == "__main__":
+    main()

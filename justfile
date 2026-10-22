@@ -60,6 +60,23 @@ zsh-refresh:
     rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/whc/zsh_plugins.* "${XDG_CACHE_HOME:-$HOME/.cache}"/whc/zcompdump*
     @echo "Cleared. Open a new shell (or run: exec zsh) to rebuild."
 
+# Render a WHC colour theme into the configs: `just theme list`, `just theme apply meadow-night` (see whc-theme/README.md).
+theme *args:
+    python3 whc-theme/whc-theme {{ args }}
+
+# Refresh whc-theme and its theme data from the brand repo (default ~/projects/brand-identity), then re-render.
+theme-sync brand="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    brand="{{ brand }}"
+    brand="${brand:-$HOME/projects/brand-identity}"
+    cp "$brand/tools/whc-theme/whc-theme" whc-theme/whc-theme
+    python3 whc-theme/whc-theme data-sync --from "$brand"
+    theme=$(sed -n 's/^theme = "\(.*\)"$/\1/p' whc-theme/theme.toml)
+    variant=$(sed -n 's/^variant = "\(.*\)"$/\1/p' whc-theme/theme.toml)
+    python3 whc-theme/whc-theme apply "${theme:-meadow-night}" --variant "${variant:-auto}"
+    git --no-pager diff --stat
+
 # Print the live keybinds as Markdown (sections: hypr, tmux, nvim; default all).
 keybinds *sections:
     python3 scripts/keybinds.py {{ sections }}
@@ -85,7 +102,7 @@ check:
     @if command -v shellcheck >/dev/null 2>&1; then find scripts setup hypr -type f -name '*.sh' -print0 | xargs -0 shellcheck -x; else echo 'shellcheck not installed; skipping'; fi
     @python3 scripts/check-recipe-docs.py
     @find shell -type f \( -name '.zshrc' -o -name '*.zsh' \) -print0 | xargs -0 -n1 zsh -n
-    @python3 -c "import ast, sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]" walker/tmux-projects.py nvim/bin/godot-editor nvim/bin/godot-session
+    @python3 -c "import ast, sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]" walker/tmux-projects.py nvim/bin/godot-editor nvim/bin/godot-session whc-theme/whc-theme
 
 # Run the setup and project-picker test suites.
 test: check
@@ -94,6 +111,7 @@ test: check
     nvim -l hypr/test.lua
     bash scripts/test-tmux-clear-idle.sh
     python3 -B -m unittest discover -s walker -p 'test_*.py'
+    python3 -B -m unittest discover -s whc-theme -p 'test_*.py'
 
 # Run a profile's setup in a throw-away container: real for remote/work, package names for home/mobile (needs docker and network).
 test-container profile:

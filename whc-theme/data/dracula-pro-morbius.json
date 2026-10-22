@@ -1,0 +1,135 @@
+{
+ "id": "dracula-pro-morbius",
+ "name": "Dracula Pro Morbius",
+ "mode": "dark",
+ "summary": "Dracula Pro Morbius (HSL hue 350°): neon accents on a Morbius-tinted background.",
+ "background": "#2C2122",
+ "foreground": "#F8F8F2",
+ "comment": "#A97079",
+ "selection": "#584145",
+ "cursor": "#A97079",
+ "orange": "#FFCA80",
+ "purple": "#9580FF",
+ "ansi": {
+  "black": "#2C2122",
+  "red": "#FF9580",
+  "green": "#8AFF80",
+  "yellow": "#FFFF80",
+  "blue": "#9580FF",
+  "magenta": "#FF80BF",
+  "cyan": "#80FFEA",
+  "white": "#F8F8F2",
+  "bright_black": "#674C50",
+  "bright_red": "#FFAA99",
+  "bright_green": "#A2FF99",
+  "bright_yellow": "#FFFF99",
+  "bright_blue": "#AA99FF",
+  "bright_magenta": "#FF99CC",
+  "bright_cyan": "#99FFEE",
+  "bright_white": "#FFFFFF",
+  "dim_black": "#231A1B",
+  "dim_red": "#CC7766",
+  "dim_green": "#6ECC66",
+  "dim_yellow": "#CCCC66",
+  "dim_blue": "#7766CC",
+  "dim_magenta": "#CC6699",
+  "dim_cyan": "#66CCBB",
+  "dim_white": "#C6C6C2"
+ },
+ "bright_orange": "#FFD59B",
+ "bright_purple": "#A89BFF",
+ "cursor_text": "#2C2122",
+ "ui": {
+  "surface": "#322728",
+  "surface_raised": "#382D2E",
+  "line_highlight": "#34292A",
+  "border": "#493E3E",
+  "line_number": "#81575D",
+  "diff_add_bg": "#3D4031",
+  "diff_del_bg": "#4A3230",
+  "accent": "#FF80BF"
+ },
+ "syntax": {
+  "keyword": "#FF80BF",
+  "function": "#8AFF80",
+  "string": "#FFFF80",
+  "number": "#9580FF",
+  "constant": "#9580FF",
+  "type": "#80FFEA",
+  "parameter": "#FFCA80",
+  "variable": "#F8F8F2",
+  "operator": "#FF80BF",
+  "property": "#9580FF",
+  "tag": "#FF80BF",
+  "attribute": "#8AFF80",
+  "comment": "#A97079",
+  "punctuation": "#F8F8F2",
+  "macro": "#FFCA80",
+  "regexp": "#FF9580"
+ },
+ "devices": {
+  "bessie": {
+   "status_bg": "#F4BEC9",
+   "status_fg": "#2C2122",
+   "status2_bg": "#614655",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#F4BEC9"
+  },
+  "ranch": {
+   "status_bg": "#A3C3B6",
+   "status_fg": "#2C2122",
+   "status2_bg": "#874640",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#A3C3B6"
+  },
+  "ship": {
+   "status_bg": "#EFCB82",
+   "status_fg": "#2C2122",
+   "status2_bg": "#425B43",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#EFCB82"
+  },
+  "cowgirl": {
+   "status_bg": "#D78F84",
+   "status_fg": "#2C2122",
+   "status2_bg": "#7E5D4B",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#D78F84"
+  },
+  "deborah": {
+   "status_bg": "#A5BB93",
+   "status_fg": "#2C2122",
+   "status2_bg": "#2B2626",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#A5BB93"
+  },
+  "felicia": {
+   "status_bg": "#CBBBD2",
+   "status_fg": "#2C2122",
+   "status2_bg": "#304B57",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#CBBBD2"
+  },
+  "dowager": {
+   "status_bg": "#B5BD95",
+   "status_fg": "#2C2122",
+   "status2_bg": "#7E5D4B",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#B5BD95"
+  },
+  "mermaid": {
+   "status_bg": "#A3C3B6",
+   "status_fg": "#2C2122",
+   "status2_bg": "#5C4D66",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#A3C3B6"
+  },
+  "sailor": {
+   "status_bg": "#91ABB7",
+   "status_fg": "#2C2122",
+   "status2_bg": "#7E5D4B",
+   "status2_fg": "#F8F8F2",
+   "cursor": "#91ABB7"
+  }
+ }
+}
