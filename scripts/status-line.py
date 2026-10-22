@@ -13,7 +13,8 @@ AI usage depends on the profile (WHC_PROFILE):
   work  Copilot: remaining AI credits and the percentage used, from `gh api /copilot_internal/user`.
 Results are cached under ~/.cache/whc/status/ so the status bar stays cheap; failures print a dash
 instead of an error. Icons are Nerd Font glyphs; override with WHC_ICON_CODEX, WHC_ICON_CLAUDE,
-WHC_ICON_COPILOT. Output uses tmux style codes (#[fg=...]).
+WHC_ICON_COPILOT. Output uses tmux style codes (#[fg=...]) in the
+whc-theme colours (WHC_THEME_STATUS, set by shell/.tmux.theme.conf).
 """
 import glob
 import json
@@ -26,6 +27,10 @@ from pathlib import Path
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "whc" / "status"
 COLORS = {"dim": "#6272A4", "text": "#F8F8F2", "green": "#50FA7B", "yellow": "#F1FA8C", "orange": "#FFB86C", "red": "#FF5555", "purple": "#BD93F9"}
+# whc-theme's tmux file exports the current theme's colours as "name=#rrggbb;..." (Dracula above is the fallback).
+COLORS.update(
+    pair.split("=", 1) for pair in os.environ.get("WHC_THEME_STATUS", "").split(";") if pair.partition("=")[0] in COLORS
+)
 ICONS = {
     "codex": os.environ.get("WHC_ICON_CODEX", "\uec81"),  # Codex
     "claude": os.environ.get("WHC_ICON_CLAUDE", "\uec82"),  # Claude

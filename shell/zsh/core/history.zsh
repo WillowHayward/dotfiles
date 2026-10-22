@@ -1,4 +1,4 @@
-# fzf: fd (or Debian's fdfind) for file lists when present, Dracula colours.
+# fzf: fd (or Debian's fdfind) for file lists when present, whc-theme colours.
 # These are read when fzf's key bindings run, so set them first.
 whc_fd=${commands[fd]:-${commands[fdfind]:-}}
 if [[ -n $whc_fd ]]; then
@@ -7,7 +7,8 @@ if [[ -n $whc_fd ]]; then
     export FZF_ALT_C_COMMAND="${whc_fd:t} --type d --hidden --exclude .git"
 fi
 unset whc_fd
-export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border --color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9,fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9,info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6,marker:#ff79c6,spinner:#ffb86c,header:#6272a4"
+# WHC_FZF_COLORS comes from whc-theme (shell/themes/whc-theme.zsh, loaded with the prompt).
+export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border --color=${WHC_FZF_COLORS:-fg:#f8f8f2,bg:#282a36,hl:#bd93f9,fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9,info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6,marker:#ff79c6,spinner:#ffb86c,header:#6272a4}"
 
 # fzf key bindings (Ctrl-R, Ctrl-T, Alt-C). `fzf --zsh` needs fzf 0.48+; older
 # distro packages (e.g. Debian bookworm) ship the scripts instead.

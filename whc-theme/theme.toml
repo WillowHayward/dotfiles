@@ -1,0 +1,3 @@
+# whc-theme: the theme the files in this repo are rendered with. Written by `whc-theme apply`.
+theme = "dracula"
+variant = "auto"
