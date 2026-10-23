@@ -8,6 +8,13 @@ task_desktop() {
     mapfile -t packages < <(tier_packages desktop)
     install_packages "${packages[@]}"
     link_groups desktop
+    # Desktop colours outside the dotfiles: GTK 4 colour scheme and accent (gsettings), Walker, Firefox.
+    if [[ $setup_home == "$HOME" ]] && command -v python3 >/dev/null 2>&1; then
+        local theme
+        theme=$(sed -n 's/^theme = "\(.*\)"$/\1/p' "$repo_root/whc-theme/theme.toml")
+        python3 "$repo_root/whc-theme/whc-theme" apply "${theme:-meadow-night}" --targets machine ||
+            warn "whc-theme could not theme the desktop apps; run \`just theme-apply\`."
+    fi
     local applications=$setup_data_home/applications
     if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database "$applications"
