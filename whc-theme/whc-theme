@@ -4,11 +4,14 @@
 Usage:
   whc-theme list [--devices]                    themes (and machines with a variant)
   whc-theme current                             the theme the dotfiles are rendered with, and this machine's state
-  whc-theme apply <theme> [--variant V] [--targets a,b] [--dry-run] [--root DIR]
+  whc-theme apply <theme> [--variant V] [--targets a,b|machine|all] [--dry-run] [--root DIR] [--home DIR]
   whc-theme export <target> [--theme T] [--variant V]   print one target's file(s) to stdout
   whc-theme preview [<theme>] [--variant V]     ANSI colour preview in this terminal
   whc-theme targets                             (alias: --list-targets) every target, where it writes, how it is wired
-  whc-theme data-sync [--from BRAND_REPO]       refresh the vendored data/ from the brand repo
+  whc-theme data-sync --from DIR [--dest DIR]   copy theme data from a whc-theme checkout (or its data/ dir)
+
+Canonical home: github.com/WillowHayward/whc-theme. Theme data comes from the whc-brand repo
+(scripts/sync-data there).
 
 Variants: `auto` (default), `base`, or a machine name (cowgirl, bessie, ranch, ...).
   auto  runtime targets (tmux, zsh/p10k/fzf, nvim, lazygit, hyprland) embed every machine and pick
@@ -18,8 +21,13 @@ Variants: `auto` (default), `base`, or a machine name (cowgirl, bessie, ranch, .
   base  device-neutral everywhere.
   NAME  that machine's variant everywhere (runtime targets are pinned to it).
 
+Target groups for --targets: `machine` = this machine's apps outside the dotfiles that are installed here
+(gnome, walker, firefox, konsole); `all` = every file target.
+
 Environment: WHC_DEVICE (machine), WHC_DOTFILES_DIR (dotfiles root), WHC_THEME_DATA (data dir),
-WHC_THEME_STATE (state file; default ${XDG_STATE_HOME:-~/.local/state}/whc/theme.toml).
+WHC_THEME_STATE (state file; default ${XDG_STATE_HOME:-~/.local/state}/whc/theme.toml),
+WHC_FIREFOX_PROFILE (a Firefox profile dir; default: every profile in profiles.ini), WHC_GTK_ACCENT
+(a libadwaita accent name instead of the theme's nearest).
 Python 3.9+ standard library only.
 """
 from __future__ import annotations
@@ -31,6 +39,7 @@ import os
 import re
 import shutil
 import socket
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,7 +47,7 @@ from typing import Callable
 
 TOOL = Path(__file__).resolve()
 TOOL_DIR = TOOL.parent
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 DEVICES = ["bessie", "ranch", "ship", "cowgirl", "deborah", "felicia", "dowager", "mermaid", "sailor"]
 ORDER8 = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
 BESPOKE = ["meadow-night", "meadow-day", "dracula-meadow"]
@@ -88,48 +97,19 @@ def contrast(a: str, b: str) -> float:
 
 
 # --- data -------------------------------------------------------------------------------------------
-def brand_root() -> Path | None:
-    """The brand repo when this script runs from <brand>/tools/whc-theme/."""
-    root = TOOL_DIR.parents[1] if len(TOOL_DIR.parents) > 1 else None
-    if root and (root / "dist/terminal").is_dir():
-        return root
-    return None
-
-
-def data_source() -> tuple[str, Path]:
+def data_dir() -> Path:
     env = os.environ.get("WHC_THEME_DATA")
-    if env:
-        return "flat", Path(env).expanduser()
-    if (TOOL_DIR / "data").is_dir():
-        return "flat", TOOL_DIR / "data"
-    b = brand_root()
-    if b:
-        return "brand", b
-    sys.exit("whc-theme: no theme data (set WHC_THEME_DATA, or run `whc-theme data-sync --from <brand repo>`)")
-
-
-def read_brand(root: Path) -> list[dict]:
-    themes = []
-    for tid in BESPOKE:
-        p = root / f"dist/terminal/{tid}/palette.json"
-        if p.exists():
-            t = json.loads(p.read_text())
-            t.pop("validation", None)
-            themes.append(t)
-    p = root / "dist/whc-theme/dracula.json"
-    if p.exists():
-        themes += json.loads(p.read_text())["themes"]
-    return themes
+    path = Path(env).expanduser() if env else TOOL_DIR / "data"
+    if not path.is_dir():
+        sys.exit(f"whc-theme: no theme data in {path} (set WHC_THEME_DATA, or `whc-theme data-sync --from <whc-theme>`)")
+    return path
 
 
 def load_themes() -> dict[str, dict]:
-    kind, path = data_source()
-    if kind == "brand":
-        themes = read_brand(path)
-    else:
-        order = json.loads((path / "index.json").read_text())["themes"] if (path / "index.json").exists() else None
-        files = [path / f"{t}.json" for t in order] if order else sorted(path.glob("*.json"))
-        themes = [json.loads(f.read_text()) for f in files if f.name != "index.json"]
+    path = data_dir()
+    order = json.loads((path / "index.json").read_text())["themes"] if (path / "index.json").exists() else None
+    files = [path / f"{t}.json" for t in order] if order else sorted(path.glob("*.json"))
+    themes = [json.loads(f.read_text()) for f in files if f.name != "index.json"]
     return {t["id"]: t for t in themes}
 
 
@@ -247,10 +227,18 @@ class Ctx:
 
 @dataclass
 class Out:
-    path: Path | None        # None: stdout only
+    path: Path | None        # None: stdout only (or only `run`)
     content: str
     block: bool = False      # replace the managed block inside an existing file instead of the whole file
     note: str = ""
+    comment: tuple = ("#", "")   # managed-block marker comment: (open, close)
+    backup: bool = False     # keep a one-time <file>.whc-backup of a file whc-theme did not write
+    create: bool = False     # a managed block may create its file (otherwise the file must exist)
+    run: list = field(default_factory=list)   # commands (argv lists) `apply` runs instead of/after writing
+
+
+def whc_written(text: str) -> bool:
+    return "whc-theme" in text
 
 
 @dataclass
@@ -261,14 +249,15 @@ class Target:
     committed: bool          # wired into the dotfiles (the default `apply` set)
     render: Callable[[Ctx], list[Out]]
     wiring: str = ""
+    detect: Callable[[Ctx], bool] | None = None   # set: part of the `machine` group, applied when it returns True
 
 
 TARGETS: dict[str, Target] = {}
 
 
-def target(name, desc, kind, committed=False, wiring=""):
+def target(name, desc, kind, committed=False, wiring="", detect=None):
     def deco(fn):
-        TARGETS[name] = Target(name, desc, kind, committed, fn, wiring)
+        TARGETS[name] = Target(name, desc, kind, committed, fn, wiring, detect)
         return fn
     return deco
 
@@ -670,9 +659,9 @@ def t_nvim(ctx):
     return [Out(ctx.root / "nvim/lua/whc/theme.lua", "\n".join(lines) + "\n" + NVIM_BODY)]
 
 
-# ---- Hyprland (Lua module; not wired by default) ----
-@target("hyprland", "Hyprland borders, groups and hyprbars in the machine colour", "runtime",
-        wiring="hypr/whc_theme.lua; add `require(\"whc_theme\")` after `require(\"styling\")` in hypr/hyprland.lua")
+# ---- Hyprland (Lua module, required by hypr/hyprland.lua after styling) ----
+@target("hyprland", "Hyprland borders (2 px), groups and hyprbars in the machine colour", "runtime", committed=True,
+        wiring="hypr/whc_theme.lua; hypr/hyprland.lua has `require(\"whc_theme\")` after `require(\"styling\")`")
 def t_hyprland(ctx):
     t = ctx.theme
     rows = []
@@ -681,7 +670,7 @@ def t_hyprland(ctx):
         rows.append((d or "base", p))
     lines = [header(ctx, prefix="--").rstrip(),
              "-- Window borders and group bars in this machine's colour ($WHC_DEVICE, else the hostname).",
-             "-- Wire it in hypr/hyprland.lua after require(\"styling\"): require(\"whc_theme\").",
+             "-- hypr/hyprland.lua requires it after require(\"styling\"); `hyprctl reload` applies a change.",
              "-- Borders only show with general.border_size > 0 (styling.lua has 0); this sets 2.", "local themes = {"]
     for name, p in rows:
         vals = {"active": p.status_bg if p.device else p.purple, "inactive": p.selection, "bar": p.ui["surface"],
@@ -861,12 +850,68 @@ def konsole_scheme(p: Pal, description: str) -> str:
     return "\n".join(out)
 
 
-@target("konsole", "KDE Konsole colour scheme", "local",
-        wiring="~/.local/share/konsole/WHC.colorscheme; Konsole > Settings > Edit Current Profile > Appearance > WHC")
+def ini_get(text: str, section: str, key: str) -> str | None:
+    """A key from a KConfig/INI file (first match), or None."""
+    cur = None
+    for line in text.splitlines():
+        st = line.strip()
+        if st.startswith("[") and st.endswith("]"):
+            cur = st[1:-1]
+        elif cur == section and "=" in st and st.split("=", 1)[0].strip() == key:
+            return st.split("=", 1)[1].strip()
+    return None
+
+
+def ini_set(text: str, section: str, key: str, value: str) -> str:
+    """Set key=value in [section] of a KConfig/INI file, keeping everything else (adds the section if missing)."""
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines) if ln.strip() == f"[{section}]"), None)
+    if start is None:
+        while lines and not lines[-1].strip():
+            lines.pop()
+        return "\n".join(lines + ([""] if lines else []) + [f"[{section}]", f"{key}={value}"]) + "\n"
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].strip().startswith("[")), len(lines))
+    for i in range(start + 1, end):
+        if "=" in lines[i] and lines[i].split("=", 1)[0].strip() == key:
+            lines[i] = f"{key}={value}"
+            return "\n".join(lines) + "\n"
+    ins = end
+    while ins > start + 1 and not lines[ins - 1].strip():
+        ins -= 1
+    lines.insert(ins, f"{key}={value}")
+    return "\n".join(lines) + "\n"
+
+
+KONSOLE_PROFILE = "WHC.profile"
+
+
+def konsole_detect(ctx: Ctx) -> bool:
+    return bool(shutil.which("konsole")) or (ctx.home / ".local/share/konsole").is_dir()
+
+
+@target("konsole", "KDE Konsole colour scheme, a WHC profile using it, and that profile as the default", "local",
+        wiring="~/.local/share/konsole/WHC.colorscheme and WHC.profile (based on the previous default profile); "
+               "~/.config/konsolerc DefaultProfile=WHC.profile (backed up to konsolerc.whc-backup first)",
+        detect=konsole_detect)
 def t_konsole(ctx):
     p = pal_static(ctx, False)
-    s = header(ctx) + konsole_scheme(p, f"WHC {p.name}")
-    return [Out(ctx.home / ".local/share/konsole/WHC.colorscheme", s)]
+    data = ctx.home / ".local/share/konsole"
+    rc_path = ctx.home / ".config/konsolerc"
+    scheme = header(ctx) + konsole_scheme(p, f"WHC {p.name}")
+    rc = rc_path.read_text() if rc_path.exists() else ""
+    prof_path = data / KONSOLE_PROFILE
+    if prof_path.exists():
+        prof = prof_path.read_text()
+    else:  # start from the profile that was the default, so its font and size carry over
+        prev = ini_get(rc, "Desktop Entry", "DefaultProfile")
+        prev_path = data / prev if prev and prev != KONSOLE_PROFILE else None
+        prof = prev_path.read_text() if prev_path and prev_path.is_file() else "[General]\nParent=FALLBACK/\n"
+    prof = ini_set(prof, "Appearance", "ColorScheme", "WHC")
+    prof = ini_set(prof, "General", "Name", "WHC")
+    rc = ini_set(rc, "Desktop Entry", "DefaultProfile", KONSOLE_PROFILE)
+    return [Out(data / "WHC.colorscheme", scheme),
+            Out(prof_path, prof),
+            Out(rc_path, rc, backup=True, note="new Konsole windows use the WHC profile")]
 
 
 @target("windows-terminal", "Windows Terminal schemes (every machine variant)", "print",
@@ -1087,7 +1132,9 @@ child:selected .item-quick-activation, row:selected .item-quick-activation {{ ba
 
 
 @target("walker", "Walker launcher CSS theme", "local",
-        wiring='~/.config/walker/themes/whc/style.css; walker/config.toml: theme = "whc" (layouts fall back to the default theme)')
+        wiring='~/.config/walker/themes/whc/style.css; the dotfiles\' walker/config.toml has theme = "whc" '
+               '(layouts fall back to the default theme); restart Walker to load a change',
+        detect=lambda ctx: bool(shutil.which("walker")))
 def t_walker(ctx):
     p = pal_static(ctx, False)
     accent = p.status_bg if p.device else p.purple
@@ -1131,9 +1178,9 @@ def t_slack(ctx):
     return [Out(None, ",".join(v.upper() for v in vals) + "\n")]
 
 
-@target("firefox", "Firefox static theme manifest.json", "print",
+@target("firefox-manifest", "Firefox static theme manifest.json (an add-on; needs signing on release Firefox)", "print",
         wiring="printed: save as manifest.json, zip as whc.xpi; load via about:debugging or sign unlisted with web-ext")
-def t_firefox(ctx):
+def t_firefox_manifest(ctx):
     p = pal_static(ctx, False)
     ui, a = p.ui, p.a
     accent = p.status_bg if p.device else ui["accent"]
@@ -1155,11 +1202,166 @@ def t_firefox(ctx):
     return [Out(None, json.dumps(m, indent=2) + "\n")]
 
 
+# ---- Firefox: userChrome.css / userContent.css in each profile (no add-on, no signing) ----
+FIREFOX_ROOTS = [".config/mozilla/firefox", ".mozilla/firefox", ".var/app/org.mozilla.firefox/.mozilla/firefox",
+                 "snap/firefox/common/.mozilla/firefox"]
+
+
+def firefox_profiles(home: Path) -> list[Path]:
+    """Profiles to theme: $WHC_FIREFOX_PROFILE, else every profile in profiles.ini that has been used (prefs.js)."""
+    env = os.environ.get("WHC_FIREFOX_PROFILE")
+    if env:
+        return [Path(env).expanduser()]
+    out = []
+    for r in FIREFOX_ROOTS:
+        root = home / r
+        ini = root / "profiles.ini"
+        if not ini.is_file():
+            continue
+        cur: dict = {}
+        sections = []
+        for line in ini.read_text(errors="replace").splitlines() + ["[end]"]:
+            st = line.strip()
+            if st.startswith("["):
+                if cur.get("Path"):
+                    sections.append(cur)
+                cur = {}
+            elif "=" in st:
+                k, v = st.split("=", 1)
+                cur[k.strip()] = v.strip()
+        for sec in sections:
+            path = root / sec["Path"] if sec.get("IsRelative", "1") == "1" else Path(sec["Path"])
+            if (path / "prefs.js").is_file() and path not in out:
+                out.append(path)
+    return out
+
+
+def firefox_vars(p: Pal) -> dict:
+    """Firefox chrome CSS variables (Firefox 13x-15x names) -> colours. Set with !important from userChrome.css, they
+    win over the system theme and over any add-on theme (which sets them as inline styles on the root)."""
+    ui, a = p.ui, p.a
+    accent = p.status_bg if p.device else ui["accent"]
+    on_accent = p.status_fg if p.device else p.bg
+    frame, toolbar, field_bg = p.bg, ui["surface_raised"], p.bg
+    return {
+        "--lwt-accent-color": frame, "--lwt-accent-color-inactive": frame, "--lwt-text-color": p.fg,
+        "--toolbox-background-color": frame, "--toolbox-background-color-inactive": frame,
+        "--toolbox-text-color": p.fg, "--toolbox-text-color-inactive": p.comment,
+        "--toolbar-background-color": toolbar, "--toolbar-bgcolor": toolbar,
+        "--toolbar-text-color": p.fg, "--toolbar-color": p.fg,
+        "--tab-background-color-selected": toolbar, "--tab-selected-bgcolor": toolbar, "--tab-selected-textcolor": p.fg,
+        "--lwt-tab-line-color": accent, "--tab-loading-fill": accent,
+        "--lwt-background-tab-separator-color": ui["border"], "--tabs-navbar-separator-color": frame,
+        "--toolbar-field-background-color": field_bg, "--toolbar-field-text-color": p.fg,
+        "--toolbar-field-border-color": ui["border"], "--toolbar-field-background-color-focus": field_bg,
+        "--toolbar-field-text-color-focus": p.fg, "--toolbar-field-border-color-focus": accent,
+        "--lwt-toolbar-field-highlight": p.selection, "--lwt-toolbar-field-highlight-text": p.fg,
+        "--toolbarbutton-icon-fill": p.fg, "--toolbarbutton-icon-fill-attention": accent,
+        "--toolbarbutton-background-color-hover": p.selection, "--toolbarbutton-background-color-active": ui["border"],
+        "--toolbarseparator-color": ui["border"], "--chrome-content-separator-color": ui["border"],
+        "--panel-background-color": toolbar, "--panel-text-color": p.fg, "--panel-border-color": ui["border"],
+        "--arrowpanel-background": toolbar, "--arrowpanel-color": p.fg, "--arrowpanel-border-color": ui["border"],
+        "--urlbarview-background-color-selected": p.selection, "--urlbarview-text-color-selected": p.fg,
+        "--sidebar-background-color": ui["surface"], "--sidebar-text-color": p.fg, "--sidebar-border-color": ui["border"],
+        "--tabpanel-background-color": p.bg, "--newtab-background-color": p.bg, "--newtab-text-primary-color": p.fg,
+        "--focus-outline-color": accent, "--color-accent-primary": accent, "--button-text-color-primary": on_accent,
+    }
+
+
+@target("firefox", "Firefox chrome colours via userChrome.css (replaces an add-on theme; no signing needed)", "local",
+        wiring="<profile>/chrome/userChrome.css and userContent.css (managed blocks) and user.js "
+               "(toolkit.legacyUserProfileCustomizations.stylesheets); every used profile; next Firefox start",
+        detect=lambda ctx: bool(firefox_profiles(ctx.home)))
+def t_firefox(ctx):
+    p = pal_static(ctx, False)
+    decl = "".join(f"  {k}: {v} !important;\n" for k, v in firefox_vars(p).items())
+    scheme = "dark" if p.dark else "light"
+    chrome = (f"/* {p.name}. Set as !important variables, so they also win over an add-on theme. */\n"
+              f":root {{\n{decl}  color-scheme: {scheme} !important;\n}}\n")
+    content = ('@-moz-document url-prefix("about:newtab"), url-prefix("about:home"), url-prefix("about:privatebrowsing") {\n'
+               f"  :root {{\n    --newtab-background-color: {p.bg} !important;\n"
+               f"    --newtab-background-color-secondary: {p.ui['surface_raised']} !important;\n"
+               f"    --newtab-text-primary-color: {p.fg} !important;\n  }}\n"
+               f"  body {{ background-color: {p.bg} !important; color: {p.fg} !important; }}\n}}\n")
+    prefs = 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);\n'
+    profiles = firefox_profiles(ctx.home) or [ctx.home / ".config/mozilla/firefox/<profile>"]
+    outs = []
+    for prof in profiles:
+        outs += [Out(prof / "chrome/userChrome.css", chrome, block=True, comment=("/*", " */"), backup=True, create=True,
+                     note="Firefox reads it at start"),
+                 Out(prof / "chrome/userContent.css", content, block=True, comment=("/*", " */"), backup=True, create=True),
+                 Out(prof / "user.js", prefs, block=True, comment=("//", ""), backup=True, create=True)]
+    return outs
+
+
+# ---- GNOME/libadwaita settings (gsettings: colour scheme and accent) ----
+ADW_ACCENTS = {"blue": "#3584E4", "teal": "#2190A4", "green": "#3A944A", "yellow": "#C88800", "orange": "#ED5B00",
+               "red": "#E62D42", "pink": "#D56199", "purple": "#9141AC", "slate": "#6F8396"}
+
+
+def hue_sat(h: str) -> tuple[float, float]:
+    r, g, b = (x / 255 for x in rgb(h))
+    mx, mn = max(r, g, b), min(r, g, b)
+    if mx == mn:
+        return 0.0, 0.0
+    d = mx - mn
+    s = d / mx
+    if mx == r:
+        hh = (g - b) / d % 6
+    elif mx == g:
+        hh = (b - r) / d + 2
+    else:
+        hh = (r - g) / d + 4
+    return hh * 60, s
+
+
+def adw_accent(colour: str) -> str:
+    """The libadwaita named accent nearest in hue (slate for greys)."""
+    env = os.environ.get("WHC_GTK_ACCENT")
+    if env in ADW_ACCENTS:
+        return env
+    h, sat = hue_sat(colour)
+    if sat < 0.15:
+        return "slate"
+
+    def dist(name):
+        ah, _ = hue_sat(ADW_ACCENTS[name])
+        d = abs(h - ah) % 360
+        return min(d, 360 - d)
+    return min((n for n in ADW_ACCENTS if n != "slate"), key=dist)
+
+
+def gnome_detect(ctx: Ctx) -> bool:
+    if not shutil.which("gsettings"):
+        return False
+    try:
+        r = subprocess.run(["gsettings", "list-keys", "org.gnome.desktop.interface"], capture_output=True, text=True,
+                           timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return r.returncode == 0 and "color-scheme" in r.stdout
+
+
+@target("gnome", "GTK 4 / libadwaita colour scheme and accent (gsettings)", "system",
+        wiring="gsettings org.gnome.desktop.interface color-scheme (prefer-dark/-light, from the theme's mode) and "
+               "accent-color (the libadwaita accent nearest the theme's accent; WHC_GTK_ACCENT overrides)",
+        detect=gnome_detect)
+def t_gnome(ctx):
+    p = resolve(ctx.theme, None)
+    scheme = "prefer-dark" if p.dark else "prefer-light"
+    accent = adw_accent(p.ui["accent"])
+    cmds = [["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme],
+            ["gsettings", "set", "org.gnome.desktop.interface", "accent-color", accent]]
+    return [Out(None, "".join(" ".join(c) + "\n" for c in cmds), run=cmds,
+                note="GTK 4 apps follow at once; settings.ini covers GTK 3")]
+
+
 # --- managed-block files --------------------------------------------------------------------------------
-def splice_block(existing: str, body: str, comment="#", before_first_section=False) -> str:
-    begin = f"{comment} {MARK_BEGIN}"
-    end = f"{comment} {MARK_END}"
-    block = f"{begin}\n{comment} Generated by whc-theme; edit the theme, not these lines (`whc-theme apply <theme>`).\n{body}{end}\n"
+def splice_block(existing: str, body: str, comment="#", before_first_section=False, close="") -> str:
+    begin = f"{comment} {MARK_BEGIN}{close}"
+    end = f"{comment} {MARK_END}{close}"
+    note = f"{comment} Generated by whc-theme; edit the theme, not these lines (`whc-theme apply <theme>`).{close}"
+    block = f"{begin}\n{note}\n{body}{end}\n"
     pat = re.compile(re.escape(begin) + r".*?" + re.escape(end) + r"\n?", re.S)
     if pat.search(existing):
         return pat.sub(lambda _m: block, existing, count=1)
@@ -1176,7 +1378,8 @@ def final_content(o: Out, tname: str) -> str:
     if not o.block:
         return o.content
     existing = o.path.read_text() if o.path and o.path.exists() else ""
-    return splice_block(existing, o.content, before_first_section=(tname == "mako"))
+    return splice_block(existing, o.content, comment=o.comment[0], close=o.comment[1],
+                        before_first_section=(tname == "mako"))
 
 
 # --- state ------------------------------------------------------------------------------------------------
@@ -1246,16 +1449,24 @@ def current_theme_id(root: Path, themes) -> str:
     return "meadow-night"
 
 
-def selected_targets(spec: str | None) -> list[Target]:
+def selected_targets(spec: str | None, ctx: Ctx | None = None) -> list[Target]:
+    """Targets for --targets: names, `machine` (installed apps outside the dotfiles), `all`, or the dotfiles set."""
     if not spec:
         return [t for t in TARGETS.values() if t.committed]
-    if spec == "all":
-        return [t for t in TARGETS.values() if t.kind != "print"]
-    names = [s.strip() for s in spec.split(",") if s.strip()]
-    bad = [n for n in names if n not in TARGETS]
-    if bad:
-        sys.exit(f"whc-theme: unknown target(s) {', '.join(bad)}; see `whc-theme targets`")
-    return [TARGETS[n] for n in names]
+    out: list[Target] = []
+    for name in [s.strip() for s in spec.split(",") if s.strip()]:
+        if name == "all":
+            group = [t for t in TARGETS.values() if t.kind not in ("print", "system")]
+        elif name == "machine":
+            group = [t for t in TARGETS.values() if t.detect and (ctx is None or t.detect(ctx))]
+        elif name == "dotfiles":
+            group = [t for t in TARGETS.values() if t.committed]
+        elif name in TARGETS:
+            group = [TARGETS[name]]
+        else:
+            sys.exit(f"whc-theme: unknown target {name!r}; see `whc-theme targets`")
+        out += [t for t in group if t not in out]
+    return out
 
 
 def cmd_list(args, themes):
@@ -1271,12 +1482,14 @@ def cmd_list(args, themes):
 
 def cmd_targets(args):
     for t in TARGETS.values():
-        mark = "*" if t.committed else " "
+        mark = "*" if t.committed else ("m" if t.detect else " ")
         print(f"{mark} {t.name:<17} {t.kind:<8} {t.desc}")
         print(f"  {'':<17} {'':<8} -> {t.wiring}")
-    print("\n* = wired into the dotfiles and applied by default; others need --targets (or `export`).")
+    print("\n* = wired into the dotfiles and applied by default (also `--targets dotfiles`);")
+    print("m = in `--targets machine` when the app is installed here; others need --targets (or `export`).")
     print("kinds: runtime = picks the machine when it loads; shared = one file in the dotfiles (auto -> base);")
-    print("       local = a file outside the dotfiles (auto -> this machine); print = stdout only (use export).")
+    print("       local = a file outside the dotfiles (auto -> this machine); system = runs a command (gsettings);")
+    print("       print = stdout only (use export).")
 
 
 def cmd_current(args, themes):
@@ -1310,16 +1523,20 @@ def cmd_apply(args, themes):
     t = pick_theme(themes, args.theme)
     variant = check_variant(t, args.variant)
     root = Path(args.root).expanduser() if args.root else default_root()
-    ctx = Ctx(t, variant, root, Path.home())
-    tlist = selected_targets(args.targets)
-    if not args.targets and not (root / "shell/.tmux.conf").exists():
+    home = Path(args.home).expanduser() if getattr(args, "home", None) else Path.home()
+    ctx = Ctx(t, variant, root, home)
+    tlist = selected_targets(args.targets, ctx)
+    if any(tg.committed for tg in tlist) and not (root / "shell/.tmux.conf").exists():
         sys.exit(f"whc-theme: {root} does not look like the dotfiles repo (use --root or WHC_DOTFILES_DIR)")
-    changed, same, written = [], [], []
+    changed, same, written, commands = [], [], [], []
     for tg, o in render(ctx, tlist):
+        if o.run:
+            commands.append((tg, o))
+            continue
         if o.path is None:
             print(f"# {tg.name}: stdout only; use `whc-theme export {tg.name}`", file=sys.stderr)
             continue
-        if o.block and not o.path.exists():
+        if o.block and not o.create and not o.path.exists():
             print(f"skip {o.path}: managed block needs the file to exist", file=sys.stderr)
             continue
         new = final_content(o, tg.name)
@@ -1331,12 +1548,29 @@ def cmd_apply(args, themes):
         changed.append(f"{'new ' if old is None else 'edit'} {rel}{'  (' + o.note + ')' if o.note else ''}")
         if not args.dry_run:
             o.path.parent.mkdir(parents=True, exist_ok=True)
+            bak = o.path.with_name(o.path.name + ".whc-backup")
+            if o.backup and old is not None and not whc_written(old) and not bak.exists():
+                shutil.copy2(o.path, bak)
+                changed.append(f"     backup {bak}")
             tmp = o.path.with_name(o.path.name + ".whc-tmp")
             tmp.write_text(new)
             os.replace(tmp, o.path)
             written.append(str(o.path))
+    for tg, o in commands:
+        for cmd in o.run:
+            if args.dry_run:
+                changed.append(f"run  {' '.join(cmd)}")
+                continue
+            try:
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                ok, err = r.returncode == 0, (r.stderr or "").strip()
+            except (OSError, subprocess.TimeoutExpired) as e:
+                ok, err = False, str(e)
+            changed.append(f"{'ran ' if ok else 'FAIL'} {' '.join(cmd)}{'' if ok else '  (' + err + ')'}")
     verb = "would change" if args.dry_run else "changed"
-    print(f"whc-theme {ctx.label()} -> {root}: {verb} {len(changed)}, unchanged {len(same)}")
+    nfiles = len([c for c in changed if not c.startswith(("run", "ran", "FAIL", "     backup"))])
+    print(f"whc-theme {ctx.label()} -> {', '.join(tg.name for tg in tlist) or 'no targets'}: "
+          f"{verb} {nfiles}, unchanged {len(same)}")
     for c in changed:
         print("  " + c)
     if args.dry_run:
@@ -1349,14 +1583,15 @@ def cmd_apply(args, themes):
                                      "root": str(root), "targets": names,
                                      "applied": _dt.datetime.now().isoformat(timespec="seconds")},
                       "whc-theme: what was last applied on this machine. Written by `whc-theme apply`.")
-    print("Reload: new shells and tmux (prefix r) pick it up; foot reads its config per window; "
-          "`makoctl reload`; Neovim on restart.")
+    print("Reload: new shells and tmux (prefix r) pick it up; foot reads its config per window; `makoctl reload`; "
+          "`hyprctl reload`; Neovim, Walker, Konsole and Firefox on restart.")
 
 
 def cmd_export(args, themes):
     root = Path(args.root).expanduser() if args.root else default_root()
     t = pick_theme(themes, args.theme or current_theme_id(root, themes))
-    ctx = Ctx(t, check_variant(t, args.variant), root, Path.home())
+    home = Path(args.home).expanduser() if getattr(args, "home", None) else Path.home()
+    ctx = Ctx(t, check_variant(t, args.variant), root, home)
     if args.target not in TARGETS:
         sys.exit(f"whc-theme: unknown target {args.target!r}; see `whc-theme targets`")
     outs = TARGETS[args.target].render(ctx)
@@ -1419,20 +1654,24 @@ def preview_text(p: Pal) -> str:
 
 
 def cmd_data_sync(args):
-    src = Path(args.src).expanduser() if args.src else (brand_root() or Path.home() / "projects/brand-identity")
-    if not (src / "dist/terminal").is_dir():
-        sys.exit(f"whc-theme: {src} is not the brand repo (no dist/terminal)")
+    """Copy theme data from a whc-theme checkout (or a data/ dir), e.g. into the dotfiles' vendored copy."""
+    src = Path(args.src).expanduser()
+    if (src / "data/index.json").exists():
+        src = src / "data"
+    if not (src / "index.json").exists():
+        sys.exit(f"whc-theme: {src} has no index.json (pass a whc-theme checkout or its data/ dir; "
+                 "the brand repo is synced with whc-theme's scripts/sync-data)")
     dest = Path(args.dest).expanduser() if args.dest else TOOL_DIR / "data"
-    if brand_root() and dest == TOOL_DIR / "data":
-        sys.exit("whc-theme: in the brand repo the tool reads dist/ directly; pass --dest to vendor elsewhere")
-    themes = read_brand(src)
+    if dest.resolve() == src.resolve():
+        sys.exit("whc-theme: source and destination are the same")
+    ids = json.loads((src / "index.json").read_text())["themes"]
     if dest.exists():
         shutil.rmtree(dest)
     dest.mkdir(parents=True)
-    for t in themes:
-        (dest / f"{t['id']}.json").write_text(json.dumps(t, indent=1, ensure_ascii=False) + "\n")
-    (dest / "index.json").write_text(json.dumps({"source": str(src), "themes": [t["id"] for t in themes]}, indent=1) + "\n")
-    print(f"synced {len(themes)} themes from {src} into {dest}")
+    for tid in ids:
+        shutil.copy2(src / f"{tid}.json", dest / f"{tid}.json")
+    shutil.copy2(src / "index.json", dest / "index.json")
+    print(f"synced {len(ids)} themes from {src} into {dest}")
 
 
 def main(argv=None):
@@ -1451,17 +1690,19 @@ def main(argv=None):
     s.add_argument("--targets", help="comma-separated names, or `all` for every file target")
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--root", help="dotfiles root (default: the repo this tool is in, else $WHC_DOTFILES_DIR or ~/dotfiles)")
+    s.add_argument("--home", help="home directory for local targets (default: ~)")
     s = sub.add_parser("export", help="print one target")
     s.add_argument("target")
     s.add_argument("--theme")
     s.add_argument("--variant", default="auto")
     s.add_argument("--root")
+    s.add_argument("--home")
     s = sub.add_parser("preview", help="ANSI preview")
     s.add_argument("theme", nargs="?", help="a theme id, or `all`")
     s.add_argument("--variant", default="auto")
     s.add_argument("--root")
-    s = sub.add_parser("data-sync", help="copy theme data from the brand repo")
-    s.add_argument("--from", dest="src")
+    s = sub.add_parser("data-sync", help="copy theme data from a whc-theme checkout")
+    s.add_argument("--from", dest="src", required=True)
     s.add_argument("--dest")
     args = ap.parse_args(argv)
     if args.list_targets or args.cmd == "targets":

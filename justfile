@@ -64,18 +64,28 @@ zsh-refresh:
 theme *args:
     python3 whc-theme/whc-theme {{ args }}
 
-# Refresh whc-theme and its theme data from the brand repo (default ~/projects/brand-identity), then re-render.
-theme-sync brand="":
+# Refresh the vendored whc-theme from its repo (default $WHC_THEME_DIR, else ~/projects/whc-theme), then re-render.
+theme-sync dir="":
     #!/usr/bin/env bash
     set -euo pipefail
-    brand="{{ brand }}"
-    brand="${brand:-$HOME/projects/brand-identity}"
-    cp "$brand/tools/whc-theme/whc-theme" whc-theme/whc-theme
-    python3 whc-theme/whc-theme data-sync --from "$brand"
-    theme=$(sed -n 's/^theme = "\(.*\)"$/\1/p' whc-theme/theme.toml)
-    variant=$(sed -n 's/^variant = "\(.*\)"$/\1/p' whc-theme/theme.toml)
-    python3 whc-theme/whc-theme apply "${theme:-meadow-night}" --variant "${variant:-auto}"
-    git --no-pager diff --stat
+    src="{{ dir }}"
+    src="${src:-${WHC_THEME_DIR:-$HOME/projects/whc-theme}}"
+    [[ -f $src/whc-theme && -f $src/data/index.json ]] || { echo "theme-sync: $src is not a whc-theme checkout" >&2; exit 1; }
+    cp "$src/whc-theme" whc-theme/whc-theme
+    cp "$src/tests/test_whc_theme.py" whc-theme/test_whc_theme.py
+    python3 whc-theme/whc-theme data-sync --from "$src" --dest whc-theme/data
+    just theme-apply
+    git --no-pager diff --stat -- whc-theme
+
+# Render a theme (default: the committed one in whc-theme/theme.toml) into the dotfiles and this machine's apps.
+theme-apply theme="" variant="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    theme="{{ theme }}"
+    variant="{{ variant }}"
+    [[ -n $theme ]] || theme=$(sed -n 's/^theme = "\(.*\)"$/\1/p' whc-theme/theme.toml)
+    [[ -n $variant ]] || variant=$(sed -n 's/^variant = "\(.*\)"$/\1/p' whc-theme/theme.toml)
+    python3 whc-theme/whc-theme apply "${theme:-meadow-night}" --variant "${variant:-auto}" --targets dotfiles,machine
 
 # Print the live keybinds as Markdown (sections: hypr, tmux, nvim; default all).
 keybinds *sections:
