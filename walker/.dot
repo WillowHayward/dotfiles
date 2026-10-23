@@ -1,0 +1,14 @@
+# The project picker scripts stay in the repository.
+when = "desktop"
+
+[[link]]
+src = "config.toml"
+dst = "$XDG_CONFIG_HOME/walker/"
+
+[[link]]
+src = "menus/*"
+dst = "$XDG_CONFIG_HOME/elephant/menus/"
+
+[[link]]
+src = "applications/*.desktop"
+dst = "$XDG_DATA_HOME/applications/"

@@ -18,8 +18,6 @@ Tasks:
   init-system  Set WHC_PROFILE and WHC_DEVICE in /etc/environment ($PREFIX/etc/environment in Termux)
   packages [--list|--diff]  Install the profile's package baseline (--list prints it;
                --diff shows what is installed but not in the manifest)
-  links [--relink|--adopt]  Link profile-appropriate dotfiles (--relink: replace wrong symlinks;
-               --adopt: also move conflicting real files to a backup)
   shell        Configure zsh and Antidote
   nvim         Install Neovim 0.11+ and link its configuration
   tmux         Install and configure tmux and TPM
@@ -39,11 +37,8 @@ EOF
 }
 
 task=${1:-}
-# Optional flag: links --relink|--adopt, packages --list|--diff.
-if [[ $# -eq 2 && $task == links && ($2 == --relink || $2 == --adopt) ]]; then
-    export WHC_LINK_MODE=${2#--}
-    set -- "$task"
-elif [[ $# -eq 2 && $task == packages && ($2 == --list || $2 == --diff) ]]; then
+# Optional flag: packages --list|--diff.
+if [[ $# -eq 2 && $task == packages && ($2 == --list || $2 == --diff) ]]; then
     export WHC_PACKAGES_MODE=${2#--}
     set -- "$task"
 fi
@@ -56,7 +51,7 @@ case "$task" in
 init-system)
     task_init_system
     ;;
-packages | links | shell | nvim | tmux | node | python | ssh | bash | docker | wsl | harden | doctor | termux | desktop | manual-lock | all)
+packages | shell | nvim | tmux | node | python | ssh | bash | docker | wsl | harden | doctor | termux | desktop | manual-lock | all)
     load_system_identity
     validate_profile_os
     "task_${task//-/_}"

@@ -58,6 +58,8 @@ case $WHC_PROFILE in
     mobile) export WHC_MOBILE=true WHC_DEV=true ;;
     remote) export WHC_REMOTE=true ;;
 esac
+# dotdot links the profile's dotfiles (see .dot); this lets `dotdot status` know the profile.
+export DOTDOT_PROFILE=$WHC_PROFILE
 
 if [[ -n "$SSH_CONNECTION" ]]; then
     # Connection context is independent from the machine profile.

@@ -1,0 +1,6 @@
+target = "~"
+include = [".gitconfig", ".gitignore.global"]
+
+[[link]]
+src = "profile/$profile.gitconfig"
+dst = "~/.gitconfig.profile"

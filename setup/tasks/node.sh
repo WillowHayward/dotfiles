@@ -24,7 +24,7 @@ task_node() {
         # fnm's Node builds are glibc binaries; Termux packages Node itself, and the
         # tree-sitter package includes the CLI.
         install_packages nodejs-lts tree-sitter
-        link_groups node
+        link_stacks node
         node --version
         return
     fi
@@ -40,7 +40,7 @@ task_node() {
     # nvim-treesitter builds its parsers with the tree-sitter CLI (a package on Arch).
     command -v tree-sitter >/dev/null 2>&1 || npm install -g "tree-sitter-cli@$TREE_SITTER_CLI_VERSION"
 
-    link_groups node
+    link_stacks node
     fnm --version
     node --version
     npm --version

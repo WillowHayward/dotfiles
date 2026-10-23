@@ -12,7 +12,7 @@ task_shell() {
         clone_public https://github.com/mattmc3/antidote.git "$antidote_dir" "$ANTIDOTE_REF"
     fi
 
-    link_groups shell
+    link_stacks shell
 
     local zsh_path login_shell current_user
     zsh_path=$(command -v zsh) || die "zsh was not found after installation."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Enabled by `just setup links` (core.hooksPath = .githooks). Scans staged changes for
+# Enabled by `just setup all` (core.hooksPath = .githooks). Scans staged changes for
 # secrets and runs the quick checks. Bypass once with `git commit --no-verify`.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"

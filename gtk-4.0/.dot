@@ -1,0 +1,2 @@
+target = "$XDG_CONFIG_HOME/gtk-4.0"
+when = "desktop"

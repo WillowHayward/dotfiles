@@ -37,7 +37,7 @@
 	d = diff
 [init]
 	defaultBranch = main
-# Per-profile settings (git/profile/*.gitconfig, linked by `just setup links`)
+# Per-profile settings (git/profile/*.gitconfig, linked by dotdot, see git/.dot)
 # and per-machine overrides that are not committed.
 [include]
 	path = ~/.gitconfig.profile

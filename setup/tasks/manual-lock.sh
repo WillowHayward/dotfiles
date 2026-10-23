@@ -22,7 +22,7 @@ task_manual_lock() {
     ((EUID != 0)) || die "run manual-lock as your own user, not as root or with sudo."
 
     install_packages greetd-tuigreet hyprlock hypridle uwsm
-    link_groups hypr
+    link_stacks hypr
 
     local uwsm=no rendered
     command -v uwsm >/dev/null 2>&1 && uwsm=yes

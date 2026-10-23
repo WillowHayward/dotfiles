@@ -12,10 +12,6 @@ init-system:
 packages *flag:
     bash setup.sh packages {{ flag }}
 
-# Link profile-appropriate dotfiles (--relink fixes wrong symlinks, --adopt also backs up real files).
-links *flag:
-    bash setup.sh links {{ flag }}
-
 # Install and configure zsh and Antidote.
 shell:
     bash setup.sh shell

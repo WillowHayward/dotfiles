@@ -8,6 +8,11 @@ trap 'rm -rf -- "$test_root"' EXIT
 export HOME=$test_root/sandbox-home
 mkdir -p -- "$HOME"
 unset XDG_CONFIG_HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
+unset DOTDOT_REPO DOTDOT_PROFILE DOTDOT_TAGS
+command -v dotdot >/dev/null 2>&1 || {
+    printf '%s\n' 'The setup tests need dotdot on PATH (see Readme.md).' >&2
+    exit 1
+}
 
 write_environment() {
     local target=$1 profile=$2 device=$3
@@ -23,7 +28,7 @@ write_os_release() {
 run_setup() {
     local environment=$1 os_release=$2 setup_home=$3 task=$4
     local -a arguments
-    read -ra arguments <<<"$task" # a task may carry a flag, e.g. "links --adopt"
+    read -ra arguments <<<"$task" # a task may carry a flag, e.g. "packages --list"
     WHC_ENVIRONMENT_FILE=$environment \
         WHC_OS_RELEASE_FILE=$os_release \
         WHC_SETUP_HOME=$setup_home \
@@ -34,12 +39,18 @@ run_setup() {
         "$setup_dir/setup.sh" "${arguments[@]}"
 }
 
+# Link the repository's .dot stacks into a test home, as `dotdot apply` would for a profile.
+link_home() {
+    local profile=$1 home=$2
+    dotdot --repo "$setup_dir/.." --home "$home" --profile "$profile" --quiet apply
+}
+
 home_case=$test_root/home
 mkdir -p -- "$home_case/user"
 write_environment "$home_case/environment" home cowgirl
 write_os_release "$home_case/os-release" arch
-run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
-run_setup "$home_case/environment" "$home_case/os-release" "$home_case/user" links
+link_home home "$home_case/user"
+link_home home "$home_case/user"
 for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim .config/swayimg .config/hypr \
     .config/walker/config.toml .config/elephant/menus/session.toml .config/mimeapps.list \
     .config/systemd/user/udiskie.service .config/foot/foot.ini .config/mako/config \
@@ -55,7 +66,7 @@ remote_case=$test_root/remote
 mkdir -p -- "$remote_case/user"
 write_environment "$remote_case/environment" remote testbox
 write_os_release "$remote_case/os-release" debian debian
-run_setup "$remote_case/environment" "$remote_case/os-release" "$remote_case/user" links
+link_home remote "$remote_case/user"
 for link in .zshrc .gitconfig .tmux.conf .vimrc .config/atuin/config.toml; do
     [[ -L $remote_case/user/$link ]] || {
         printf 'Expected remote link: %s\n' "$link" >&2
@@ -80,7 +91,7 @@ work_case=$test_root/work
 mkdir -p -- "$work_case/user"
 write_environment "$work_case/environment" work work
 write_os_release "$work_case/os-release" debian debian
-run_setup "$work_case/environment" "$work_case/os-release" "$work_case/user" links
+link_home work "$work_case/user"
 for link in .zshrc .tmux.session.conf .npmrc .taskrc .config/nvim; do
     [[ -L $work_case/user/$link ]] || {
         printf 'Expected work link: %s\n' "$link" >&2
@@ -104,7 +115,7 @@ mobile_case=$test_root/mobile
 mkdir -p -- "$mobile_case/user"
 write_environment "$mobile_case/environment" mobile phone
 write_os_release "$mobile_case/os-release" arch # ignored in Termux
-TERMUX_VERSION=0.118 run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" links
+TERMUX_VERSION=0.118 link_home mobile "$mobile_case/user"
 for link in .zshrc .tmux.session.conf .taskrc .config/nvim .config/lazygit/config.yml \
     .termux/termux.properties .termux/colors.properties; do
     [[ -L $mobile_case/user/$link ]] || {
@@ -119,8 +130,7 @@ for link in .config/hypr .config/foot; do
     }
 done
 [[ $(readlink "$mobile_case/user/.gitconfig.profile") == */git/profile/mobile.gitconfig ]]
-[[ -f $mobile_case/user/.taskrc.local && ! -L $mobile_case/user/.taskrc.local ]]
-if run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" links 2>/dev/null; then
+if run_setup "$mobile_case/environment" "$mobile_case/os-release" "$mobile_case/user" bash 2>/dev/null; then
     printf '%s\n' 'Expected mobile to require Termux.' >&2
     exit 1
 fi
@@ -135,29 +145,19 @@ sailor_case=$test_root/termux-remote
 mkdir -p -- "$sailor_case/user"
 write_environment "$sailor_case/environment" remote testphone
 write_os_release "$sailor_case/os-release" debian debian
-TERMUX_VERSION=0.118 run_setup "$sailor_case/environment" "$sailor_case/os-release" "$sailor_case/user" links
+TERMUX_VERSION=0.118 link_home remote "$sailor_case/user"
 [[ -L $sailor_case/user/.termux/termux.properties && -L $sailor_case/user/.vimrc ]]
-[[ ! -e $sailor_case/user/.config/nvim && ! -e $sailor_case/user/.taskrc && ! -e $sailor_case/user/.taskrc.local ]]
+[[ ! -e $sailor_case/user/.config/nvim && ! -e $sailor_case/user/.taskrc ]]
 write_environment "$sailor_case/environment" work testphone
-if TERMUX_VERSION=0.118 run_setup "$sailor_case/environment" "$sailor_case/os-release" "$sailor_case/user" links 2>/dev/null; then
+if TERMUX_VERSION=0.118 run_setup "$sailor_case/environment" "$sailor_case/os-release" "$sailor_case/user" bash 2>/dev/null; then
     printf '%s\n' 'Expected work to reject Termux.' >&2
     exit 1
 fi
 
-legacy_case=$test_root/legacy
-mkdir -p -- "$legacy_case/user"
-write_environment "$legacy_case/environment" remote testbox
-write_os_release "$legacy_case/os-release" debian debian
-ln -s "$(cd "$setup_dir/.." && pwd)/shell/.zsh_plugins.txt" "$legacy_case/user/.zsh_plugins.txt"
-run_setup "$legacy_case/environment" "$legacy_case/os-release" "$legacy_case/user" links
-[[ ! -e $legacy_case/user/.zsh_plugins.txt && ! -L $legacy_case/user/.zsh_plugins.txt ]]
-
 conflict_case=$test_root/conflict
 mkdir -p -- "$conflict_case/user"
-write_environment "$conflict_case/environment" home testbox
-write_os_release "$conflict_case/os-release" arch
 touch "$conflict_case/user/.zshrc"
-if run_setup "$conflict_case/environment" "$conflict_case/os-release" "$conflict_case/user" links 2>/dev/null; then
+if link_home home "$conflict_case/user" 2>/dev/null; then
     printf '%s\n' 'Expected link conflict to fail.' >&2
     exit 1
 fi
@@ -167,7 +167,7 @@ mismatch_case=$test_root/mismatch
 mkdir -p -- "$mismatch_case/user"
 write_environment "$mismatch_case/environment" work work
 write_os_release "$mismatch_case/os-release" arch
-if run_setup "$mismatch_case/environment" "$mismatch_case/os-release" "$mismatch_case/user" links 2>/dev/null; then
+if run_setup "$mismatch_case/environment" "$mismatch_case/os-release" "$mismatch_case/user" bash 2>/dev/null; then
     printf '%s\n' 'Expected profile/OS mismatch to fail.' >&2
     exit 1
 fi
@@ -176,7 +176,7 @@ missing_case=$test_root/missing
 mkdir -p -- "$missing_case/user"
 printf 'OTHER=value\n' >"$missing_case/environment"
 write_os_release "$missing_case/os-release" arch
-if run_setup "$missing_case/environment" "$missing_case/os-release" "$missing_case/user" links 2>/dev/null; then
+if run_setup "$missing_case/environment" "$missing_case/os-release" "$missing_case/user" bash 2>/dev/null; then
     printf '%s\n' 'Expected missing machine identity to fail.' >&2
     exit 1
 fi
@@ -304,32 +304,6 @@ fi
     if version_at_least 0.10.4 0.11; then exit 1; fi
     if version_at_least 0.9.5 0.11; then exit 1; fi
 )
-
-# --relink replaces a wrong symlink; --adopt also backs up a real file. Plain links refuses both.
-mode_case=$test_root/mode
-mkdir -p -- "$mode_case/user"
-write_environment "$mode_case/environment" remote testbox
-write_os_release "$mode_case/os-release" debian debian
-ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
-printf 'mine\n' >"$mode_case/user/.vimrc"
-if run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" links 2>/dev/null; then
-    printf '%s\n' 'Expected links to refuse a wrong symlink and a real file.' >&2
-    exit 1
-fi
-if run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --relink" 2>/dev/null; then
-    printf '%s\n' 'Expected --relink to refuse a real file.' >&2
-    exit 1
-fi
-rm "$mode_case/user/.zshrc"
-ln -s /nonexistent/elsewhere "$mode_case/user/.zshrc"
-rm "$mode_case/user/.vimrc"
-run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --relink" >/dev/null
-[[ $(readlink "$mode_case/user/.zshrc") == */shell/.zshrc ]]
-rm "$mode_case/user/.vimrc" # a link from the previous step
-printf 'mine\n' >"$mode_case/user/.vimrc"
-run_setup "$mode_case/environment" "$mode_case/os-release" "$mode_case/user" "links --adopt" >/dev/null
-[[ -L $mode_case/user/.vimrc ]]
-grep -rqx mine "$mode_case/user/.local/state/whc/backups"
 
 # ssh and bash tasks add their lines once and keep the existing files.
 shell_case=$test_root/shellfiles

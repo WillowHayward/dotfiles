@@ -1,0 +1,4 @@
+# shortcuts/ and boot/ are installed as copies by `setup termux`.
+target = "~/.termux"
+include = ["/termux.properties", "/colors.properties"]
+when = "distro.termux"

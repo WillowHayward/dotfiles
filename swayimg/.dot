@@ -1,0 +1,3 @@
+target = "$XDG_CONFIG_HOME/swayimg"
+fold = true
+when = "desktop"

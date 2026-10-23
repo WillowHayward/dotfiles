@@ -7,7 +7,7 @@ task_desktop() {
     local -a packages
     mapfile -t packages < <(tier_packages desktop)
     install_packages "${packages[@]}"
-    link_groups desktop
+    link_stacks hypr swayimg walker misc foot mako gtk-3.0 gtk-4.0 xdg-desktop-portal systemd
     # Desktop colours outside the dotfiles: GTK 4 colour scheme and accent (gsettings), Walker, Firefox.
     if [[ $setup_home == "$HOME" ]] && command -v python3 >/dev/null 2>&1; then
         local theme

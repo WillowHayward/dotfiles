@@ -14,5 +14,5 @@ task_tmux() {
         clone_public https://github.com/tmux-plugins/tpm "$tpm_dir" "$TPM_REF"
     fi
 
-    link_groups tmux
+    link_stacks shell
 }

@@ -36,23 +36,17 @@ doctor_optional() {
 }
 
 doctor_links() {
-    local group item source target
-    local -a groups
-    local -a LINKS=()
-    mapfile -t groups < <(profile_link_groups)
-    for group in "${groups[@]}"; do link_group "$group"; done
     printf 'links\n'
-    for item in "${LINKS[@]}"; do
-        source=${item%%|*}
-        target=${item#*|}
-        if paths_match "$source" "$target"; then
-            doctor_ok "$target"
-        elif [[ -e $target || -L $target ]]; then
-            doctor_miss "$target exists but is not linked to the repo (links --relink / --adopt)"
-        else
-            doctor_miss "$target is not linked (just setup links)"
-        fi
-    done
+    if ! command -v dotdot >/dev/null 2>&1; then
+        doctor_miss "dotdot is not installed (see Readme.md)"
+        return
+    fi
+    if dotdot_run status --check; then
+        doctor_ok "every link is in place (dotdot status)"
+    else
+        doctor_miss "links need attention (just link; --relink or --backup for conflicts):"
+        dotdot_run --color never status | sed 's/^/           /' || true
+    fi
 }
 
 # Plugins on disk should match lazy-lock.json (Neovim reports drift by name).

@@ -1,0 +1,4 @@
+# logind.conf is copied into /etc by `setup manual-lock`.
+target = "$XDG_CONFIG_HOME/systemd"
+include = ["/user/*.service"]
+when = "desktop"

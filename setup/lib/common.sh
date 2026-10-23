@@ -213,15 +213,23 @@ install_optional_packages() {
     ((${#available[@]} == 0)) || install_packages "${available[@]}"
 }
 
-paths_match() {
-    local source=$1 target=$2
-    [[ -L $target ]] || return 1
-    [[ $(readlink -f -- "$target") == "$(readlink -f -- "$source")" ]]
+# dotdot (github.com/WillowHayward/dotdot) links the stacks described by the .dot files,
+# for this machine's profile, pointed at the setup home when tests redirect it.
+dotdot_run() {
+    command -v dotdot >/dev/null 2>&1 || die "dotdot is not installed; see Readme.md."
+    local -a args=(--repo "$repo_root" --profile "$WHC_PROFILE")
+    [[ $setup_home == "$HOME" ]] || args+=(--home "$setup_home")
+    dotdot "${args[@]}" "$@"
 }
 
-# How link_set treats a target that is not already the right link:
-#   strict (default) refuse; relink replace a wrong symlink (never a real file);
-#   adopt replace a wrong symlink, and move a real file or directory to a backup first.
+# Link the named stacks, or every stack. Conflicts stop setup; resolve them with dotdot.
+# shellcheck disable=SC2120 # the tasks pass stack names
+link_stacks() {
+    dotdot_run apply "$@" ||
+        die "resolve the conflicts above (dotdot apply --relink, or --backup), then run setup again."
+}
+
+# Move a file setup is about to replace into this run's backup directory.
 link_backup_dir=
 backup_target() {
     local target=$1
@@ -230,49 +238,4 @@ backup_target() {
     mkdir -p -- "$link_backup_dir/$(dirname -- "${target#/}")"
     mv -- "$target" "$link_backup_dir/${target#/}"
     printf 'Moved %s to %s\n' "$target" "$link_backup_dir/${target#/}"
-}
-
-check_link() {
-    local source=$1 target=$2
-    [[ -e $source ]] || die "link source does not exist: $source"
-    if [[ -e $target || -L $target ]]; then
-        paths_match "$source" "$target" && return 0
-        case "${WHC_LINK_MODE:-strict}" in
-        relink) [[ -L $target ]] && return 0 ;;
-        adopt) return 0 ;;
-        esac
-        printf 'Refusing to replace %s (use --relink for a wrong symlink, --adopt to back up a real file)\n' "$target" >&2
-        return 1
-    fi
-}
-
-create_link() {
-    local source=$1 target=$2
-    paths_match "$source" "$target" && return 0
-    if [[ -e $target || -L $target ]]; then
-        if [[ -L $target ]]; then
-            rm -- "$target"
-        else
-            backup_target "$target"
-        fi
-    fi
-    mkdir -p -- "$(dirname -- "$target")"
-    ln -s -- "$source" "$target"
-    printf 'Linked %s -> %s\n' "$target" "$source"
-}
-
-link_set() {
-    local -n requested_links=$1
-    local item source target failed=false
-    for item in "${requested_links[@]}"; do
-        source=${item%%|*}
-        target=${item#*|}
-        check_link "$source" "$target" || failed=true
-    done
-    [[ $failed == false ]] || die "resolve the link conflicts above and run setup again."
-    for item in "${requested_links[@]}"; do
-        source=${item%%|*}
-        target=${item#*|}
-        create_link "$source" "$target"
-    done
 }

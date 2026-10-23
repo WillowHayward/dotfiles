@@ -1,0 +1,18 @@
+# dotdot repository settings: https://github.com/WillowHayward/dotdot
+# Each linked directory has its own .dot saying where its files go. setup passes
+# --profile "$WHC_PROFILE"; interactive shells export it as DOTDOT_PROFILE.
+
+[repo]
+min_version = "1.0"
+
+[profiles.remote]
+tags = []
+
+[profiles.work]
+tags = ["dev"]
+
+[profiles.mobile]
+tags = ["dev"]
+
+[profiles.home]
+tags = ["dev", "desktop"]

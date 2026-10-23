@@ -65,7 +65,7 @@ configure_termux_sshd() {
 task_termux() {
     [[ $PACKAGE_FAMILY == termux ]] || die "termux only applies to profiles installed in Termux."
     install_packages termux-api termux-services openssh fzf mosh
-    link_groups termux
+    link_stacks termux
     install_termux_font
     install_script_copies "$repo_root/termux/shortcuts" "$setup_home/.shortcuts"
     install_script_copies "$repo_root/termux/boot" "$setup_home/.termux/boot"

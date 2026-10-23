@@ -1,0 +1,7 @@
+target = "$XDG_CONFIG_HOME/hypr"
+fold = true
+when = "desktop"
+
+[[link]]
+src = "exit.sh"
+dst = "$XDG_BIN_HOME/hypr-exit"

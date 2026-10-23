@@ -7,9 +7,9 @@ mod setup
 default:
     @just --list
 
-# Link profile-appropriate dotfiles into the home directory.
-link:
-    @just setup links
+# Link the profile's dotfiles with dotdot (pass --relink or --backup to resolve conflicts).
+link *flags:
+    dotdot apply {{ flags }}
 
 # List the helper scripts that can be run with `just run`.
 scripts:

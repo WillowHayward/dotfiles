@@ -45,5 +45,5 @@ task_nvim() {
             install_neovim_release
         fi
     fi
-    link_groups nvim
+    link_stacks nvim
 }

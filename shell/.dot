@@ -1,0 +1,14 @@
+# zsh/ and the rest are sourced from the repository, not linked.
+
+[[link]]
+src = ".zshrc"
+dst = "~/.zshrc"
+
+[[link]]
+src = ".tmux.conf"
+dst = "~/.tmux.conf"
+
+[[link]]
+src = ".tmux.session.conf"
+dst = "~/.tmux.session.conf"
+when = "dev"

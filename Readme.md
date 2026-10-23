@@ -2,7 +2,7 @@ These are the dotfiles I use to make my dev experience more universal across dev
 
 # Usage
 
-Install Git and a module-capable version of [just](https://github.com/casey/just), then clone this repository to `~/dotfiles` (shell and scripts use `$WHC_DOTFILES_DIR`, defaulting to that path). Without `just`, run the same tasks with `setup/setup.sh <task>`.
+Install Git, a module-capable version of [just](https://github.com/casey/just) and [dotdot](https://github.com/WillowHayward/dotdot), which links the dotfiles (see [Symlinks](#symlinks)), then clone this repository to `~/dotfiles` (shell and scripts use `$WHC_DOTFILES_DIR`, defaulting to that path). Without `just`, run the same tasks with `setup/setup.sh <task>`.
 
 Initialize the machine identity once, then run every setup task the machine's profile includes:
 
@@ -26,7 +26,8 @@ just setup all
 Install [Termux](https://termux.dev) from F-Droid or its GitHub releases, together with **Termux:API**, **Termux:Boot** and **Termux:Widget** from the same source (builds from different sources cannot share permissions; the Play Store build is a separate, limited one). Exempt Termux from battery optimisation so sshd survives Doze, and open Termux:Boot once so Android lets it run at start-up.
 
 ```sh
-pkg install git just
+pkg install git just rust
+cargo install --locked --git https://github.com/WillowHayward/dotdot
 git clone https://github.com/WillowHayward/dotfiles ~/dotfiles && cd ~/dotfiles
 just setup init-system   # mobile for a daily phone, remote for a test device
 just setup all           # includes `just setup termux`
@@ -60,7 +61,6 @@ On a new server, `scripts/create-user.sh` (run as root) creates a login user wit
 |---|---|
 | `init-system` | Write `WHC_PROFILE` and `WHC_DEVICE` to `/etc/environment` (`$PREFIX/etc/environment` in Termux) |
 | `packages [--list\|--diff]` | Install the profile's packages; `--list` prints the manifest, `--diff` shows packages installed outside it |
-| `links [--relink\|--adopt]` | Link the profile's dotfiles. Strict by default; `--relink` replaces wrong symlinks, `--adopt` also moves real files to `~/.local/state/whc/backups/` |
 | `shell`, `tmux`, `nvim`, `node`, `python` | Zsh and Antidote; tmux and TPM; Neovim; fnm and Node (plus the tree-sitter CLI); uv |
 | `ssh`, `bash` | Add an `Include` to `~/.ssh/config` (per-host files in `~/.ssh/config.d/`, shared defaults last) and a source line to `~/.bashrc`, without replacing either file |
 | `docker`, `harden` | Docker Engine from Docker's apt repository; sshd/updates/firewall hardening (remote) |
@@ -74,7 +74,7 @@ Every download is pinned and checksummed in `setup/pins.env` (Neovim, fnm, uv, t
 
 ## Testing
 
-`just check` validates `just` (including that every recipe has a doc comment), shell, zsh and Python syntax, and runs shellcheck when installed. `just test` adds the hermetic setup tests (fake `/etc/environment`, fake os-release, shimmed package managers), the zsh loader tests, a stub-based load of the Hyprland config that fails on an undescribed bind, and the project-picker unit tests. `just test-container remote` or `just test-container work` runs that profile's real setup in a throw-away Debian container (needs docker and network) and checks that zsh, git and, for `work`, Neovim start cleanly on a first run; `just test-container home` checks that every Arch package name resolves. CI runs all of this, plus a history-wide secret scan, on every push. A pre-commit hook (enabled by `just setup links`) runs gitleaks on staged changes and `just check`.
+`just check` validates `just` (including that every recipe has a doc comment), shell, zsh and Python syntax, and runs shellcheck when installed. `just test` adds the hermetic setup tests (fake `/etc/environment`, fake os-release, shimmed package managers), the zsh loader tests, a stub-based load of the Hyprland config that fails on an undescribed bind, and the project-picker unit tests. `just test-container remote` or `just test-container work` runs that profile's real setup in a throw-away Debian container (needs docker and network) and checks that zsh, git and, for `work`, Neovim start cleanly on a first run; `just test-container home` checks that every Arch package name resolves. CI runs all of this, plus a history-wide secret scan, on every push. A pre-commit hook (enabled by `just setup all`) runs gitleaks on staged changes and `just check`.
 
 ## Environment variables
 
@@ -119,7 +119,13 @@ Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh
 
 ## Symlinks
 
-`just setup links` creates the links for the machine's profile. Existing correct links are accepted; conflicting files or links are reported and never replaced (see `--relink` and `--adopt` above).
+[dotdot](https://github.com/WillowHayward/dotdot) manages the links, so it must be installed before setup: `cargo install --locked --git https://github.com/WillowHayward/dotdot` (or `cargo install --path` from a checkout). Each linked directory has a `.dot` file saying where its files go and on which profiles (`when = "dev"`, `when = "desktop"`, `when = "distro.termux"`); the profiles themselves are in the top-level `.dot`. `just setup all` and the tasks that need their configuration (`shell`, `tmux`, `nvim`, `node`, `termux`, `desktop`, `manual-lock`) run `dotdot apply` for the machine's profile.
+
+Shells export `DOTDOT_PROFILE`, so dotdot can be used directly from anywhere:
+
+- `dotdot` (or `dotdot status`) shows what is linked, missing or in the way; `just doctor` includes it.
+- `just link` (`dotdot apply`) links everything. It checks every target before changing anything, leaves correct links alone, and removes links whose source has gone or whose profile no longer wants them. Conflicting files are reported and never replaced: `--relink` replaces wrong symlinks, `--backup` also moves real files to `~/.local/state/dotdot/backups/` (`dotdot restore` puts them back).
+- `dotdot why PATH` says which `.dot` rule owns a path, and `dotdot adopt PATH --stack NAME` moves a file into the repository and links it back.
 
 | dotfile | System location | Profiles | Description |
 |---|---|---|---|
