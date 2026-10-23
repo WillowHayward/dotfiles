@@ -1,3 +1,6 @@
+# Colours: whc-theme writes ~/.config/walker/themes/whc/style.css (`just theme-apply`); layouts fall back to the default theme.
+theme = "whc"
+
 # Reserve # for the project provider; pass application arguments with ::.
 global_argument_delimiter = "::"
 
