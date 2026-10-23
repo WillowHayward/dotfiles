@@ -33,7 +33,7 @@ just setup all           # includes `just setup termux`
 termux-setup-storage     # optional: shared storage (Downloads, the Obsidian vault) at ~/storage
 ```
 
-Then restart Termux. `just setup termux` links the Dracula colours and `termux.properties` (two rows of extra keys: `PFX` sends the tmux prefix, the back button is Escape), installs a pinned JetBrains Mono Nerd Font, installs the **ssh** widget shortcut (pick a host from `~/.ssh/config.d`, attach its `general` tmux session over mosh when possible) and a Termux:Boot script that starts termux-services. Once `~/.ssh/authorized_keys` exists, rerunning it turns password logins off and enables sshd on port 8022. A `remote` phone also holds a wake lock at boot so it stays reachable; a `mobile` one does not, to save battery.
+Then restart Termux. `just setup termux` links the theme colours (`termux/colors.properties`, from whc-theme) and `termux.properties` (two rows of extra keys: `PFX` sends the tmux prefix, the back button is Escape), installs a pinned JetBrains Mono Nerd Font, installs the **ssh** widget shortcut (pick a host from `~/.ssh/config.d`, attach its `general` tmux session over mosh when possible) and a Termux:Boot script that starts termux-services. Once `~/.ssh/authorized_keys` exists, rerunning it turns password logins off and enables sshd on port 8022. A `remote` phone also holds a wake lock at boot so it stays reachable; a `mobile` one does not, to save battery.
 
 Each phone signs commits with its own key: add that key to GitHub as a signing key, and to `~/.ssh/allowed_signers` on the other machines.
 
@@ -43,7 +43,7 @@ Each phone signs commits with its own key: add that key to GitHub as a signing k
 
 | Profile | Environment | What it gets |
 |---|---|---|
-| `remote` | Debian family, servers; Termux on a test phone | The lightweight baseline: zsh with Antidote, the Dracula prompt, autosuggestions and syntax highlighting, fzf, zoxide, atuin, delta, tmux, Git config, plain Vim (with Ctrl-hjkl pane navigation), a server comfort suite (htop, ncdu, rsync, jq, tree, fd, bat, eza), Docker (`just setup docker`), an SSH defaults include and a login banner. No Neovim, Node, Taskwarrior or desktop. |
+| `remote` | Debian family, servers; Termux on a test phone | The lightweight baseline: zsh with Antidote, the themed Powerlevel10k prompt, autosuggestions and syntax highlighting, fzf, zoxide, atuin, delta, tmux, Git config, plain Vim (with Ctrl-hjkl pane navigation), a server comfort suite (htop, ncdu, rsync, jq, tree, fd, bat, eza), Docker (`just setup docker`), an SSH defaults include and a login banner. No Neovim, Node, Taskwarrior or desktop. |
 | `work` | Debian family, WSL | `remote` plus the developer tooling: Neovim 0.11+, fnm/Node, uv, direnv, lazygit, gh, shellcheck, Taskwarrior, build tools and tmux project layouts. WSL templates with `just setup wsl`. |
 | `mobile` | Termux (Android), a daily phone | `remote`'s baseline (without Docker) plus the developer tooling, all from `pkg`: Neovim, Node LTS, uv, tree-sitter with clang, direnv, lazygit, gh, shellcheck, Taskwarrior. No AI tools (drive the workstation's agents instead) and no Godot. |
 | `home` | Arch Linux | `work` plus the Hyprland desktop (`just setup desktop`): Hyprland, Walker/Elephant, Flameshot, foot, mako, swayimg, mime handlers. Login and lock-screen configuration stays opt-in (`just setup manual-lock`). Godot tooling. |
@@ -94,7 +94,7 @@ Tab completion offers the immediate subdirectories (hidden ones once you type a 
 
 - **Loading:** `.zshrc` sources `core/`, then `dev/` where `WHC_DEV` is set, then the profile file. Local terminals hand over to tmux right after the environment and `PATH` are set, so the full init runs once, inside tmux.
 - **Plugins:** `shell/plugins/{early,core,dev,last}.txt`, every one pinned to a commit; bundles are cached under `~/.cache/whc/`. `just zsh-refresh` forgets the caches (and the completion dump, which is otherwise rebuilt daily).
-- **History:** Ctrl-R is Atuin when installed, otherwise fzf. fzf uses `fd` and the Dracula colours.
+- **History:** Ctrl-R is Atuin when installed, otherwise fzf. fzf uses `fd` and the whc-theme colours.
 - **direnv:** `use_fnm` in a project's `.envrc` puts its Node version on `PATH`; `direnv allow` approves a file.
 - **Remote logins:** SSH logins on a `remote` machine print a banner from `shell/motd.d/*.zsh` (device, uptime/load/memory/disk, containers). Add a numbered file there to add a segment; `WHC_MOTD=0` silences it.
 - **Not tracked:** `shell/zsh/profile/<profile>.local.zsh` (personal aliases, hosts), `~/.gitconfig.local`, `.env`.
@@ -105,9 +105,15 @@ Tab completion offers the immediate subdirectories (hidden ones once you type a 
 
 ## Terminal appearance
 
-Tmux uses Neovim's Dracula palette with a compact session/window bar. Zsh loads the official [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote, including its two-line layout, icons and Git status. The configuration uses explicit Dracula RGB colours so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration lives in `shell/zsh/core/prompt.zsh`. Use a Nerd Font (the `home` desktop installs the symbols fallback) for its icons.
+Colours come from [whc-theme](https://github.com/WillowHayward/whc-theme), vendored in `whc-theme/` (see its README). The default is **Meadow Night** with a per-machine variant: each machine (`WHC_DEVICE`, else the short hostname) gets its own background tint, and its brand colour (the family's Light step) on the prompt's machine segment, the tmux machine pill, the cursor and Hyprland's 2 px active border. One committed render serves every machine, because the tmux, zsh, Neovim, lazygit and Hyprland files pick the machine when they load; foot, mako and Termux get the device-neutral base.
 
-The first prompt segment is the machine prefix: the OS logo and `WHC_DEVICE` (short hostname if unset); a local shell on `home` shows just the logo. It is in the theme's muted blue everywhere except `remote` machines and SSH sessions, where it is **vibrant red** (and so is the tmux session pill). A very small bash fallback (`just setup bash`) shows a red `[device]` prefix in the same situations.
+- `just theme-apply [theme]` renders a theme into the dotfiles and this machine's apps outside them (GTK 4 colour scheme and accent via gsettings, Walker, Firefox's `userChrome.css`, Konsole where installed); `just setup desktop` runs the machine part too. `just theme-apply dracula` goes back to the original Dracula; `just theme list` shows the themes and `just theme targets` every target.
+- `just theme-sync` refreshes the vendored copy from `~/projects/whc-theme` (or `$WHC_THEME_DIR`) and re-renders.
+- Machines without the dotfiles (the Steam devices' Konsole) are themed from the whc-theme repo: `just remote <host>` there.
+
+Zsh loads the [Dracula Powerlevel10k theme](https://github.com/dracula/powerlevel10k) through Antidote for its two-line layout, icons and Git status, and `shell/themes/whc-theme.zsh` re-colours it with explicit RGB colours, so it does not depend on the terminal ANSI palette. The adapted upstream theme lives in `shell/themes/dracula-powerlevel10k/p10k.zsh`; local integration lives in `shell/zsh/core/prompt.zsh`. Use a Nerd Font (the `home` desktop installs the symbols fallback) for its icons.
+
+The first prompt segment is the machine prefix: the OS logo and `WHC_DEVICE` (short hostname if unset); a local shell on `home` shows just the logo. It is in the machine's brand colour everywhere except `remote` machines and SSH sessions, where it is **vibrant red** (and so is the tmux session pill). A very small bash fallback (`just setup bash`) shows a red `[device]` prefix in the same situations.
 
 Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh/core/prompt.zsh"` in an existing shell. Reload tmux with `tmux source-file ~/.tmux.conf`.
 
@@ -129,7 +135,7 @@ Open a new shell to load the prompt, or run `source "$WHC_DOTFILES_DIR/shell/zsh
 | node/.npmrc, node/.yarnrc.yml | ~/.npmrc, ~/.yarnrc.yml | home, work, mobile | NPM and Yarn settings |
 | taskwarrior/.taskrc | ~/.taskrc | home, work, mobile | Taskwarrior config |
 | direnv/, lazygit/ | ~/.config/direnv, ~/.config/lazygit | home, work, mobile |
-| termux/termux.properties, termux/colors.properties | ~/.termux/ | Termux | Extra keys and settings; Dracula colours. The shortcut and boot script are installed as copies (see the Termux section) | direnv helpers; lazygit with delta |
+| termux/termux.properties, termux/colors.properties | ~/.termux/ | Termux | Extra keys and settings; theme colours. The shortcut and boot script are installed as copies (see the Termux section) | direnv helpers; lazygit with delta |
 | hypr/, swayimg/, walker/, foot/, mako/, gtk-3.0/, gtk-4.0/, xdg-desktop-portal/, misc/, systemd/user/ | ~/.config/... | home | The desktop |
 
 ## Neovim
