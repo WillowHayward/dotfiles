@@ -1,8 +1,8 @@
 # lazygit: delta for diffs, Neovim as the editor, Dracula-ish borders.
 git:
-  paging:
-    colorArg: always
-    pager: delta --dark --paging=never
+  diffRenderers:
+    - colorArg: always
+      command: delta --dark --paging=never
 os:
   editPreset: nvim
 gui:
