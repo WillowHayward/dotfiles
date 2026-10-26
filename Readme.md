@@ -60,7 +60,7 @@ On a new server, `scripts/create-user.sh` (run as root) creates a login user wit
 | Task | Does |
 |---|---|
 | `init-system` | Write `WHC_PROFILE` and `WHC_DEVICE` to `/etc/environment` (`$PREFIX/etc/environment` in Termux) |
-| `packages [--list\|--diff]` | Install the profile's packages; `--list` prints the manifest, `--diff` shows packages installed outside it |
+| `packages [--list\|--diff]` | Install the profile's packages; `--list` prints the manifest, `--diff` shows packages installed outside it. Machine-only packages (kernels, drivers) go in an untracked `setup/packages.local`, one per line, so `--diff` knows them |
 | `shell`, `tmux`, `nvim`, `node`, `python` | Zsh and Antidote; tmux and TPM; Neovim; fnm and Node (plus the tree-sitter CLI); uv |
 | `ssh`, `bash` | Add an `Include` to `~/.ssh/config` (per-host files in `~/.ssh/config.d/`, shared defaults last) and a source line to `~/.bashrc`, without replacing either file |
 | `docker`, `harden` | Docker Engine from Docker's apt repository; sshd/updates/firewall hardening (remote) |

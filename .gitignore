@@ -11,3 +11,4 @@ docs/
 setup/devices.local
 hypr/local.lua
 nvim/lua/willow.lua
+setup/packages.local

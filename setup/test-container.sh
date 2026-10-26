@@ -47,7 +47,7 @@ pacman -Sy --noconfirm >/dev/null 2>&1
 export PACKAGE_FAMILY=arch
 source /src/setup/tasks/packages.sh
 status=0
-for tier in core dev desktop; do
+for tier in core dev desktop apps; do
     while read -r package; do
         pacman -Si "$package" >/dev/null 2>&1 || { printf 'FAIL: %s/%s is not in the Arch repositories\n' "$tier" "$package" >&2; status=1; }
     done < <(tier_packages "$tier")

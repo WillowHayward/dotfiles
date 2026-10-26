@@ -1,23 +1,40 @@
 #!/usr/bin/env bash
 
 # Package names per tier. Core is installed on every profile and dev adds the
-# developer toolchain (home, work and mobile). The desktop tier (the Hyprland session,
-# home only) is installed by task_desktop.
+# developer toolchain (home, work and mobile). The desktop tier (the Hyprland session)
+# and the apps tier (personal desktop applications) are home only, installed by
+# task_desktop. The base and aur tiers are never installed: they only tell
+# `packages --diff` that a package is expected.
 tier_packages() {
     case "$PACKAGE_FAMILY:$1" in
     arch:core)
         printf '%s\n' git curl zsh tmux ripgrep fzf bat vim less openssh git-delta fd \
-            htop ncdu rsync jq unzip tree man-db eza zoxide atuin
+            htop ncdu rsync jq unzip tree man-db eza zoxide atuin just wget lsof mtr btop
         ;;
     arch:dev)
-        printf '%s\n' base-devel neovim lazygit github-cli python tree-sitter-cli direnv \
-            shellcheck shfmt gitleaks task stylua yamllint
+        # uv also comes from task_python; cmake builds the patched Flameshot.
+        printf '%s\n' base-devel neovim lazygit github-cli python uv tree-sitter-cli direnv \
+            shellcheck shfmt gitleaks task stylua yamllint cmake git-filter-repo sops age \
+            docker docker-buildx docker-compose
         ;;
     arch:desktop)
         printf '%s\n' hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland \
             xdg-desktop-portal-gtk uwsm foot thunar firefox udiskie mako grim flameshot swayimg \
             wl-clipboard pipewire wireplumber playerctl brightnessctl ddcutil libnotify \
-            noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols
+            noto-fonts noto-fonts-emoji adwaita-fonts ttf-nerd-fonts-symbols \
+            networkmanager iwd bluez bluez-utils gnome-keyring gvfs-mtp gvfs-smb tumbler
+        ;;
+    arch:apps)
+        printf '%s\n' chromium bitwarden rbw discord inkscape krita godot gparted \
+            proton-vpn-gtk-app proton-vpn-cli systemd-resolvconf restic fuse2
+        ;;
+    arch:aur)
+        # Installed by hand (yay); the desktop needs the first three.
+        printf '%s\n' walker-bin elephant-all hyprmon-bin yay chatgpt-desktop linnote md-viewer-bin
+        ;;
+    arch:base)
+        # The installer's job, not the dotfiles'; manual-lock installs the greeter.
+        printf '%s\n' base linux linux-firmware sudo grub efibootmgr greetd greetd-tuigreet
         ;;
     debian:core)
         printf '%s\n' git curl ca-certificates zsh tmux ripgrep fzf bat vim less openssh-client \
@@ -63,7 +80,17 @@ manifest_packages() {
         while read -r name; do printf '%s\t%s (optional)\n' "$name" "$tier"; done < <(tier_optional_packages "$tier")
     done
     if profile_has desktop; then
-        while read -r name; do printf '%s\tdesktop\n' "$name"; done < <(tier_packages desktop)
+        for tier in desktop apps aur; do
+            while read -r name; do printf '%s\t%s\n' "$name" "$tier"; done < <(tier_packages "$tier")
+        done
+    fi
+    while read -r name; do printf '%s\tbase\n' "$name"; done < <(tier_packages base)
+    # Machine-specific packages (drivers, kernels), one per line in an untracked file.
+    local local_file=$repo_root/setup/packages.local
+    if [[ -r $local_file ]]; then
+        while read -r name; do
+            [[ -n $name && $name != \#* ]] && printf '%s\tlocal\n' "$name"
+        done <"$local_file"
     fi
 }
 

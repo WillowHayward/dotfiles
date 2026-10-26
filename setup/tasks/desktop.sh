@@ -6,6 +6,7 @@ task_desktop() {
     [[ $WHC_PROFILE == home ]] || die "desktop is only supported by the home profile."
     local -a packages
     mapfile -t packages < <(tier_packages desktop)
+    mapfile -t -O "${#packages[@]}" packages < <(tier_packages apps)
     install_packages "${packages[@]}"
     link_stacks hypr swayimg walker misc foot mako gtk-3.0 gtk-4.0 xdg-desktop-portal systemd
     # Desktop colours outside the dotfiles: GTK 4 colour scheme and accent (gsettings), Walker, Firefox.
@@ -24,6 +25,6 @@ task_desktop() {
         systemctl --user daemon-reload || warn "could not reload the systemd user manager."
         systemctl --user enable elephant.service || warn "could not enable elephant.service."
     fi
-    warn "AUR packages are not installed automatically: walker-bin elephant-all hyprmon-bin."
+    warn "AUR packages are not installed automatically: $(tier_packages aur | paste -sd' ')."
     printf '%s\n' 'Desktop configured. Restart Elephant to load the project and session menus.'
 }
