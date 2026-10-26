@@ -1,0 +1,5 @@
+# Created by whc-rollout.py (reversible: python3 -I ~/tmp/whc-rollout.py rollback)
+# TODO: no vault project note for Dotfiles yet (Outcomes 1.9); code from Project Codes. Public repository, but DOT is the one place .whc/ is committed
+name: Dotfiles
+code: DOT
+kind: bau
