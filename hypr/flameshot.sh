@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Native-resolution active-output capture with Flameshot's existing editor.
-# Usage: flameshot.sh [clipboard|file]   (file saves under ~/Pictures/Screenshots)
+# Usage: flameshot.sh [clipboard|file]   (file saves under ~/pictures/Screenshots)
 set -euo pipefail
 mode=${1:-clipboard}
 binary="$HOME/.local/lib/flameshot-hyprland/flameshot"
@@ -17,7 +17,11 @@ IFS=$'\t' read -r output scale <<<"$monitor"
 case "$mode" in
 clipboard) destination=(--clipboard) ;;
 file)
-    directory=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
+    # user-dirs.dirs is not exported into the environment; read it like xdg-user-dir does.
+    user_dirs=${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs
+    # shellcheck disable=SC1090
+    [[ -n ${XDG_PICTURES_DIR:-} || ! -r $user_dirs ]] || source "$user_dirs"
+    directory=${XDG_PICTURES_DIR:-$HOME/pictures}/Screenshots
     mkdir -p -- "$directory"
     destination=(--path "$directory")
     ;;

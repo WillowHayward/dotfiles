@@ -54,7 +54,7 @@ for _, value in ipairs(programsKeybinds) do
     bindSuper(value.description, value.cmd, value.key)
 end
 
--- Screenshots: the capture is copied, Shift+Print also saves it to ~/Pictures/Screenshots.
+-- Screenshots: the capture is copied, Shift+Print also saves it to ~/pictures/Screenshots.
 bindStandard("Screenshot to the clipboard", function()
     utils.takeScreenshot("clipboard")
 end, "PRINT")

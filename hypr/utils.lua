@@ -32,7 +32,7 @@ local function bindStandard(description, action, ...)
 end
 
 -- Native pixels and output-name selection for mixed-scale monitors (see flameshot.md).
--- mode "clipboard" copies the capture; "file" saves it under ~/Pictures/Screenshots.
+-- mode "clipboard" copies the capture; "file" saves it under ~/pictures/Screenshots.
 local function takeScreenshot(mode)
     hl.exec_cmd('"$HOME/.config/hypr/flameshot.sh" ' .. (mode or "clipboard"))
 end
