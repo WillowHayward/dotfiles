@@ -24,3 +24,6 @@ vim.api.nvim_create_autocmd("FileType", {
         vim.opt_local.spell = true
     end,
 })
+
+-- The start screen in whc.splash replaces the built-in intro.
+vim.opt.shortmess:append("I")

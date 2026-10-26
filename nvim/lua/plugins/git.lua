@@ -69,7 +69,7 @@ return {
         dependencies = { "nvim-lua/plenary.nvim", "sindrets/diffview.nvim", "nvim-telescope/telescope.nvim" },
         opts = { integrations = { diffview = true, telescope = true } },
         keys = {
-            { "<leader>gn", "<cmd>Neogit<CR>", desc = "Neogit status" },
+            { "<leader>gg", "<cmd>Neogit<CR>", desc = "Neogit status" },
             { "<leader>gC", "<cmd>Neogit commit<CR>", desc = "Neogit commit" },
         },
     },

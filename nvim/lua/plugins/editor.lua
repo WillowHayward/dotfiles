@@ -15,7 +15,7 @@ return {
                 desc = "Find in workspace",
             },
             {
-                "<C-t>",
+                "<leader>ff",
                 function()
                     require("whc.project").find_files()
                 end,
@@ -29,7 +29,7 @@ return {
                 desc = "Search current string in workspace",
             },
             {
-                "<leader>fP",
+                "<leader>pp",
                 function()
                     require("whc.project").switch()
                 end,
@@ -50,7 +50,7 @@ return {
                 desc = "Find help tags",
             },
             {
-                "<C-r>",
+                "<leader>fr",
                 function()
                     require("telescope.builtin").oldfiles()
                 end,
@@ -109,6 +109,7 @@ return {
             default_file_explorer = true,
             view_options = { show_hidden = true },
             float = { padding = 2, max_width = 0.8, max_height = 0.8, border = "rounded" },
+            keymaps = { ["q"] = { "actions.close", mode = "n" } }, -- As well as Oil's own <C-c>
         },
         keys = {
             {

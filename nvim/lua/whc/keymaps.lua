@@ -19,7 +19,7 @@ set_keymap("n", "<leader><leader>", "<cmd>nohlsearch<CR>", "Clear search highlig
 -- Refresh
 set_keymap("n", "<leader>e", "<cmd>e<CR>", "Reload buffer")
 
--- Redo (<C-r> is taken by "open recent file")
+-- Redo on U as well as the default <C-r>
 set_keymap("n", "U", "<cmd>redo<CR>", "Redo last undone change")
 
 -- Indenting a visual selection remains in visual mode afterwards

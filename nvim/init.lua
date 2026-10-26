@@ -10,3 +10,4 @@ require("whc.keymaps")
 if require("whc.profile").features.godot then
     require("whc.server")
 end
+require("whc.splash").setup()

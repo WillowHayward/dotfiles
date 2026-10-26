@@ -83,7 +83,7 @@ return {
         },
         keys = {
             {
-                "<leader>gg",
+                "<leader>gL",
                 function()
                     Snacks.lazygit()
                 end,
@@ -95,13 +95,6 @@ return {
                     Snacks.lazygit.log_file()
                 end,
                 desc = "LazyGit log for this file",
-            },
-            {
-                "<leader>gL",
-                function()
-                    Snacks.lazygit.log()
-                end,
-                desc = "LazyGit log",
             },
             {
                 "<leader>gx",
