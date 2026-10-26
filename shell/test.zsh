@@ -11,7 +11,7 @@ printf '#!/bin/sh\n' > "$home/.local/share/fnm/fnm" # `fnm env` prints nothing
 chmod +x "$home/.local/share/fnm/fnm"
 
 HOME=$home
-unset FNM_DIR FNM_MULTISHELL_PATH
+unset FNM_DIR FNM_MULTISHELL_PATH PNPM_HOME
 path=(/usr/bin /bin)
 whc_source() { source "$root/zsh/$1" }
 

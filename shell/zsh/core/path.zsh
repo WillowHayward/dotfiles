@@ -7,3 +7,10 @@ for dir in "$HOME/.cargo/bin" "$HOME/android-studio/bin" /opt/nvim-linux64/bin; 
     [[ -d $dir ]] && path+=("$dir")
 done
 unset dir
+
+# pnpm's managed installation and global executables.
+export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
+# An if, not &&: a false test as the last command would make sourcing this file fail.
+if [[ -d "$PNPM_HOME/bin" ]]; then
+    path=("$PNPM_HOME/bin" $path)
+fi
