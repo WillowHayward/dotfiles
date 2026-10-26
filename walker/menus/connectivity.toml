@@ -1,6 +1,6 @@
 name = "connectivity"
 name_pretty = "Connectivity"
-description = "Wi-Fi and radios (Bluetooth and audio have their own prefixes)"
+description = "Wi-Fi, DNS and radios (Bluetooth and audio have their own prefixes)"
 icon = "network-wireless"
 action = "%VALUE%"
 fixed_order = true
@@ -29,3 +29,9 @@ text = "Airplane mode off"
 icon = "airplane-mode-disabled"
 keywords = ["flight", "radios", "rfkill"]
 value = "rfkill unblock all"
+
+[[entries]]
+text = "Toggle Headscale DNS"
+icon = "network-vpn"
+keywords = ["dns", "pihole", "pi-hole", "tailscale", "headscale", "toggle"]
+value = "sh -c '\"${WHC_INFRA_DIR:-$HOME/infra}/cowgirl/tailscale/scripts/dns\" toggle --notify'"

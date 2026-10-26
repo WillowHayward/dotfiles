@@ -29,3 +29,17 @@ text = "Log Out"
 icon = "system-log-out"
 keywords = ["logout", "sign out"]
 value = "hypr-exit"
+
+# Opens a terminal: workspace-eject asks for sudo and lists anything still holding the drive.
+[[entries]]
+text = "Eject workspace drive"
+icon = "media-eject"
+keywords = ["undock", "unmount", "crucial", "usb", "safely remove"]
+value = "foot --title='Eject workspace' --hold workspace-eject"
+
+# Kills whatever still holds the drive (SIGTERM, then SIGKILL after 5s) instead of listing it.
+[[entries]]
+text = "Force eject workspace drive"
+icon = "media-eject"
+keywords = ["undock", "unmount", "crucial", "usb", "kill"]
+value = "foot --title='Eject workspace' --hold workspace-eject --force"
