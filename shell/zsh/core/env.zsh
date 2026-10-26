@@ -68,10 +68,14 @@ else
     export WHC_LOCAL=true
 fi
 
-# Roots for the cdd/cdp/cdi shortcuts and the tmux project picker; .env may override them.
+# Roots for the cdd/cdp/cdi shortcuts and the tmux project picker. A machine with a data drive
+# sets them system-wide in /etc/environment; .env may override them; otherwise these defaults apply.
+# The optional WHC_LOCAL_PROJECTS_DIR/WHC_LOCAL_PROTO_DIR hold the projects kept on the internal
+# disk so they work undocked; a project lives in exactly one place and keeps its plain name.
 : ${WHC_PROJECTS_DIR:=$HOME/projects}
 : ${WHC_INFRA_DIR:=$HOME/infra}
-export WHC_PROJECTS_DIR WHC_INFRA_DIR
+: ${WHC_PROTO_DIR:=$HOME/prototypes}
+export WHC_PROJECTS_DIR WHC_INFRA_DIR WHC_PROTO_DIR
 
 # Servers do not always have Neovim; never leave EDITOR pointing at a missing binary.
 if (( $+commands[nvim] )); then

@@ -40,6 +40,14 @@ for bad in app/src .. . missing; do
     [[ $PWD == $home ]] || { print -u2 "cdp moved on rejected '$bad'"; exit 1 }
 done
 if cdp a b 2>/dev/null; then print -u2 "cdp accepted two arguments"; exit 1; fi
+# cdp also finds projects in WHC_LOCAL_PROJECTS_DIR, even when the main root is missing.
+export WHC_LOCAL_PROJECTS_DIR=$home/local
+mkdir -p "$WHC_LOCAL_PROJECTS_DIR/undocked"
+cdp undocked; [[ $PWD == $WHC_LOCAL_PROJECTS_DIR/undocked ]] || { print -u2 "cdp did not find a local project"; exit 1 }
+cdp app; [[ $PWD == $WHC_PROJECTS_DIR/app ]] || { print -u2 "cdp app failed with a local root set"; exit 1 }
+WHC_PROJECTS_DIR=$home/unplugged cdp undocked; [[ $PWD == $WHC_LOCAL_PROJECTS_DIR/undocked ]] || { print -u2 "cdp needed the main root for a local project"; exit 1 }
+cd "$home"
+unset WHC_LOCAL_PROJECTS_DIR
 
 # pp dispatch: terminal picker, direct open, and refresh without an empty argument.
 source "$root/zsh/dev/functions/pp.zsh"

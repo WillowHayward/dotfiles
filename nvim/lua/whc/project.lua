@@ -1,10 +1,12 @@
 local M = {}
 
+-- Workspace roots come from tmux-projects.py, which reads .whc/project.yml and workspace.yml
+-- (falling back to the legacy .whc file).
 local function metadata()
     local script = (vim.env.WHC_DOTFILES_DIR or (vim.env.HOME .. "/dotfiles")) .. "/walker/tmux-projects.py"
     local result = vim.system({ "python3", script, "roots", vim.fn.getcwd() }, { text = true }):wait()
     if result.code ~= 0 then
-        vim.notify("Cannot load .whc workspace roots: " .. vim.trim(result.stderr or ""), vim.log.levels.WARN)
+        vim.notify("Cannot load .whc/ workspace roots: " .. vim.trim(result.stderr or ""), vim.log.levels.WARN)
         return { root = vim.fn.getcwd(), search_dirs = { "." } }
     end
     local ok, value = pcall(vim.json.decode, result.stdout)

@@ -22,28 +22,89 @@ def dotfiles_dir():
     return Path(os.environ.get("WHC_DOTFILES_DIR") or Path.home() / "dotfiles").expanduser()
 
 
+def prototypes_dir():
+    return Path(os.environ.get("WHC_PROTO_DIR") or Path.home() / "prototypes").expanduser()
+
+
+def local_dir(variable):
+    """An optional internal-disk root (WHC_LOCAL_PROJECTS_DIR, WHC_LOCAL_PROTO_DIR) for undocked work."""
+    value = os.environ.get(variable)
+    return Path(value).expanduser() if value else None
+
+
+def prototype_roots():
+    return [r for r in (local_dir("WHC_LOCAL_PROTO_DIR"), prototypes_dir()) if r is not None]
+
+
+def project_dirs(root):
+    """The roots whose immediate directories are projects: the local root, then the canonical one."""
+    return [r for r in (local_dir("WHC_LOCAL_PROJECTS_DIR"), root) if r is not None]
+
+
+def immediate_dirs(root):
+    return [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
+
+
+def prototype_root(directory):
+    resolved = directory.resolve()
+    for prototypes in prototype_roots():
+        if prototypes.is_dir() and resolved.is_relative_to(prototypes.resolve()):
+            return prototypes
+    return None
+
+
+def is_prototype(directory):
+    return prototype_root(directory) is not None
+
+
+def has_config(directory):
+    """True when directory carries a .whc/ directory with project or workspace files, or a legacy .whc file."""
+    config = directory / ".whc"
+    if config.is_dir():
+        return (config / "project.yml").is_file() or (config / "workspace.yml").is_file()
+    return config.is_file()
+
+
+def workspace_members(directory):
+    """The member roots a workspace declares (everything after the project itself)."""
+    if not has_config(directory):
+        return []
+    try:
+        return load_metadata(directory)["roots"][1:]
+    except (OSError, ValueError):
+        return []  # A broken .whc must not empty the picker; opening the project itself reports it.
+
+
 def projects(root, infra):
-    entries = [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")] if root.is_dir() else []
+    # Local and canonical projects share one unprefixed namespace; a project lives in only one of them.
+    entries = [p for directory in project_dirs(root) for p in immediate_dirs(directory)]
     if infra.is_dir():
         entries.append(infra)
-        # Infra stays one option until it has a .whc file; then its workspace roots are listed too.
-        if (infra / ".whc").is_file():
-            try:
-                entries += load_metadata(infra)["roots"][1:]
-            except (OSError, ValueError):
-                pass  # A broken .whc must not empty the picker; opening infra itself reports it.
+    # A project stays one option until it declares a workspace; then its member roots are listed too
+    # (farmhand and farmhand/premium, infra and its device repositories).
+    for workspace in list(entries):
+        entries += workspace_members(workspace)
+    seen = set()
+    entries = [p for p in entries if not (p.resolve() in seen or seen.add(p.resolve()))]
     dotfiles = dotfiles_dir()
     if dotfiles.is_dir() and dotfiles.resolve() not in {p.resolve() for p in entries}:
         entries.append(dotfiles)
-    return sorted(entries, key=lambda p: (p.resolve() != dotfiles.resolve(),
+    # Prototypes are listed after everything else, as proto/<name>.
+    known = {p.resolve() for p in entries}
+    entries += [p for r in prototype_roots() for p in immediate_dirs(r) if p.resolve() not in known]
+    return sorted(entries, key=lambda p: (p.resolve() != dotfiles.resolve(), is_prototype(p),
                                           project_label(p, root).casefold()))
 
 
 def project_label(directory, root):
     if directory.resolve() == dotfiles_dir().resolve():
         return "dotfiles"
-    if directory.is_relative_to(root):
-        return str(directory.relative_to(root))
+    prototypes = prototype_root(directory)
+    if prototypes is not None:
+        return "proto/" + str(directory.resolve().relative_to(prototypes.resolve()))
+    for projects_root in project_dirs(root):
+        if directory.is_relative_to(projects_root):
+            return str(directory.relative_to(projects_root))
     if directory.is_relative_to(Path.home()):
         return "~/" + str(directory.relative_to(Path.home()))
     return str(directory)
@@ -56,12 +117,16 @@ def project_roots():
 
 
 def find_config_root(directory):
-    """Find the nearest .whc without letting a nested Git repository stop the walk."""
+    """Find the nearest .whc/ (or legacy .whc file) without letting a nested Git repository stop the walk."""
     current = directory.expanduser().resolve(strict=True)
     if current.is_file():
         current = current.parent
+    buckets = {r.resolve() for r in prototype_roots() if r.exists()}
     for candidate in (current, *current.parents):
-        if (candidate / ".whc").is_file():
+        # A prototypes root is a bucket, not the workspace of the prototypes inside it.
+        if candidate in buckets and current != candidate:
+            continue
+        if has_config(candidate):
             return candidate
     configured = os.environ.get("WHC_PROJECT_ROOT")
     if configured:
@@ -71,17 +136,110 @@ def find_config_root(directory):
     return current
 
 
+def _yaml_scalar(text):
+    text = text.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'":
+        return text[1:-1]
+    if text.startswith("[") and text.endswith("]"):
+        inner = text[1:-1].strip()
+        return [_yaml_scalar(part) for part in inner.split(",")] if inner else []
+    if text.startswith("{") and text.endswith("}"):
+        mapping = {}
+        for part in text[1:-1].split(","):
+            if ":" in part:
+                key, value = part.split(":", 1)
+                mapping[key.strip()] = _yaml_scalar(value)
+        return mapping
+    if text in ("true", "false"):
+        return text == "true"
+    return text
+
+
+def mini_yaml(text):
+    """The YAML subset .whc files use (nested maps, inline lists and maps), for hosts without PyYAML."""
+    root, stack = {}, []
+    stack = [(-1, root)]
+    for raw in text.splitlines():
+        line = re.sub(r"(^|\s)#.*$", "", raw) if "'" not in raw and '"' not in raw else raw
+        if not line.strip() or line.lstrip().startswith("-"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        key, separator, rest = line.strip().partition(":")
+        if not separator:
+            raise ValueError(f"Unsupported line: {raw.strip()}")
+        while stack[-1][0] >= indent:
+            stack.pop()
+        if rest.strip():
+            stack[-1][1][key.strip()] = _yaml_scalar(rest)
+        else:
+            child = {}
+            stack[-1][1][key.strip()] = child
+            stack.append((indent, child))
+    return root
+
+
+def read_yaml(path):
+    try:
+        text = path.read_text()
+        try:
+            import yaml
+        except ImportError:
+            data = mini_yaml(text)
+        else:
+            data = yaml.safe_load(text)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"Cannot read {path}: {exc}") from exc
+    except Exception as exc:  # yaml.YAMLError, without requiring the import above
+        raise ValueError(f"Cannot read {path}: {exc}") from exc
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a YAML mapping.")
+    return data
+
+
+def read_legacy(path):
+    """The old single-file .whc: TOML (session, ticket, [workspace]), or the one-line YAML some checkouts have."""
+    try:
+        text = path.read_text()
+    except OSError as exc:
+        raise ValueError(f"Cannot read {path}: {exc}") from exc
+    try:
+        config = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        try:
+            config = mini_yaml(text)
+        except ValueError:
+            raise ValueError(f"Cannot read {path}: {exc}") from exc
+    if not isinstance(config, dict):
+        raise ValueError(f"{path} must contain a TOML table.")
+    return config
+
+
 def load_metadata(directory):
     root = find_config_root(directory)
     config_path = root / ".whc"
-    config = {}
-    if config_path.is_file():
-        try:
-            config = tomllib.loads(config_path.read_text())
-        except (OSError, tomllib.TOMLDecodeError) as exc:
-            raise ValueError(f"Cannot read {config_path}: {exc}") from exc
-        if not isinstance(config, dict):
-            raise ValueError(f"{config_path} must contain a TOML table.")
+    config, workspace, repos, local_ticket = {}, {}, {}, None
+    if config_path.is_dir():
+        # The .whc/ directory: project.yml (identity, session), workspace.yml (repos, roots), local/ticket.
+        if (config_path / "project.yml").is_file():
+            config = read_yaml(config_path / "project.yml")
+        if (config_path / "workspace.yml").is_file():
+            workspace_file = read_yaml(config_path / "workspace.yml")
+            workspace = {"roots": workspace_file.get("roots", [])}
+            repos = workspace_file.get("repos") or {}
+            if not isinstance(repos, dict):
+                raise ValueError(f"repos in {config_path / 'workspace.yml'} must be a mapping.")
+        if (config_path / "local" / "ticket").is_file():
+            try:
+                local_ticket = (config_path / "local" / "ticket").read_text().strip()
+            except OSError as exc:
+                raise ValueError(f"Cannot read {config_path / 'local' / 'ticket'}: {exc}") from exc
+            if not local_ticket or "\n" in local_ticket or "\r" in local_ticket:
+                raise ValueError(f"{config_path / 'local' / 'ticket'} must contain exactly one non-empty line.")
+    elif config_path.is_file():
+        config = read_legacy(config_path)  # Fallback: the legacy file, kept readable for one release.
+        workspace = config.get("workspace", {})
 
     session = config.get("session")
     configured_ticket = config.get("ticket")
@@ -90,9 +248,9 @@ def load_metadata(directory):
     if configured_ticket is not None and not isinstance(configured_ticket, str):
         raise ValueError(f"ticket in {config_path} must be a string.")
 
-    ticket = configured_ticket
+    ticket = local_ticket or configured_ticket
     ticket_path = root / ".ticket"
-    if ticket_path.is_file():
+    if local_ticket is None and ticket_path.is_file():
         try:
             ticket = ticket_path.read_text().strip()
         except OSError as exc:
@@ -100,15 +258,17 @@ def load_metadata(directory):
         if not ticket or "\n" in ticket or "\r" in ticket:
             raise ValueError(f"{ticket_path} must contain exactly one non-empty line.")
 
-    workspace = config.get("workspace", {})
     if not isinstance(workspace, dict):
-        raise ValueError(f"workspace in {config_path} must be a TOML table.")
+        raise ValueError(f"workspace in {config_path} must be a table.")
     configured_roots = workspace.get("roots", [])
     if not isinstance(configured_roots, list) or not all(isinstance(item, str) for item in configured_roots):
         raise ValueError(f"workspace.roots in {config_path} must be an array of strings.")
 
     resolved_roots = [root]
     for item in configured_roots:
+        member = repos.get(item)  # A root names a repo in workspace.yml, or is a path.
+        if isinstance(member, dict) and isinstance(member.get("path"), str):
+            item = member["path"]
         candidate = (root / item).resolve(strict=True)
         if candidate != root and root not in candidate.parents:
             raise ValueError(f"Workspace root escapes the project: {item}")
@@ -116,7 +276,10 @@ def load_metadata(directory):
             raise ValueError(f"Workspace root is not a directory: {item}")
         if candidate not in resolved_roots:
             resolved_roots.append(candidate)
-    return {"root": root, "session": session, "ticket": ticket, "roots": resolved_roots}
+    project = config.get("project") if isinstance(config.get("project"), str) else None
+    return {"root": root, "session": session, "ticket": ticket, "roots": resolved_roots,
+            "name": config.get("name") or project, "code": config.get("code"),
+            "labels": config.get("labels") or []}
 
 
 def git_branch(directory):
@@ -347,11 +510,50 @@ def resolve_project(selector, choices, root):
             resolved = candidate.resolve()
             if resolved not in matches:
                 matches.append(resolved)
+    if len(matches) > 1:
+        # A project and a prototype with the same name: the project wins.
+        projects_only = [match for match in matches if not is_prototype(match)]
+        if len(projects_only) == 1:
+            return projects_only[0]
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
         raise ValueError(f"Ambiguous project '{selector}': " + ", ".join(map(str, matches)))
     raise ValueError(f"Unknown project: {selector}")
+
+
+def create_project(name, root, prototype=False, local=False):
+    """Make <root>/<name> (parents included) and git init it; name may be nested (a/b).
+
+    local puts it under WHC_LOCAL_PROJECTS_DIR (or WHC_LOCAL_PROTO_DIR) so it works undocked."""
+    relative = Path(name)
+    if not name or relative.is_absolute() or any(part in ("", ".", "..") for part in relative.parts):
+        raise ValueError(f"Project name must be a relative path inside the projects directory: {name!r}")
+    if relative.parts[0].startswith("."):
+        raise ValueError(f"Project name cannot start with a dot (the picker hides those): {name}")
+    if local:
+        variable = "WHC_LOCAL_PROTO_DIR" if prototype else "WHC_LOCAL_PROJECTS_DIR"
+        base = local_dir(variable)
+        if base is None:
+            raise ValueError(f"{variable} is not set")
+    else:
+        base = prototypes_dir() if prototype else root
+    # The canonical roots may be on a drive that is not mounted; never create them on the wrong disk.
+    if not base.is_dir():
+        raise ValueError(f"Not a directory (is the drive mounted?): {base}")
+    # One place per project: the same name in the local and canonical roots would be ambiguous.
+    roots = prototype_roots() if prototype else project_dirs(root)
+    for existing in (r / relative for r in roots):
+        if existing.exists():
+            raise ValueError(f"Already exists: {existing} (open it with pp instead)")
+    directory = base / relative
+    directory.mkdir(parents=True)
+    try:
+        subprocess.run(["git", "init", "--quiet", str(directory)], text=True, capture_output=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        shutil.rmtree(directory)
+        raise
+    return directory
 
 
 def current_project():
@@ -360,7 +562,7 @@ def current_project():
         if root.returncode == 0 and root.stdout.strip():
             return Path(root.stdout.strip()).resolve(strict=True)
     configured = find_config_root(Path.cwd())
-    if (configured / ".whc").is_file():
+    if has_config(configured):
         return configured
     result = subprocess.run(
         ["git", "-C", str(Path.cwd()), "rev-parse", "--show-toplevel"],
@@ -386,9 +588,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=[
         "pick", "terminal-pick", "list", "complete", "entries", "open", "terminal-open",
-        "ensure", "refresh", "roots", "layout", "start",
+        "ensure", "refresh", "roots", "layout", "start", "new",
     ])
     parser.add_argument("target", nargs="?")
+    parser.add_argument("--prototype", action="store_true", help="new: create it under WHC_PROTO_DIR")
+    parser.add_argument("--local", action="store_true",
+                        help="new: create it under WHC_LOCAL_PROJECTS_DIR (or WHC_LOCAL_PROTO_DIR)")
     args = parser.parse_args()
     root, infra = project_roots()
     choices = projects(root, infra)
@@ -403,6 +608,10 @@ def main():
         else:
             directory = resolve_project(args.target, choices, root)
             open_project(directory, graphical=args.action == "open")
+    elif args.action == "new":
+        if not args.target:
+            parser.error("a project name is required")
+        open_project(create_project(args.target, root, prototype=args.prototype, local=args.local), graphical=False)
     elif args.action == "refresh":
         directory = resolve_project(args.target, choices, root) if args.target else current_project()
         print(refresh_project(directory))
