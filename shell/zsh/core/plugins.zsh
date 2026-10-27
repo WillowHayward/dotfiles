@@ -16,6 +16,19 @@ unset whc_pins
 
 source ${ANTIDOTE_DIR}/antidote.zsh
 
+# Does every file a generated bundle sources exist? A bundle written while a clone failed
+# (Ranch's in-chroot provisioning) is truncated, yet newer than its list, so it would never be
+# rebuilt; checking makes the next shell rebuild it instead.
+whc_antidote_complete() {
+    local line file
+    for line in "${(@f)$(<$1)}"; do
+        [[ $line == 'source "'*'"' ]] || continue
+        file=${${line#source \"}%\"}
+        file=${file//\$HOME/$HOME}
+        [[ -r $file ]] || return 1
+    done
+}
+
 # Bundle the given plugin lists into the cache under <name> and source the result.
 whc_antidote_load() {
     local name=$1; shift
@@ -30,7 +43,7 @@ whc_antidote_load() {
         cat $sources >| "$bundle"
     fi
     # Same as `antidote load`: regenerate the static file when the bundle changes.
-    if [[ ! -s $static || $bundle -nt $static ]]; then
+    if [[ ! -s $static || $bundle -nt $static ]] || ! whc_antidote_complete "$static"; then
         (GIT_CONFIG_GLOBAL=/dev/null antidote bundle < "$bundle" >| "$static")
     fi
     source "$static"
@@ -54,4 +67,4 @@ local -a stages=($plugins/core.txt)
 [[ -v WHC_DEV ]] && stages+=($plugins/dev.txt)
 whc_antidote_load main $stages
 whc_antidote_load last $plugins/last.txt
-unfunction whc_antidote_load
+unfunction whc_antidote_load whc_antidote_complete
