@@ -346,6 +346,31 @@ assert arguments[arguments.index("--cmd") + 1] == "uwsm start -e -D Hyprland hyp
 assert arguments.count("--cmd") == 1 and arguments[-1] == arguments[arguments.index("--cmd") + 1], arguments
 assert arguments[arguments.index("--user") + 1] == "tester", arguments
 PY
+    # Automatic login: off unless asked; when on, one initial_session that marks the session and
+    # execs the same launcher as the greeter.
+    if grep -q initial_session <<<"$with_uwsm"; then exit 1; fi
+    python3 - "$(render_greetd_config tester yes yes)" <<'PY'
+import shlex, sys, tomllib
+config = tomllib.loads(sys.argv[1])
+session = config["initial_session"]
+assert session["user"] == "tester", session
+shell, flag, script = shlex.split(session["command"])
+assert (shell, flag) == ("sh", "-c"), session
+assert script == 'touch "$XDG_RUNTIME_DIR/whc-autologin"; exec uwsm start -e -D Hyprland hyprland.desktop', script
+assert "tuigreet" in config["default_session"]["command"]
+PY
+    environment=$(mktemp)
+    for value in 1 yes '"true"'; do
+        printf 'WHC_AUTOLOGIN=%s\n' "$value" >"$environment"
+        environment_file=$environment autologin_wanted
+    done
+    for value in 0 no ''; do
+        printf 'WHC_AUTOLOGIN=%s\n' "$value" >"$environment"
+        if environment_file=$environment autologin_wanted; then exit 1; fi
+    done
+    : >"$environment"
+    if environment_file=$environment autologin_wanted; then exit 1; fi
+    rm -f -- "$environment"
 )
 
 # Device presets are read from an untracked file, ignoring comments and invalid names.
