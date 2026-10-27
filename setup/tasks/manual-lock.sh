@@ -58,6 +58,8 @@ task_manual_lock() {
     run_as_root rm -f /etc/systemd/system/systemd-logind.service.d/60-dotfiles.conf
     run_as_root rmdir --ignore-fail-on-non-empty /etc/systemd/system/systemd-logind.service.d 2>/dev/null || true
     run_as_root systemctl daemon-reload
+    # Without this a fresh machine keeps booting to the getty and the configuration above is unused.
+    run_as_root systemctl enable greetd.service
     printf 'Installed greetd and logind configuration (session: %s; automatic login: %s).\n' \
         "$(grep -o 'cmd .*"' /etc/greetd/config.toml | head -1)" "$autologin"
     printf '%s\n' 'Reboot to apply. If login fails, switch to a TTY (Ctrl+Alt+F2) and run WHC_NO_UWSM=1 just setup manual-lock.'
