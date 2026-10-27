@@ -25,7 +25,10 @@ task_shell() {
     fi
     current_user=$(id -un)
     login_shell=$(getent passwd "$current_user" | cut -d: -f7)
-    if [[ $login_shell != "$zsh_path" ]]; then
+    # /usr/bin/zsh and /usr/sbin/zsh are the same file on merged-/usr systems; compare the
+    # resolved paths so an already-correct login shell is not re-set needlessly (chsh needs
+    # a password and fails non-interactively, e.g. during unattended provisioning).
+    if [[ $(readlink -f -- "$login_shell" 2>/dev/null) != $(readlink -f -- "$zsh_path" 2>/dev/null) ]]; then
         chsh -s "$zsh_path"
     fi
 }
