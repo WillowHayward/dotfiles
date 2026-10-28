@@ -9,11 +9,14 @@ typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=off
 # The first segment names the machine: OS logo and device name (just the logo locally on
 # home), in the machine's brand colour from whc-theme, except on remote machines and SSH sessions,
-# which are vibrant red.
+# which are vibrant red and also carry the user (user@device), so the right-hand context segment
+# is hidden over SSH.
 typeset -ga POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(whc_host "${(@)POWERLEVEL9K_LEFT_PROMPT_ELEMENTS:#os_icon}")
 # Keep hex lowercase: ZLE normalizes region_highlight, and autosuggestions
 # must match that exact value to remove the hint colour after accepting/history.
 typeset -g ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=${(L)whc_theme[bright_black]:-#6272a4}"
+
+typeset -g POWERLEVEL9K_CONTEXT_{REMOTE,REMOTE_SUDO}_{CONTENT,VISUAL_IDENTIFIER}_EXPANSION=
 
 # Nerd Font glyphs by os-release ID; unknown systems get the generic Linux logo.
 typeset -gA _whc_os_icons=(arch $'\uf303' debian $'\uf306' ubuntu $'\uf31b' fedora $'\uf30a' alpine $'\uf300')
@@ -32,6 +35,7 @@ prompt_whc_host() {
     device=${device//[[:cntrl:]]/}
     if [[ ${WHC_PROFILE:-} == remote || -n ${SSH_CONNECTION:-} || -n ${SSH_TTY:-} ]]; then
         background=#FF1F1F foreground=#FFFFFF
+        device="${USER//[[:cntrl:]]/}@$device"
     elif [[ ${WHC_PROFILE:-} == home ]]; then
         p10k segment -b $background -f $foreground -t "$_whc_os_icon"
         return
